@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Мої Оцінки{% endblock %}
+
+{% block header_title %}Оцінки{% endblock %}
+
+{% block content %}
+<div class="glass-panel rounded-3xl p-8 mb-8" role="region" aria-label="Таблиця оцінок">
+    <form method="GET" action="{% url 'student_grades' %}" class="flex flex-col md:flex-row flex-wrap gap-4 mb-8">
+
+        <div class="flex flex-col gap-2">
+            <label for="date-from" class="text-sm font-medium text-bodyText">Дата від:</label>
+            <input type="date" id="date-from" name="date_from"
+                class="px-4 py-2 border border-tableBorder rounded-xl text-dark bg-white focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200"
+                value="{{ request.GET.date_from }}">
+        </div>
+
+        <div class="flex flex-col gap-2">
+            <label for="date-to" class="text-sm font-medium text-bodyText">До:</label>
+            <input type="date" id="date-to" name="date_to"
+                class="px-4 py-2 border border-tableBorder rounded-xl text-dark bg-white focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200"
+                value="{{ request.GET.date_to }}">
+        </div>
+
+        <div class="flex flex-col gap-2 flex-grow min-w-[200px]">
+            <label for="subject-select" class="text-sm font-medium text-bodyText">Предмет:</label>
+            <div class="relative">
+                <select id="subject-select"
+                    class="w-full px-4 py-2 border border-tableBorder rounded-xl text-dark bg-white appearance-none focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200 cursor-pointer"
+                    name="subject_id" aria-label="Предмет">
+                    <option value="" {% if not request.GET.subject_id %}selected{% endif %}>Усі предмети</option>
+                    {% for subject in subjects %}
+                    <option value="{{ subject.pk }}" {% if subject.pk|stringformat:"s" == request.GET.subject_id
+                        %}selected{% endif %}>
+                        {{ subject.subject_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-dark">
+                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-end gap-2">
+            <button type="submit"
+                class="btn bg-primary text-white shadow-button hover:bg-blue-600 hover:shadow-button-hover flex items-center gap-2 py-2.5">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                ФІЛЬТР
+            </button>
+
+            <a href="{% url 'student_grades' %}"
+                class="btn bg-primary text-white shadow-button hover:bg-blue-600 hover:shadow-button-hover flex items-center gap-2 py-2.5"
+                title="Скинути фільтр">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-4 h-4">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+                СКИНУТИ
+            </a>
+        </div>
+    </form>
+
+    <div class="overflow-x-auto rounded-xl border border-tableBorder bg-white shadow-sm">
+        <table class="w-full border-collapse">
+            <thead>
+                <tr>
+                    <th class="bg-primary text-white p-4 text-left text-xs font-bold uppercase tracking-wider">Дата</th>
+                    <th class="bg-primary text-white p-4 text-left text-xs font-bold uppercase tracking-wider">Предмет
+                    </th>
+                    <th class="bg-primary text-white p-4 text-left text-xs font-bold uppercase tracking-wider">Викладач
+                    </th>
+                    <th class="bg-primary text-white p-4 text-left text-xs font-bold uppercase tracking-wider">Тип</th>
+                    <th class="bg-primary text-white p-4 text-center text-xs font-bold uppercase tracking-wider">Оцінка
+                    </th>
+                    <th class="bg-primary text-white p-4 text-left text-xs font-bold uppercase tracking-wider">Коментар
+                    </th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-tableBorder text-dark">
+                {% for entry in grades %}
+                <tr
+                    class="{% cycle 'bg-tableBgLight' 'bg-tableBgDark' %} hover:bg-primary/10 transition-colors duration-200">
+
+                    <td class="p-4">{{ entry.lesson_date|date:"d.m.Y" }}</td>
+
+                    <td class="p-4 font-medium">{{ entry.subject.subject_name }}</td>
+                    <td class="p-4">{{ entry.teacher.full_name }}</td>
+
+                    <td class="p-4">Участь на уроці</td>
+
+                    <td class="p-4 text-center font-bold text-primary text-lg">{{ entry.value }}</td>
+                    <td class="p-4 text-gray-500 italic">{{ entry.comment|default:"—" }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="p-8 text-center text-neutral text-lg">Оцінок поки немає.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

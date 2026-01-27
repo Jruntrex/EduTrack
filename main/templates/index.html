@@ -1,0 +1,85 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вхід - EduTrack</title>
+    <link rel="icon" type="image/png" href="{% static 'images/logo.png' %}">
+    <link rel="stylesheet" href="{% static 'css/output.css' %}">
+</head>
+
+<body class="font-sans bg-main-gradient flex items-center justify-center min-h-screen p-4 text-bodyText">
+    <div class="w-full max-w-md">
+        <div class="glass-panel rounded-3xl p-8 md:p-12 text-center relative overflow-hidden" role="main">
+            <div class="mb-8 animate-fade-in opacity-0" style="animation-fill-mode: forwards;">
+                <div class="flex items-center justify-center gap-3 mb-4">
+                    <div class="text-primary">
+                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 14l9-5-9-5-9 5 9 5z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.908V14z" />
+                        </svg>
+                    </div>
+                    <h1 class="text-3xl font-bold text-dark m-0">EduTrack</h1>
+                </div>
+            </div>
+
+            <h2 class="text-bodyText mb-10 text-base font-medium">Вхід до системи</h2>
+
+            {% if messages %}
+            <div class="mb-6 animate-fade-in opacity-0" style="animation-fill-mode: forwards;">
+                {% for message in messages %}
+                <div class="bg-error/10 text-error text-center text-sm font-medium p-4 rounded-xl mb-4">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <form id="loginForm" class="space-y-6" method="POST" action="{% url 'login_process' %}">
+                {% csrf_token %}
+
+                <div class="text-left">
+                    <label for="username" class="sr-only">Логін (Email)</label>
+                    <div class="relative flex items-center animate-slide-up opacity-0"
+                        style="animation-fill-mode: forwards;">
+                        <svg class="absolute left-4 w-5 h-5 text-bodyText pointer-events-none" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                        <input type="text" id="username" name="username" placeholder="Логін (Email)" required
+                            class="w-full py-3.5 pl-11 pr-4 border border-gray-200 rounded-xl bg-gray-50 text-dark text-base transition-all duration-300 focus:outline-none focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
+                            aria-required="true">
+                    </div>
+                </div>
+
+                <div class="text-left">
+                    <label for="password" class="sr-only">Пароль</label>
+                    <div class="relative flex items-center animate-slide-up opacity-0 delay-100"
+                        style="animation-fill-mode: forwards; animation-delay: 100ms;">
+                        <svg class="absolute left-4 w-5 h-5 text-bodyText pointer-events-none" fill="none"
+                            stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M14 9a2 2 0 00-2-2H8a2 2 0 00-2 2v2a2 2 0 002 2h4a2 2 0 002-2V9z" />
+                        </svg>
+                        <input type="password" id="password" name="password" placeholder="Пароль" required
+                            class="w-full py-3.5 pl-11 pr-4 border border-gray-200 rounded-xl bg-gray-50 text-dark text-base transition-all duration-300 focus:outline-none focus:border-primary focus:bg-white focus:ring-4 focus:ring-primary/10"
+                            aria-required="true">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn bg-primary w-full mt-2 animate-slide-up opacity-0 delay-200"
+                    style="animation-fill-mode: forwards; animation-delay: 200ms;">УВІЙТИ</button>
+            </form>
+
+        </div>
+    </div>
+</body>
+
+</html>

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}Звіти Адміністратора{% endblock %}
+
+{% block header_title %}Генерація Звітів (Адмін){% endblock %}
+
+{% block content %}
+<div class="glass-panel rounded-3xl p-8 mb-8" role="region" aria-label="Панель звітів">
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+
+        <a href="{% url 'report_rating' %}"
+            class="glass-panel rounded-2xl p-6 border-l-[6px] border-l-primary hover:-translate-y-1 transition-transform duration-300 shadow-glass animate-fade-in group flex flex-col justify-center text-center">
+            <div class="text-xs uppercase tracking-wider text-bodyText mb-2 font-medium">Рейтинг Успішності</div>
+            <div class="text-xl font-bold text-primary mb-1">Середній Бал</div>
+        </a>
+
+        <a href="{% url 'report_absences' %}"
+            class="glass-panel rounded-2xl p-6 border-l-[6px] border-l-accent hover:-translate-y-1 transition-transform duration-300 shadow-glass animate-fade-in group flex flex-col justify-center text-center">
+            <div class="text-xs uppercase tracking-wider text-bodyText mb-2 font-medium">Загальний Облік</div>
+            <div class="text-xl font-bold text-accent mb-1">Топ Прогульників (За весь час)</div>
+        </a>
+
+        <a href="{% url 'report_weekly_absences' %}"
+            class="glass-panel rounded-2xl p-6 border-l-[6px] border-l-neutral hover:-translate-y-1 transition-transform duration-300 shadow-glass animate-fade-in group flex flex-col justify-center text-center">
+            <div class="text-xs uppercase tracking-wider text-bodyText mb-2 font-medium">Актуальний Контроль</div>
+            <div class="text-xl font-bold text-neutral mb-1">Тижневі Пропуски</div>
+        </a>
+
+    </div>
+
+    <div class="mt-8 pt-6 border-t border-tableBorder">
+        <h4 class="text-lg font-bold text-dark mb-4">Довідка по генерації CSV</h4>
+        <p class="text-sm text-bodyText leading-relaxed">
+            Натисніть на картку звіту, щоб переглянути його в таблиці.
+            Щоб **згенерувати CSV-файл**, додайте параметр <code
+                class="bg-gray-100 text-primary px-1.5 py-0.5 rounded text-xs font-mono">?export=csv</code> до URL, або
+            скористайтеся відповідною кнопкою на сторінці звіту.
+        </p>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply font-sans bg-main-gradient text-bodyText leading-relaxed min-h-screen;
+  }
+  
+  h1, h2, h3 {
+    @apply leading-tight text-dark font-bold;
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-glass backdrop-blur-glass border border-white/30 shadow-glass;
+  }
+  
+  .glass-sidebar {
+    @apply bg-glass backdrop-blur-glass border-r border-white/30 shadow-glass;
+  }
+  
+  .btn {
+    @apply inline-flex items-center justify-center px-7 py-3 border-none rounded-xl font-semibold text-sm uppercase tracking-wide cursor-pointer transition-all duration-300 relative overflow-hidden text-white shadow-button hover:-translate-y-0.5 hover:shadow-button-hover;
+  }
+}

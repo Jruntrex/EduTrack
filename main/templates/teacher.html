@@ -1,0 +1,433 @@
+{% extends "base.html" %}
+
+{% load static %}
+{% load math_filters %}
+{% load journal_filters %}
+
+{% block title %}Журнал викладача{% endblock %}
+
+{% block header_title %}Журнал Викладача{% endblock %}
+
+{% block content %}
+<div class="glass-panel rounded-3xl p-8 mb-8" role="region" aria-label="Журнал викладача">
+    <form method="GET" action="{% url 'teacher_journal' %}" class="flex flex-col gap-6 mb-8">
+
+        <h3 class="text-2xl font-bold text-dark mb-2">{{ students.first.group.name|default:"Оберіть групу" }}</h3>
+
+        <div class="flex flex-col md:flex-row gap-4">
+            <div class="relative w-full">
+                <select name="subject"
+                    class="w-full px-4 py-3 border border-tableBorder rounded-xl text-dark bg-white appearance-none focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200 cursor-pointer"
+                    aria-label="Предмет" onchange="this.form.submit()">
+                    {% for subject in subjects %}
+                    <option value="{{ subject.pk }}" {% if
+                        subject.pk|stringformat:'s'==selected_subject_id|stringformat:'s' %}selected{% endif %}>
+                        {{ subject.subject_name }}
+                    </option>
+                    {% empty %}
+                    <option disabled selected>Немає предметів</option>
+                    {% endfor %}
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-dark">
+                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                    </svg>
+                </div>
+            </div>
+
+            <div class="relative w-full">
+                <select name="group"
+                    class="w-full px-4 py-3 border border-tableBorder rounded-xl text-dark bg-white appearance-none focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200 cursor-pointer"
+                    aria-label="Група" onchange="this.form.submit()">
+                    {% for group in groups %}
+                    <option value="{{ group.pk }}" {% if group.pk|stringformat:'s'==selected_group_id|stringformat:'s'
+                        %}selected{% endif %}>
+                        {{ group.name }}
+                    </option>
+                    {% empty %}
+                    <option disabled selected>Немає груп</option>
+                    {% endfor %}
+                </select>
+                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-dark">
+                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Кнопка налаштування типів оцінювання -->
+        {% if selected_subject_id and selected_group_id and selected_assignment %}
+        <div class="flex justify-end mt-3">
+            <a href="{% url 'manage_evaluation_types' %}?assignment={{ selected_assignment.id }}"
+                class="flex items-center gap-2 px-4 py-2 bg-secondary text-white rounded-xl hover:bg-orange-600 transition-all duration-200 shadow-sm hover:shadow-md text-sm font-medium">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Налаштувати типи оцінювання
+            </a>
+        </div>
+        {% endif %}
+
+        <div class="flex justify-center mt-2">
+            <div class="flex items-center gap-4 bg-white/50 p-2 rounded-xl border border-white/40 shadow-sm">
+                <a href="{% url 'teacher_journal' %}?subject={{ selected_subject_id|default:'' }}&group={{ selected_group_id|default:'' }}&week={{ week_shift|add:'-1' }}"
+                    class="p-2 rounded-lg bg-primary shadow-sm text-white hover:bg-blue-600 hover:shadow-md transition-all duration-200"
+                    title="Попередній тиждень">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                    </svg>
+                </a>
+
+                <span class="px-4 py-1 text-sm font-bold text-dark">
+                    {% if start_of_week and end_of_week %}
+                    {{ start_of_week|date:"d.m" }} - {{ end_of_week|date:"d.m" }}
+                    {% else %}
+                    Тиждень
+                    {% endif %}
+                </span>
+
+                <a href="{% url 'teacher_journal' %}?subject={{ selected_subject_id|default:'' }}&group={{ selected_group_id|default:'' }}&week={{ week_shift|add:'1' }}"
+                    class="p-2 rounded-lg bg-primary shadow-sm text-white hover:bg-blue-600 hover:shadow-md transition-all duration-200"
+                    title="Наступний тиждень">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                    </svg>
+                </a>
+            </div>
+        </div>
+
+    </form>
+
+    <div class="mt-6 overflow-x-auto rounded-xl border border-tableBorder bg-glass shadow-glass">
+        <table id="teacher-journal" class="w-full border-collapse">
+            <thead>
+                <tr>
+                    <th rowspan="2"
+                        class="sticky left-0 z-30 bg-primary text-white p-3 text-left text-xs font-bold uppercase tracking-wider min-w-[4rem] border-r border-white/20">
+                        #</th>
+                    <th rowspan="2"
+                        class="sticky left-16 z-30 bg-primary text-white p-3 text-left text-xs font-bold uppercase tracking-wider min-w-[150px] border-r border-white/20">
+                        ПІБ Студента</th>
+
+                    {% for header in lesson_headers %}
+                    <th colspan="{{ header.lessons|length }}"
+                        class="bg-primary text-white p-3 text-center text-xs font-bold uppercase tracking-wider border-r border-white/20 last:border-r-0">
+                        {{ header.date_formatted }} ({{ header.date|date:"D" }})
+                    </th>
+                    {% empty %}
+                    {% if students %}
+                    <th colspan="99" class="bg-primary text-white p-3 text-center">Немає запланованих занять для цієї
+                        групи/предмету.</th>
+                    {% else %}
+                    <th colspan="99" class="bg-primary text-white p-3 text-center">Оберіть предмет та групу.</th>
+                    {% endif %}
+                    {% endfor %}
+                </tr>
+
+                <tr>
+                    {% for header in lesson_headers %}
+                    {% for lesson in header.lessons %}
+                    <th
+                        class="sticky top-[3.5rem] z-20 bg-gray-100/90 text-dark p-2 text-center border-l border-white/50 first:border-l-0 min-w-[100px] h-full align-top">
+                        <div class="flex flex-col h-full justify-between gap-1">
+                            <span class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Пара {{
+                                lesson.lesson_num }}</span>
+
+                            <div class="py-1">
+                                <span class="block text-xs font-bold text-primary leading-tight">
+                                    {{ lesson.lesson_type|truncatechars:15 }}
+                                </span>
+                                {% if lesson.weight_percent %}
+                                <span class="block text-[10px] font-medium text-accent mt-0.5">
+                                    Вага: {{ lesson.weight_percent }}%
+                                </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </th>
+                    {% endfor %}
+                    {% endfor %}
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for student in students %}
+                <tr data-student="{{ student.full_name }}"
+                    class="{% cycle 'bg-tableBgLight' 'bg-tableBgDark' %} hover:bg-primary/10 transition-colors duration-200 group">
+
+                    <td
+                        class="sticky left-0 z-10 p-4 font-medium text-dark border-b border-tableBorder shadow-[2px_0_5px_rgba(0,0,0,0.05)] {% cycle 'bg-tableBgLight' 'bg-tableBgDark' %} group-hover:bg-primary/10">
+                        {{ forloop.counter }}</td>
+                    <td
+                        class="sticky left-16 z-10 p-4 font-medium text-dark border-b border-tableBorder shadow-[2px_0_5px_rgba(0,0,0,0.05)] {% cycle 'bg-tableBgLight' 'bg-tableBgDark' %} group-hover:bg-primary/10">
+                        {{ student.full_name }}</td>
+
+                    {% for header in lesson_headers %}
+                    {% for lesson in header.lessons %}
+                    {% with entry=journal_data|get_item:student.pk|get_item:header.date|get_item:lesson.lesson_num %}
+                    <td class="text-center p-3 border border-tableBorder cursor-pointer transition-all duration-200 hover:bg-primary/10 hover:shadow-inner editable
+                                        {% if entry and entry.is_grade %}bg-blue-500/5{% else %}bg-transparent{% endif %}"
+                        data-student="{{ student.pk }}" data-date="{{ header.date|date:'Y-m-d' }}"
+                        data-lesson="{{ lesson.lesson_num }}" data-type="grade_or_att"
+                        data-val="{{ entry.value|default:'—' }}">
+
+                        {% if entry %}
+                        {% with display_value=entry.get_display_value %}
+                        <span class="font-bold 
+                                                    {% if entry.is_grade and entry.value >= 10 %}text-accent
+                                                    {% elif entry.is_grade and entry.value < 6 or entry.value == -1 %}text-error
+                                                    {% elif entry.value == -2 or entry.value == -3 %}text-secondary
+                                                    {% else %}text-dark{% endif %}">
+                            {{ display_value }}
+                        </span>
+                        {% endwith %}
+                        {% else %}
+                        <span class="font-bold text-neutral">—</span>
+                        {% endif %}
+                    </td>
+                    {% endwith %}
+                    {% endfor %}
+                    {% endfor %}
+
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="99" class="p-8 text-center text-neutral text-lg">Оберіть предмет та групу, або внесіть
+                        дані розкладу.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <div class="mt-8 flex justify-end">
+        <p id="status" class="hidden text-sm font-medium mr-4 flex items-center">Збереження імітується...</p>
+        <button id="saveBtn"
+            class="btn bg-primary text-white shadow-button hover:bg-blue-600 hover:shadow-button-hover flex items-center gap-2">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            Зберегти всі зміни
+        </button>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    // JS-логіка для редагування клітинки (Grade OR Absence)
+    $(document).ready(function () {
+        const status = $('#status');
+
+        // Опції для випадаючого списку
+        const gradeOptions = [
+            { value: '—', label: '— (Очистити)', type: 'neutral' },
+            { value: '-1', label: 'Н (Неявка)', type: 'fail' },
+            { value: '-2', label: 'ДЛ (Д/л, оплач.)', type: 'paid' },
+            { value: '-3', label: 'ПП (Поважна)', type: 'paid' },
+            { value: 12, label: '12 (Відм.)', type: 'excellent' },
+            { value: 11, label: '11', type: 'excellent' },
+            { value: 10, label: '10', type: 'excellent' },
+            { value: 9, label: '9 (Добре)', type: 'good' },
+            { value: 8, label: '8', type: 'good' },
+            { value: 7, label: '7', type: 'good' },
+            { value: 6, label: '6 (Задов.)', type: 'satisfactory' },
+            { value: 5, label: '5 (Незадов.)', type: 'fail' },
+            { value: 4, label: '4', type: 'fail' },
+            { value: 3, label: '3', type: 'fail' },
+            { value: 2, label: '2', type: 'fail' },
+            { value: 1, label: '1', type: 'fail' },
+        ].sort((a, b) => {
+            if (a.value < 0 && b.value >= 0) return -1;
+            if (a.value >= 0 && b.value < 0) return 1;
+            return b.value - a.value;
+        });
+
+        $('#teacher-journal').on('click', '.editable', function () {
+            const cell = $(this);
+            // Виправлення: Тепер дозволяємо як select, так і input
+            if (cell.find('select, input').length > 0) return;
+
+            const currentValue = cell.data('val');
+            const isGrade = currentValue > 0 || (currentValue > 0).toString() === 'true'; // Приблизна перевірка, чи це оцінка
+
+            let elementToFocus;
+
+            // Якщо це поле для вибору/введення
+            if (isGrade) {
+                // Комбінований підхід: Input для введення оцінок 1-12
+                let inputElement = `
+                    <input type="text" value="${currentValue}"
+                           class="input-journal-grade"
+                           placeholder="1-12" maxlength="3">
+                `;
+                cell.html(inputElement);
+                elementToFocus = cell.find('input').first();
+
+                // Додаємо обробку ручного введення
+                elementToFocus.on('blur change keydown', function (e) {
+                    if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== 'Tab') return;
+                    formatAndSaveInput(cell, $(this));
+                });
+            } else {
+                // Select для вибору пропусків та швидких оцінок
+                let optionsHtml = gradeOptions.map(option => {
+                    const selected = option.value.toString() === currentValue.toString() ? 'selected' : '';
+                    return `<option value="${option.value}" data-type="${option.type}" ${selected}>${option.label}</option>`;
+                }).join('');
+
+                let selectElement = `
+                    <select class="input-journal-select">
+                        ${optionsHtml}
+                    </select>
+                `;
+
+                cell.html(selectElement);
+                elementToFocus = cell.find('select').first();
+
+                // Додаємо обробку вибору
+                elementToFocus.on('change blur', function (e) {
+                    formatAndSaveSelect(cell, $(this));
+                });
+            }
+
+            elementToFocus.focus();
+        });
+
+        // Функція для форматування та збереження після ручного введення (для input)
+        const formatAndSaveInput = function (cell, input) {
+            let newValue = input.val().trim().toUpperCase();
+            let displayText = newValue;
+            let textClass = 'text-dark';
+            let finalValue = newValue;
+
+            if (!newValue) {
+                displayText = '—';
+                textClass = 'attendance-neutral';
+                finalValue = '—';
+            } else if (newValue >= 1 && newValue <= 12) {
+                displayText = newValue;
+                finalValue = parseInt(newValue);
+                if (finalValue >= 10) textClass = 'grade-excellent';
+                else if (finalValue < 6) textClass = 'grade-fail';
+                else if (finalValue >= 7 && finalValue <= 9) textClass = 'grade-good';
+                else if (finalValue == 6) textClass = 'grade-satisfactory';
+                else textClass = 'text-dark';
+            } else {
+                // Якщо введено некоректне значення, повертаємо його до попереднього або очищаємо
+                displayText = '—';
+                textClass = 'attendance-neutral';
+                finalValue = '—';
+            }
+
+            cell.html(`<span class="font-bold ${textClass}">${displayText}</span>`);
+            cell.data('val', finalValue);
+        };
+
+        // Функція для форматування та збереження після вибору (для select)
+        const formatAndSaveSelect = function (cell, select) {
+            const selectedOption = select.find('option:selected');
+            const newValue = selectedOption.val();
+            const displayText = selectedOption.text().split(' ')[0];
+            const type = selectedOption.data('type');
+
+            let textClass = 'text-dark';
+            if (type) textClass = `grade-${type} attendance-${type}`;
+
+            let finalValue = newValue;
+            if (newValue === '—') finalValue = '—';
+            else finalValue = parseInt(newValue);
+
+            cell.html(`<span class="font-bold ${textClass}">${displayText}</span>`);
+            cell.data('val', finalValue);
+        };
+
+        // 2. РЕАЛІЗАЦІЯ ЗБЕРЕЖЕННЯ: Збір даних та Fetch POST (Залишається незмінною)
+        $('#saveBtn').on('click', function () {
+            const status = $('#status');
+
+            const changes = [];
+            const selectedSubjectId = $('select[name="subject"]').val();
+
+            $('#teacher-journal .editable').each(function () {
+                const cell = $(this);
+                const value = cell.data('val');
+
+                if (value && value !== '—') {
+                    changes.push({
+                        'student_pk': cell.data('student'),
+                        'date': cell.data('date'),
+                        'lesson_num': cell.data('lesson'),
+                        'value': value,
+                        'subject_id': selectedSubjectId,
+                    });
+                } else if (value === '—' && cell.find('span').text().trim() !== '—') {
+                    changes.push({
+                        'student_pk': cell.data('student'),
+                        'date': cell.data('date'),
+                        'lesson_num': cell.data('lesson'),
+                        'value': '—',
+                        'subject_id': selectedSubjectId,
+                    });
+                }
+            });
+
+            if (changes.length === 0) {
+                status.removeClass('hidden').text('Немає змін для збереження.').addClass('alert-info');
+                setTimeout(() => status.addClass('hidden').removeClass('alert-info'), 2000);
+                return;
+            }
+
+            status.removeClass('hidden').text('Збереження...').addClass('alert-info');
+
+            // ... (Fetch API call remains the same) ...
+            fetch('{% url "save_journal_entries" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: JSON.stringify({ changes: changes }),
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        return response.json().then(errorData => {
+                            throw new Error(errorData.message || 'Помилка мережі або сервера.');
+                        });
+                    }
+                    return response.json();
+                })
+                .then(response => {
+                    status.text(response.message).removeClass('alert-info alert-error').addClass('alert-success');
+                    setTimeout(() => window.location.reload(), 500);
+                })
+                .catch(error => {
+                    const errorMsg = error.message || 'Невідома помилка збереження.';
+                    status.text('Помилка: ' + errorMsg).removeClass('alert-info').addClass('alert-error');
+                    setTimeout(() => status.addClass('hidden').removeClass('alert-error'), 8000);
+                });
+        });
+
+        // 3. ДОПОМІЖНА ФУНКЦІЯ: Отримання CSRF-токена з cookie
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+    });
+</script>
+{% endblock %}

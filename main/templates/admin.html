@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Панель Адміна{% endblock %}
+
+{% block header_title %}Панель Адміна{% endblock %}
+
+{% block content %}
+<div class="glass-panel rounded-3xl p-8 mb-8" role="region" aria-label="Панель адміна">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+        <div class="glass-panel rounded-2xl p-6 border-l-[6px] border-l-primary hover:-translate-y-1 transition-transform duration-300 shadow-glass animate-fade-in opacity-0"
+            style="animation-fill-mode: forwards;">
+            <div class="text-xs uppercase tracking-wider text-bodyText mb-2 font-medium">Користувачі</div>
+            <div class="text-4xl font-bold text-dark mb-1">{{ total_users|default:0 }}</div>
+        </div>
+
+        <div class="glass-panel rounded-2xl p-6 border-l-[6px] border-l-accent hover:-translate-y-1 transition-transform duration-300 shadow-glass animate-fade-in opacity-0 delay-100"
+            style="animation-fill-mode: forwards; animation-delay: 100ms;">
+            <div class="text-xs uppercase tracking-wider text-bodyText mb-2 font-medium">Студенти</div>
+            <div class="text-4xl font-bold text-dark mb-1">{{ student_count|default:0 }}</div>
+        </div>
+
+        <div class="glass-panel rounded-2xl p-6 border-l-[6px] border-l-secondary hover:-translate-y-1 transition-transform duration-300 shadow-glass animate-fade-in opacity-0 delay-200"
+            style="animation-fill-mode: forwards; animation-delay: 200ms;">
+            <div class="text-xs uppercase tracking-wider text-bodyText mb-2 font-medium">Групи</div>
+            <div class="text-4xl font-bold text-dark mb-1">{{ group_count|default:0 }}</div>
+        </div>
+
+        <div class="glass-panel rounded-2xl p-6 border-l-[6px] border-l-neutral hover:-translate-y-1 transition-transform duration-300 shadow-glass animate-fade-in opacity-0 delay-300"
+            style="animation-fill-mode: forwards; animation-delay: 300ms;">
+            <div class="text-xs uppercase tracking-wider text-bodyText mb-2 font-medium">Предмети</div>
+            <div class="text-4xl font-bold text-dark mb-1">{{ subject_count|default:0 }}</div>
+        </div>
+    </div>
+
+    <h3 class="text-2xl font-bold text-dark mb-6">Швидкі дії</h3>
+
+    <div class="flex flex-wrap gap-4 mb-8">
+        <a href="{% url 'users_list' %}"
+            class="btn bg-primary text-white shadow-button hover:bg-blue-600 hover:shadow-button-hover flex items-center gap-2 animate-pulse-slow">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Додати Користувача
+        </a>
+
+        <a href="{% url 'set_weekly_schedule' %}"
+            class="btn bg-accent text-white shadow-button hover:bg-green-600 hover:shadow-button-hover flex items-center gap-2 animate-pulse-slow">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            Встановити Розклад
+        </a>
+
+        <a href="{% url 'admin_reports' %}"
+            class="btn bg-primary text-white shadow-button hover:bg-blue-600 hover:shadow-button-hover flex items-center gap-2 animate-pulse-slow">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Генерувати Звіти
+        </a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+{% endblock %}
