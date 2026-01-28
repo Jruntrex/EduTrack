@@ -18,6 +18,82 @@
         </button>
     </div>
 
+    <div class="glass-panel shadow-sm rounded-3xl p-6 mb-8 bg-white/80 border border-gray-100">
+        <form method="GET" action="{% url 'users_list' %}"
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+
+            <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-gray-500 uppercase">Пошук (Ім'я / Email)</label>
+                <input type="text" name="search" value="{{ request.GET.search }}" placeholder="Введіть текст..."
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm">
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-gray-500 uppercase">Роль</label>
+                <select name="role"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-sm">
+                    <option value="">Всі ролі</option>
+                    <option value="student" {% if request.GET.role|is_equal:'student' %}selected{% endif %}>Студенти
+                    </option>
+                    <option value="teacher" {% if request.GET.role|is_equal:'teacher' %}selected{% endif %}>Викладачі
+                    </option>
+                    <option value="admin" {% if request.GET.role|is_equal:'admin' %}selected{% endif %}>Адміни</option>
+                </select>
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-gray-500 uppercase">Група</label>
+                <select name="group"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-sm">
+                    <option value="">Всі групи</option>
+                    {% for g in groups %}
+                    {% with group_id=g.id|stringformat:"s" %}
+                    <option value="{{ g.id }}" {% if request.GET.group|is_equal:group_id %}selected{% endif %}>
+                        {{ g.name }}
+                    </option>
+                    {% endwith %}
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-gray-500 uppercase">Предмет (для викл.)</label>
+                <select name="subject"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-sm">
+                    <option value="">Всі предмети</option>
+                    {% for sub in all_subjects %}
+                    {% with sub_id=sub.id|stringformat:"s" %}
+                    <option value="{{ sub.id }}" {% if request.GET.subject|is_equal:sub_id %}selected{% endif %}>
+                        {{ sub.name }}
+                    </option>
+                    {% endwith %}
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-gray-500 uppercase">Дата реєстрації</label>
+                <div class="flex gap-2">
+                    <input type="date" name="date_from" value="{{ request.GET.date_from }}"
+                        class="w-full px-2 py-2 border border-gray-300 rounded-lg text-xs">
+                    <input type="date" name="date_to" value="{{ request.GET.date_to }}"
+                        class="w-full px-2 py-2 border border-gray-300 rounded-lg text-xs">
+                </div>
+            </div>
+
+            <div class="lg:col-span-3 flex justify-end gap-3 mt-2 border-t pt-4">
+                <a href="{% url 'users_list' %}"
+                    class="px-6 py-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition">
+                    Скинути все
+                </a>
+                <button type="submit"
+                    class="px-8 py-2 rounded-lg bg-primary text-white hover:bg-blue-700 shadow-md transition">
+                    Застосувати фільтри
+                </button>
+            </div>
+        </form>
+    </div>
+
     <div id="addForm" class="hidden glass-panel bg-white/50 rounded-2xl p-6 mb-8 animate-slide-down" aria-hidden="true">
         <h4 class="text-xl font-bold text-dark mb-6">Додати нового користувача</h4>
         <form method="POST" action="{% url 'users_list' %}" class="space-y-4">

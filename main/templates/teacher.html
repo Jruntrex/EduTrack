@@ -10,54 +10,80 @@
 
 {% block content %}
 <div class="glass-panel rounded-3xl p-8 mb-8" role="region" aria-label="Журнал викладача">
-    <form method="GET" action="{% url 'teacher_journal' %}" class="flex flex-col gap-6 mb-8">
+    <div class="glass-panel shadow-sm rounded-3xl p-6 mb-8 bg-white/80 border border-gray-100">
+        <form method="GET" action="{% url 'teacher_journal' %}"
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
 
-        <h3 class="text-2xl font-bold text-dark mb-2">{{ students.first.group.name|default:"Оберіть групу" }}</h3>
-
-        <div class="flex flex-col md:flex-row gap-4">
-            <div class="relative w-full">
-                <select name="subject"
-                    class="w-full px-4 py-3 border border-tableBorder rounded-xl text-dark bg-white appearance-none focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200 cursor-pointer"
-                    aria-label="Предмет" onchange="this.form.submit()">
-                    {% for subject in subjects %}
-                    <option value="{{ subject.pk }}" {% if subject.pk|stringformat:'s' == selected_subject_id|stringformat:'s' %}selected{% endif %}>
-                        {{ subject.subject_name }}
+            <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-gray-500 uppercase">Предмет</label>
+                <select name="subject" onchange="this.form.submit()"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-sm">
+                    {% for s in subjects %}
+                    {% with s_id=s.pk|stringformat:"s" %}
+                    <option value="{{ s.pk }}" {% if request.GET.subject|is_equal:s_id %}selected{% endif %}>
+                        {{ s.subject_name }}
                     </option>
-                    {% empty %}
-                    <option disabled selected>Немає предметів</option>
+                    {% endwith %}
                     {% endfor %}
                 </select>
-                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-dark">
-                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                    </svg>
-                </div>
             </div>
 
-            <div class="relative w-full">
-                <select name="group"
-                    class="w-full px-4 py-3 border border-tableBorder rounded-xl text-dark bg-white appearance-none focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200 cursor-pointer"
-                    aria-label="Група" onchange="this.form.submit()">
-                    {% for group in groups %}
-                    <option value="{{ group.pk }}" {% if group.pk|stringformat:'s' == selected_group_id|stringformat:'s' %}selected{% endif %}>
-                        {{ group.name }}
+            <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-gray-500 uppercase">Група</label>
+                <select name="group" onchange="this.form.submit()"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-sm">
+                    {% for g in groups %}
+                    {% with g_id=g.pk|stringformat:"s" %}
+                    <option value="{{ g.pk }}" {% if request.GET.group|is_equal:g_id %}selected{% endif %}>
+                        {{ g.name }}
                     </option>
-                    {% empty %}
-                    <option disabled selected>Немає груп</option>
+                    {% endwith %}
                     {% endfor %}
                 </select>
-                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-dark">
-                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                    </svg>
-                </div>
             </div>
-        </div>
 
-        {% if selected_subject_id and selected_group_id and selected_assignment %}
-        <div class="flex justify-end mt-3">
+            <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-gray-500 uppercase">Пошук студента</label>
+                <input type="text" name="search" value="{{ request.GET.search }}" placeholder="Прізвище ім'я..."
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-sm">
+            </div>
+
+            <div class="flex flex-row gap-4 items-end">
+                <div class="flex flex-col gap-1 flex-grow">
+                    <label class="text-xs font-bold text-gray-500 uppercase">Тиждень</label>
+                    <div class="flex items-center gap-2 bg-gray-50 p-1 rounded-lg border border-gray-200">
+                        <a href="{% url 'teacher_journal' %}?subject={{ request.GET.subject }}&group={{ request.GET.group }}&search={{ request.GET.search }}&week={{ week_shift|add:'-1' }}"
+                            class="p-1.5 rounded bg-primary text-white hover:bg-blue-600 transition">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-4 h-4">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </a>
+                        <span class="text-xs font-bold text-gray-700 min-w-[70px] text-center">
+                            {{ start_of_week|date:"d.m" }} - {{ end_of_week|date:"d.m" }}
+                        </span>
+                        <a href="{% url 'teacher_journal' %}?subject={{ request.GET.subject }}&group={{ request.GET.group }}&search={{ request.GET.search }}&week={{ week_shift|add:'1' }}"
+                            class="p-1.5 rounded bg-primary text-white hover:bg-blue-600 transition">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-4 h-4">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 5l7 7-7 7" />
+                            </svg>
+                        </a>
+                    </div>
+                </div>
+                <button type="submit"
+                    class="px-6 py-2 rounded-lg bg-primary text-white hover:bg-blue-700 shadow-md transition font-medium">
+                    Знайти
+                </button>
+            </div>
+
+            <input type="hidden" name="week" value="{{ week_shift }}">
+        </form>
+
+        {% if selected_assignment %}
+        <div class="flex justify-start mt-4 border-t pt-4">
             <a href="{% url 'manage_evaluation_types' %}?assignment={{ selected_assignment.id }}"
-                class="flex items-center gap-2 px-4 py-2 bg-secondary text-white rounded-xl hover:bg-orange-600 transition-all duration-200 shadow-sm hover:shadow-md text-sm font-medium">
+                class="flex items-center gap-2 px-4 py-2 bg-secondary text-white rounded-xl hover:bg-orange-600 transition shadow-sm text-sm font-medium">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -68,36 +94,7 @@
             </a>
         </div>
         {% endif %}
-
-        <div class="flex justify-center mt-2">
-            <div class="flex items-center gap-4 bg-white/50 p-2 rounded-xl border border-white/40 shadow-sm">
-                <a href="{% url 'teacher_journal' %}?subject={{ selected_subject_id|default:'' }}&group={{ selected_group_id|default:'' }}&week={{ week_shift|add:'-1' }}"
-                    class="p-2 rounded-lg bg-primary shadow-sm text-white hover:bg-blue-600 hover:shadow-md transition-all duration-200"
-                    title="Попередній тиждень">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                    </svg>
-                </a>
-
-                <span class="px-4 py-1 text-sm font-bold text-dark">
-                    {% if start_of_week and end_of_week %}
-                    {{ start_of_week|date:"d.m" }} - {{ end_of_week|date:"d.m" }}
-                    {% else %}
-                    Тиждень
-                    {% endif %}
-                </span>
-
-                <a href="{% url 'teacher_journal' %}?subject={{ selected_subject_id|default:'' }}&group={{ selected_group_id|default:'' }}&week={{ week_shift|add:'1' }}"
-                    class="p-2 rounded-lg bg-primary shadow-sm text-white hover:bg-blue-600 hover:shadow-md transition-all duration-200"
-                    title="Наступний тиждень">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                    </svg>
-                </a>
-            </div>
-        </div>
-
-    </form>
+    </div>
 
     <div class="mt-6 overflow-x-auto rounded-xl border border-tableBorder bg-glass shadow-glass">
         <table id="teacher-journal" class="w-full border-collapse">
@@ -131,7 +128,8 @@
                     <th
                         class="sticky top-[3.5rem] z-20 bg-gray-100/90 text-dark p-2 text-center border-l border-white/50 first:border-l-0 min-w-[100px] h-full align-top">
                         <div class="flex flex-col h-full justify-between gap-1">
-                            <span class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Пара {{ lesson.lesson_num }}</span>
+                            <span class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Пара {{
+                                lesson.lesson_num }}</span>
                             <div class="py-1">
                                 <span class="block text-xs font-bold text-primary leading-tight">
                                     {{ lesson.lesson_type|truncatechars:15 }}
@@ -154,9 +152,11 @@
                 <tr data-student="{{ student.full_name }}"
                     class="{% cycle 'bg-tableBgLight' 'bg-tableBgDark' %} hover:bg-primary/10 transition-colors duration-200 group">
 
-                    <td class="sticky left-0 z-10 p-4 font-medium text-dark border-b border-tableBorder shadow-[2px_0_5px_rgba(0,0,0,0.05)] {% cycle 'bg-tableBgLight' 'bg-tableBgDark' %} group-hover:bg-primary/10">
+                    <td
+                        class="sticky left-0 z-10 p-4 font-medium text-dark border-b border-tableBorder shadow-[2px_0_5px_rgba(0,0,0,0.05)] {% cycle 'bg-tableBgLight' 'bg-tableBgDark' %} group-hover:bg-primary/10">
                         {{ forloop.counter }}</td>
-                    <td class="sticky left-16 z-10 p-4 font-medium text-dark border-b border-tableBorder shadow-[2px_0_5px_rgba(0,0,0,0.05)] {% cycle 'bg-tableBgLight' 'bg-tableBgDark' %} group-hover:bg-primary/10">
+                    <td
+                        class="sticky left-16 z-10 p-4 font-medium text-dark border-b border-tableBorder shadow-[2px_0_5px_rgba(0,0,0,0.05)] {% cycle 'bg-tableBgLight' 'bg-tableBgDark' %} group-hover:bg-primary/10">
                         {{ student.full_name }}</td>
 
                     {% for header in lesson_headers %}
@@ -361,18 +361,18 @@
                 },
                 body: JSON.stringify({ changes: changes }),
             })
-            .then(response => {
-                if (!response.ok) return response.json().then(errorData => { throw new Error(errorData.message || 'Помилка мережі.'); });
-                return response.json();
-            })
-            .then(response => {
-                status.text(response.message).removeClass('alert-info alert-error').addClass('alert-success');
-                setTimeout(() => window.location.reload(), 500);
-            })
-            .catch(error => {
-                status.text('Помилка: ' + error.message).removeClass('alert-info').addClass('alert-error');
-                setTimeout(() => status.addClass('hidden').removeClass('alert-error'), 8000);
-            });
+                .then(response => {
+                    if (!response.ok) return response.json().then(errorData => { throw new Error(errorData.message || 'Помилка мережі.'); });
+                    return response.json();
+                })
+                .then(response => {
+                    status.text(response.message).removeClass('alert-info alert-error').addClass('alert-success');
+                    setTimeout(() => window.location.reload(), 500);
+                })
+                .catch(error => {
+                    status.text('Помилка: ' + error.message).removeClass('alert-info').addClass('alert-error');
+                    setTimeout(() => status.addClass('hidden').removeClass('alert-error'), 8000);
+                });
         });
 
         function getCookie(name) {

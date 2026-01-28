@@ -160,11 +160,40 @@ def users_list_view(request):
     else:
         form = UserAdminForm()
 
-    # Оптимізований запит: завантажуємо групу та призначення викладачів разом із предметами
+    # 1. Параметри фільтрації
+    role_filter = request.GET.get('role', '')
+    group_filter = request.GET.get('group', '')
+    subject_filter = request.GET.get('subject', '')
+    search_query = request.GET.get('search', '')
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+
+    # 2. Базовий запит
     users = User.objects.select_related('group').prefetch_related(
         'teachingassignment_set__subject'
     ).order_by('-id')
+
+    # 3. Фільтри
+    if role_filter:
+        users = users.filter(role=role_filter)
     
+    if group_filter:
+        users = users.filter(group_id=group_filter)
+        
+    if subject_filter:
+        users = users.filter(teachingassignment__subject_id=subject_filter).distinct()
+
+    if search_query:
+        users = users.filter(
+            Q(full_name__icontains=search_query) | 
+            Q(email__icontains=search_query)
+        )
+
+    if date_from:
+        users = users.filter(created_at__date__gte=date_from)
+    if date_to:
+        users = users.filter(created_at__date__lte=date_to)
+
     groups = StudyGroup.objects.all()
     all_subjects = Subject.objects.all()
 
@@ -240,9 +269,14 @@ def groups_list_view(request):
     else:
         form = StudyGroupForm()
 
+    search_query = request.GET.get('search', '')
     groups = StudyGroup.objects.annotate(
         student_count=Count('students')
     ).order_by('name')
+    
+    if search_query:
+        groups = groups.filter(name__icontains=search_query)
+
     return render(request, 'groups.html', {'groups': groups, 'form': form, 'active_page': 'groups'})
 
 
@@ -269,11 +303,17 @@ def group_delete_view(request, pk):
 
 @role_required('admin')
 def subjects_list_view(request):
-    # Subject більше не має прямого зв'язку з User (Teacher)
-    # Показуємо кількість призначень (assignments) для кожного предмету
+    search_query = request.GET.get('search', '')
     subjects = Subject.objects.annotate(
         teachers_count=Count('teachingassignment')
     ).order_by('name')
+    
+    if search_query:
+        subjects = subjects.filter(
+            Q(name__icontains=search_query) | 
+            Q(description__icontains=search_query)
+        )
+        
     form = SubjectForm()
     return render(request, 'subjects.html', {'subjects': subjects, 'form': form, 'active_page': 'subjects'})
 
@@ -563,9 +603,13 @@ def teacher_journal_view(request):
             )
             
             # Отримуємо студентів групи
-            students = selected_assignment.group.students.filter(
-                role='student'
-            ).order_by('full_name')
+            search_query = request.GET.get('search', '')
+            students_query = selected_assignment.group.students.filter(role='student')
+            
+            if search_query:
+                students_query = students_query.filter(full_name__icontains=search_query)
+            
+            students = students_query.order_by('full_name')
             
             # Отримуємо розклад для цього призначення на тиждень
             schedule_items = WeeklySchedule.objects.filter(
@@ -814,12 +858,17 @@ def save_journal_entries(request):
 @role_required('student')
 def student_grades_view(request):
     student_id = request.session.get('user_id')
+    student = User.objects.get(id=student_id)
     
-    # 2. Отримуємо фільтри з URL
+    # 1. Отримуємо параметри з GET-запиту
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
+    subject_id = request.GET.get('subject')
+    min_grade = request.GET.get('min_grade')
+    max_grade = request.GET.get('max_grade')
+    search_query = request.GET.get('search')
 
-    # 3. Основний запит (БЕЗ ручних трансформацій)
+    # 2. Базовий запит
     grades = StudentPerformance.objects.filter(
         student_id=student_id, 
         grade__isnull=False
@@ -830,14 +879,35 @@ def student_grades_view(request):
         'lesson__evaluation_type'
     ).order_by('-lesson__date')
 
-    # 4. Фільтрація
+    # 3. Застосування фільтрів
     if date_from:
         grades = grades.filter(lesson__date__gte=date_from)
     if date_to:
         grades = grades.filter(lesson__date__lte=date_to)
+    
+    if subject_id:
+        grades = grades.filter(lesson__assignment__subject_id=subject_id)
+        
+    if min_grade:
+        grades = grades.filter(grade__gte=min_grade)
+    if max_grade:
+        grades = grades.filter(grade__lte=max_grade)
+
+    if search_query:
+        # Пошук по коментарю або темі уроку
+        grades = grades.filter(
+            Q(comment__icontains=search_query) | 
+            Q(lesson__topic__icontains=search_query)
+        )
+
+    # 4. Отримуємо предмети студента для фільтру
+    student_subjects = Subject.objects.filter(
+        teachingassignment__group=student.group
+    ).distinct()
 
     return render(request, 'student_grades.html', {
         'grades': grades,
+        'student_subjects': student_subjects,
         'active_page': 'student_grades',
     })
 
@@ -845,6 +915,13 @@ def student_grades_view(request):
 def student_attendance_view(request):
     student_id = request.session.get('user_id')
     
+    # Фільтрація
+    search_query = request.GET.get('search', '')
+    subject_id = request.GET.get('subject', '')
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+    is_respectful = request.GET.get('is_respectful', '')
+
     absences = StudentPerformance.objects.filter(
         student_id=student_id,
         absence__isnull=False
@@ -852,15 +929,40 @@ def student_attendance_view(request):
         'lesson__assignment__subject',
         'lesson__assignment__teacher',
         'absence'
-    ).order_by('-lesson__date')
+    )
+
+    if search_query:
+        absences = absences.filter(lesson__topic__icontains=search_query)
+    
+    if subject_id:
+        absences = absences.filter(lesson__assignment__subject_id=subject_id)
+        
+    if date_from:
+        absences = absences.filter(lesson__date__gte=date_from)
+        
+    if date_to:
+        absences = absences.filter(lesson__date__lte=date_to)
+
+    if is_respectful == '1':
+        absences = absences.filter(absence__is_respectful=True)
+    elif is_respectful == '0':
+        absences = absences.filter(absence__is_respectful=False)
+
+    absences = absences.order_by('-lesson__date')
     
     total_absences = absences.count()
     unexcused = absences.filter(absence__is_respectful=False).count()
+    
+    # Дані для фільтрів
+    student_subjects = Subject.objects.filter(
+        teachingassignment__group__students__id=student_id
+    ).distinct()
     
     context = {
         'absences': absences,
         'total': total_absences,
         'unexcused': unexcused,
+        'student_subjects': student_subjects,
         'active_page': 'student_attendance',
     }
     return render(request, 'student_attendance.html', context)
@@ -875,22 +977,39 @@ def admin_reports_view(request):
 
 @role_required('admin')
 def report_absences_view(request):
-    # Оновлений запит під нову структуру
-    limit = int(request.GET.get('limit', 10))
+    group_id = request.GET.get('group', '')
+    subject_id = request.GET.get('subject', '')
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+    limit = int(request.GET.get('limit', 0) or 0)
+
+    # Базова фільтрація для студентів
+    students = User.objects.filter(role='student')
     
-    # Агрегація по пропусках
-    # Count absence where absence is NOT NULL
-    report_data = User.objects.filter(role='student').annotate(
-        total_absences=Count('studentperformance', filter=Q(studentperformance__absence__isnull=False)),
-        unexcused_absences=Count('studentperformance', filter=Q(studentperformance__absence__is_respectful=False))
+    if group_id:
+        students = students.filter(group_id=group_id)
+
+    # Параметри для анотації (фильтрація в Count)
+    perf_filter = Q(studentperformance__absence__isnull=False)
+    
+    if subject_id:
+        perf_filter &= Q(studentperformance__lesson__assignment__subject_id=subject_id)
+    if date_from:
+        perf_filter &= Q(studentperformance__lesson__date__gte=date_from)
+    if date_to:
+        perf_filter &= Q(studentperformance__lesson__date__lte=date_to)
+
+    unexcused_filter = perf_filter & Q(studentperformance__absence__is_respectful=False)
+
+    report_data = students.annotate(
+        total_absences=Count('studentperformance', filter=perf_filter),
+        unexcused_absences=Count('studentperformance', filter=unexcused_filter)
     ).filter(total_absences__gt=0).order_by('-total_absences')
     
     if limit > 0:
-        report_data = list(report_data[:limit])
-    else:
-        report_data = list(report_data)
-    
-    # Додаємо розраховані поля
+        report_data = report_data[:limit]
+
+    # Розрахунок поважних причин
     for item in report_data:
         item.excused_absences = item.total_absences - item.unexcused_absences
 
@@ -899,13 +1018,16 @@ def report_absences_view(request):
         return generate_csv_response(f"absences_report_{date.today()}", ['ПІБ', 'Група', 'Всього', 'Неповажні'], rows)
 
     groups = StudyGroup.objects.all()
+    all_subjects = Subject.objects.all()
+    
     context = {
         'report_data': report_data,
-        'report_title': 'Звіт: Пропуски студентів (за весь час)',
+        'report_title': 'Звіт: Пропуски студентів',
         'is_absences_report': True,
         'is_weekly_report': False,
         'report_reset_url_name': 'report_absences',
         'groups': groups,
+        'all_subjects': all_subjects,
         'active_page': 'reports'
     }
     return render(request, 'report_absences.html', context)
@@ -919,34 +1041,77 @@ def report_rating_view(request):
     """
     Генерує рейтинг студентів на основі зваженого середнього (Bayesian Average).
     """
+    group_id = request.GET.get('group', '')
+    subject_id = request.GET.get('subject', '')
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
     
     MIN_VOTES = 5  # мінімум оцінок для участі в рейтингу
     
-    # 1. Рахуємо середнє по всій школі (C)
-    global_stats = StudentPerformance.objects.filter(grade__isnull=False).aggregate(avg=Avg('grade'))
-    C = global_stats['avg'] or 0
+    # Фільтрація для оцінок
+    perf_base_filter = Q(grade__isnull=False)
+    perf_user_filter = Q(studentperformance__grade__isnull=False)
+    
+    if subject_id:
+        term = Q(lesson__assignment__subject_id=subject_id)
+        perf_base_filter &= term
+        perf_user_filter &= Q(studentperformance__lesson__assignment__subject_id=subject_id)
+    if date_from:
+        term = Q(lesson__date__gte=date_from)
+        perf_base_filter &= term
+        perf_user_filter &= Q(studentperformance__lesson__date__gte=date_from)
+    if date_to:
+        term = Q(lesson__date__lte=date_to)
+        perf_base_filter &= term
+        perf_user_filter &= Q(studentperformance__lesson__date__lte=date_to)
+
+    # 1. Рахуємо середнє по всій школі (C) - тепер теж зважене
+    global_stats = StudentPerformance.objects.filter(perf_base_filter).annotate(
+        weighted_val=F('grade') * F('lesson__evaluation_type__weight_percent')
+    ).aggregate(
+        total_weighted=Sum('weighted_val'),
+        total_weights=Sum('lesson__evaluation_type__weight_percent')
+    )
+    
+    C_sum = float(global_stats['total_weighted'] or 0)
+    C_weight = float(global_stats['total_weights'] or 1) # уникнення ділення на 0
+    C = C_sum / C_weight if C_weight > 0 else 0
     
     # 2. Отримуємо дані по студентах
-    students_data = User.objects.filter(role='student').annotate(
-        v=Count('studentperformance', filter=Q(studentperformance__grade__isnull=False)),
-        R=Avg('studentperformance__grade')
+    students_query = User.objects.filter(role='student')
+    if group_id:
+        students_query = students_query.filter(group_id=group_id)
+
+    students_data = students_query.annotate(
+        v=Count('studentperformance', filter=perf_user_filter),
+        weighted_sum=Sum(
+            F('studentperformance__grade') * F('studentperformance__lesson__evaluation_type__weight_percent'),
+            filter=perf_user_filter
+        ),
+        weight_total=Sum(
+            F('studentperformance__lesson__evaluation_type__weight_percent'),
+            filter=perf_user_filter
+        )
     ).filter(v__gt=0)
 
-    # 3. Рахуємо рейтинг у Python (так простіше ніж SQL для цієї формули)
+    # 3. Рахуємо рейтинг у Python
     rating_list = []
     
     for student in students_data:
         v = student.v
-        R = student.R or 0
+        ws = float(student.weighted_sum or 0)
+        wt = float(student.weight_total or 1)
         
-        # Bayesian Formula
-        weighted_rating = (v / (v + MIN_VOTES)) * float(R) + (MIN_VOTES / (v + MIN_VOTES)) * float(C)
+        R = ws / wt if wt > 0 else 0
         
-        group_obj = type('Group', (), {'name': student.group.name if student.group else '-'})()
+        # Bayesian Formula: (v / (v+m)) * R + (m / (v+m)) * C
+        weighted_rating = (v / (v + MIN_VOTES)) * R + (MIN_VOTES / (v + MIN_VOTES)) * float(C)
+        
+        group_name = student.group.name if student.group else '-'
         
         rating_list.append({
             'full_name': student.full_name,
-            'group': group_obj,
+            'group': {'name': group_name}, # Для сумісності з шаблоном
             'raw_avg': round(R, 2),
             'count': v,
             'weighted_avg': round(weighted_rating, 2)
@@ -958,7 +1123,7 @@ def report_rating_view(request):
     # Експорт у CSV
     if request.GET.get('export') == 'csv':
         rows = [
-            [r['full_name'], r['group'].name, r['raw_avg'], r['weighted_avg'], r['count']] 
+            [r['full_name'], r['group']['name'], r['raw_avg'], r['weighted_avg'], r['count']] 
             for r in rating_list
         ]
         return generate_csv_response(
@@ -968,13 +1133,16 @@ def report_rating_view(request):
         )
 
     groups = StudyGroup.objects.all()
+    all_subjects = Subject.objects.all()
+    
     context = {
         'report_data': rating_list,
-        'report_title': 'Звіт: Рейтинг студентів (За оцінками)',
+        'report_title': 'Звіт: Рейтинг студентів',
         'is_rating_report': True,
         'is_weekly_report': False,
         'report_reset_url_name': 'report_rating',
         'groups': groups,
+        'all_subjects': all_subjects,
         'active_page': 'reports'
     }
     return render(request, 'report_absences.html', context)
@@ -983,35 +1151,46 @@ def report_rating_view(request):
 @role_required('admin')
 def report_weekly_absences_view(request):
     """Звіт про пропуски за останній тиждень."""
+    group_id = request.GET.get('group', '')
+    subject_id = request.GET.get('subject', '')
+    
     today = date.today()
     start_week = today - timedelta(days=today.weekday()) # Понеділок
     end_week = start_week + timedelta(days=6) # Неділя
 
-    # Отримуємо пропуски студентів за цей тиждень
-    # Групуємо за студентом
-    students_with_absences = User.objects.filter(
-        role='student',
-        studentperformance__absence__isnull=False
-    ).annotate(
-        total_absences=Count('studentperformance', filter=Q(studentperformance__absence__isnull=False)),
-        unexcused_absences=Count('studentperformance', filter=Q(studentperformance__absence__is_respectful=False))
-    ).distinct()
+    # Фільтрація
+    students = User.objects.filter(role='student')
+    if group_id:
+        students = students.filter(group_id=group_id)
 
-    report_data = []
-    for student in students_with_absences:
-        student.excused_absences = student.total_absences - student.unexcused_absences
-        report_data.append(student)
+    # Параметри для анотації (фильтрація в Count)
+    perf_filter = Q(
+        studentperformance__absence__isnull=False,
+        studentperformance__lesson__date__gte=start_week,
+        studentperformance__lesson__date__lte=end_week
+    )
+    
+    if subject_id:
+        perf_filter &= Q(studentperformance__lesson__assignment__subject_id=subject_id)
+
+    unexcused_filter = perf_filter & Q(studentperformance__absence__is_respectful=False)
+
+    report_data = students.annotate(
+        total_absences=Count('studentperformance', filter=perf_filter),
+        unexcused_absences=Count('studentperformance', filter=unexcused_filter)
+    ).filter(total_absences__gt=0).order_by('-total_absences')
 
     groups = StudyGroup.objects.all()
+    all_subjects = Subject.objects.all()
+    
     context = {
         'report_data': report_data,
         'report_title': f'Звіт: Пропуски за тиждень ({start_week} - {end_week})',
         'is_absences_report': True,
         'is_weekly_report': True,
         'report_reset_url_name': 'report_weekly_absences',
-        'start_date': start_week,
-        'end_date': end_week,
         'groups': groups,
+        'all_subjects': all_subjects,
         'active_page': 'reports'
     }
     return render(request, 'report_absences.html', context)
@@ -1193,14 +1372,25 @@ from django.contrib.auth.hashers import make_password
 
 @login_required
 def students_list_view(request):
+    search_query = request.GET.get('search', '')
+    group_id = request.GET.get('group', '')
+    
     # Отримуємо всіх користувачів з роллю 'student'
-    students = User.objects.filter(role='student').select_related('group').order_by('group__name', 'full_name')
-    groups = Group.objects.all()
+    students = User.objects.filter(role='student').select_related('group')
+    
+    if search_query:
+        students = students.filter(full_name__icontains=search_query)
+        
+    if group_id:
+        students = students.filter(group_id=group_id)
+        
+    students = students.order_by('group__name', 'full_name')
+    groups = StudyGroup.objects.all()
     
     return render(request, 'students.html', {
         'students': students, 
         'groups': groups,
-        'active_page': 'students' # Для підсвічування меню (якщо використовується)
+        'active_page': 'students'
     })
 
 @login_required

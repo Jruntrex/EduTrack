@@ -24,3 +24,9 @@ def to_json(value):
     if value is None:
         return 'null'
     return json.dumps(value)
+
+
+@register.filter
+def is_equal(value, arg):
+    """Порівнює два значення, приводячи їх до рядків."""
+    return str(value) == str(arg)
