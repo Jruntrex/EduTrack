@@ -7,60 +7,24 @@
 {% block content %}
 <div class="glass-panel rounded-3xl p-8 mb-8" role="region" aria-label="Таблиця відвідування">
     <form method="GET" action="{% url 'student_attendance' %}" class="flex flex-col md:flex-row flex-wrap gap-4 mb-8">
-
         <div class="flex flex-col gap-2">
             <label for="date-from-att" class="text-sm font-medium text-bodyText">Дата від:</label>
             <input type="date" id="date-from-att" name="date_from"
                 class="px-4 py-2 border border-tableBorder rounded-xl text-dark bg-white focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200"
                 value="{{ request.GET.date_from }}">
         </div>
-
         <div class="flex flex-col gap-2">
             <label for="date-to-att" class="text-sm font-medium text-bodyText">До:</label>
             <input type="date" id="date-to-att" name="date_to"
                 class="px-4 py-2 border border-tableBorder rounded-xl text-dark bg-white focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200"
                 value="{{ request.GET.date_to }}">
         </div>
-
-        <div class="flex flex-col gap-2 flex-grow min-w-[200px]">
-            <label for="subject-select-att" class="text-sm font-medium text-bodyText">Предмет:</label>
-            <div class="relative">
-                <select id="subject-select-att"
-                    class="w-full px-4 py-2 border border-tableBorder rounded-xl text-dark bg-white appearance-none focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200 cursor-pointer"
-                    name="subject_id" aria-label="Предмет">
-                    <option value="" {% if not request.GET.subject_id %}selected{% endif %}>Усі предмети</option>
-                    {% for subject in subjects %}
-                    <option value="{{ subject.pk }}" {% if subject.pk|stringformat:"s" == request.GET.subject_id
-                        %}selected{% endif %}>
-                        {{ subject.subject_name }}
-                    </option>
-                    {% endfor %}
-                </select>
-                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-dark">
-                    <svg class="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                        <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z" />
-                    </svg>
-                </div>
-            </div>
-        </div>
-
-        <div class="flex items-end gap-2">
-            <button type="submit"
-                class="btn bg-primary text-white shadow-button hover:bg-blue-600 hover:shadow-button-hover flex items-center gap-2 py-2.5">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-4 h-4">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                ФІЛЬТР
+        <div class="flex items-end">
+            <button type="submit" class="btn bg-primary text-white shadow-button hover:bg-blue-600 hover:shadow-button-hover py-2 px-6">
+                Фільтрувати
             </button>
-
-            <a href="{% url 'student_attendance' %}"
-                class="btn bg-primary text-white shadow-button hover:bg-blue-600 hover:shadow-button-hover flex items-center gap-2 py-2.5"
-                title="Скинути фільтр">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-4 h-4">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                СКИНУТИ
+            <a href="{% url 'student_attendance' %}" class="ml-2 btn bg-gray-200 text-dark hover:bg-gray-300 py-2 px-4 rounded-xl">
+                Скинути
             </a>
         </div>
     </form>
@@ -70,34 +34,24 @@
             <thead>
                 <tr>
                     <th class="bg-primary text-white p-4 text-left text-xs font-bold uppercase tracking-wider">Дата</th>
-                    <th class="bg-primary text-white p-4 text-left text-xs font-bold uppercase tracking-wider">Предмет
-                    </th>
-                    <th class="bg-primary text-white p-4 text-left text-xs font-bold uppercase tracking-wider">Викладач
-                    </th>
-                    <th class="bg-primary text-white p-4 text-left text-xs font-bold uppercase tracking-wider">Тип
-                        Пропуску</th>
-                    <th class="bg-primary text-white p-4 text-center text-xs font-bold uppercase tracking-wider">Номер
-                        Пари</th>
+                    <th class="bg-primary text-white p-4 text-left text-xs font-bold uppercase tracking-wider">Предмет</th>
+                    <th class="bg-primary text-white p-4 text-left text-xs font-bold uppercase tracking-wider">Викладач</th>
+                    <th class="bg-primary text-white p-4 text-left text-xs font-bold uppercase tracking-wider">Причина</th>
+                    <th class="bg-primary text-white p-4 text-center text-xs font-bold uppercase tracking-wider">Пара</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-tableBorder text-dark">
                 {% for entry in absences %}
-                <tr
-                    class="{% cycle 'bg-tableBgLight' 'bg-tableBgDark' %} hover:bg-primary/10 transition-colors duration-200">
-
-                    <td class="p-4 font-bold text-error">{{ entry.lesson_date|date:"d.m.Y" }}</td>
+                <tr class="{% cycle 'bg-tableBgLight' 'bg-tableBgDark' %} hover:bg-primary/10 transition-colors duration-200">
+                    <td class="p-4 font-bold text-error">{{ entry.lesson.date|date:"d.m.Y" }}</td>
                     <td class="p-4 font-medium">{{ entry.lesson.assignment.subject.name }}</td>
-                    <td class="p-4">{{ entry.lesson.assignment.teacher.full_name }}</td>
-
+                    <td class="p-4 text-sm">{{ entry.lesson.assignment.teacher.full_name }}</td>
                     <td class="p-4">
-                        {% with val=entry.absence.code %}
-                        {% if val == 'Н' %}<span class="text-error font-semibold">Без поважної</span>
-                        {% elif val == 'ДЛ' %}<span class="text-secondary font-semibold">Лікарняний</span>
-                        {% elif val == 'ПП' %}<span class="text-secondary font-semibold">Поважна</span>
-                        {% else %}{{ val }}{% endif %}
-                        {% endwith %}
+                        <span class="px-2 py-1 rounded-md text-xs font-bold uppercase
+                            {% if entry.absence.is_respectful %}bg-green-100 text-green-700{% else %}bg-red-100 text-red-700{% endif %}">
+                            {{ entry.absence.description }} ({{ entry.absence.code }})
+                        </span>
                     </td>
-
                     <td class="p-4 text-center">{{ entry.lesson.lesson_number }}</td>
                 </tr>
                 {% empty %}
@@ -108,4 +62,5 @@
             </tbody>
         </table>
     </div>
-    {% endblock %}
+</div>
+{% endblock %}

@@ -13,6 +13,8 @@ from django.db.models import Avg, Count, F, Max, Min, Prefetch, Q, Sum
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
+from django.contrib.auth.decorators import login_required
+from django.views.decorators.http import require_http_methods
 
 from .forms import StudyGroupForm, SubjectForm, UserAdminForm
 from .models import (
@@ -42,7 +44,7 @@ def role_required(allowed_roles):
     def decorator(view_func):
         def wrapper(request, *args, **kwargs):
             if 'user_id' not in request.session:
-                return redirect('login')
+                return redirect('/')
 
             user_role = request.session.get('user_role')
             if user_role not in allowed_roles:
@@ -52,7 +54,7 @@ def role_required(allowed_roles):
                 elif user_role == 'teacher':
                     return redirect('teacher_journal')
                 else:
-                    return redirect('login')
+                    return redirect('/')
 
             # Виконуємо в'юху
             response = view_func(request, *args, **kwargs)
@@ -158,34 +160,13 @@ def users_list_view(request):
     else:
         form = UserAdminForm()
 
+    # Оптимізований запит: завантажуємо групу та призначення викладачів разом із предметами
     users = User.objects.select_related('group').prefetch_related(
         'teachingassignment_set__subject'
-    ).order_by('-created_at')
+    ).order_by('-id')
+    
     groups = StudyGroup.objects.all()
-
-    # Формуємо словник з предметами для кожного користувача
-    user_subjects = {}
-    for user in users:
-        if user.role == 'teacher':
-            # Отримуємо унікальні предмети для цього викладача
-            subjects = Subject.objects.filter(
-                teachingassignment__teacher=user
-            ).distinct()
-            # Група предметів за кількістю викладачів
-            subject_list = []
-            for subject in subjects:
-                teachers = TeachingAssignment.objects.filter(
-                    subject=subject
-                ).select_related('teacher').values(
-                    'teacher_id', 'teacher__full_name'
-                ).distinct()
-
-                # Якщо більше викладачів, додаємо прізвище
-                if len(teachers) > 1:
-                    subject_list.append(f"{subject.name} ({user.full_name})")
-                else:
-                    subject_list.append(subject.name)
-            user_subjects[user.id] = subject_list
+    all_subjects = Subject.objects.all()
 
     return render(
         request,
@@ -194,11 +175,10 @@ def users_list_view(request):
             'users': users,
             'form': form,
             'groups': groups,
-            'user_subjects': user_subjects,
+            'all_subjects': all_subjects,
             'active_page': 'users',
         },
     )
-
 
 @role_required('admin')
 def user_edit_view(request, pk):
@@ -835,67 +815,31 @@ def save_journal_entries(request):
 def student_grades_view(request):
     student_id = request.session.get('user_id')
     
-    # Отримуємо фільтри
-    subject_id = request.GET.get('subject_id')
+    # 2. Отримуємо фільтри з URL
     date_from = request.GET.get('date_from')
     date_to = request.GET.get('date_to')
-    
-    # Базовий запит для оцінок
-    performances = StudentPerformance.objects.filter(
-        student_id=student_id,
+
+    # 3. Основний запит (БЕЗ ручних трансформацій)
+    grades = StudentPerformance.objects.filter(
+        student_id=student_id, 
         grade__isnull=False
     ).select_related(
-        'lesson__assignment__subject',
+        'lesson', 
+        'lesson__assignment__subject', 
         'lesson__assignment__teacher',
         'lesson__evaluation_type'
-    )
-    
-    # Застосовуємо фільтри
-    if subject_id:
-        performances = performances.filter(lesson__assignment__subject_id=subject_id)
-    if date_from:
-        performances = performances.filter(lesson__date__gte=date_from)
-    if date_to:
-        performances = performances.filter(lesson__date__lte=date_to)
-    
-    performances = performances.order_by('-lesson__date')
-    
-    # Трансформуємо дані для відповідності шаблону
-    grades = []
-    for perf in performances:
-        # Створюємо об'єкти з атрибутами, які очікує шаблон
-        grade_entry = type('GradeEntry', (), {
-            'lesson_date': perf.lesson.date,
-            'subject': type('Subject', (), {
-                'subject_name': perf.lesson.assignment.subject.name
-            })(),
-            'teacher': type('Teacher', (), {
-                'full_name': perf.lesson.assignment.teacher.full_name
-            })(),
-            'value': perf.grade,
-            'comment': perf.comment or ''
-        })()
-        grades.append(grade_entry)
-    
-    # Отримуємо список предметів для фільтра
-    assignments = TeachingAssignment.objects.filter(
-        group__students__id=student_id
-    ).select_related('subject').distinct()
-    
-    subjects = []
-    for assign in assignments:
-        subject_obj = type('SubjectFilter', (), {
-            'pk': assign.subject.id,
-            'subject_name': assign.subject.name
-        })()
-        subjects.append(subject_obj)
+    ).order_by('-lesson__date')
 
-    context = {
+    # 4. Фільтрація
+    if date_from:
+        grades = grades.filter(lesson__date__gte=date_from)
+    if date_to:
+        grades = grades.filter(lesson__date__lte=date_to)
+
+    return render(request, 'student_grades.html', {
         'grades': grades,
-        'subjects': subjects,
-        'active_page': 'grades',
-    }
-    return render(request, 'student_grades.html', context)
+        'active_page': 'student_grades',
+    })
 
 @role_required('student')
 def student_attendance_view(request):
@@ -917,7 +861,7 @@ def student_attendance_view(request):
         'absences': absences,
         'total': total_absences,
         'unexcused': unexcused,
-        'active_page': 'attendance',
+        'active_page': 'student_attendance',
     }
     return render(request, 'student_attendance.html', context)
 
@@ -961,7 +905,8 @@ def report_absences_view(request):
         'is_absences_report': True,
         'is_weekly_report': False,
         'report_reset_url_name': 'report_absences',
-        'groups': groups
+        'groups': groups,
+        'active_page': 'reports'
     }
     return render(request, 'report_absences.html', context)
 
@@ -1029,7 +974,8 @@ def report_rating_view(request):
         'is_rating_report': True,
         'is_weekly_report': False,
         'report_reset_url_name': 'report_rating',
-        'groups': groups
+        'groups': groups,
+        'active_page': 'reports'
     }
     return render(request, 'report_absences.html', context)
 
@@ -1065,7 +1011,8 @@ def report_weekly_absences_view(request):
         'report_reset_url_name': 'report_weekly_absences',
         'start_date': start_week,
         'end_date': end_week,
-        'groups': groups
+        'groups': groups,
+        'active_page': 'reports'
     }
     return render(request, 'report_absences.html', context)
 
@@ -1238,3 +1185,61 @@ def get_evaluation_types_api(request):
     except TeachingAssignment.DoesNotExist:
         return JsonResponse({'error': 'Призначення не знайдено'}, status=404)
 
+
+
+# --- ДОДАТИ В КІНЕЦЬ main/views.py ---
+
+from django.contrib.auth.hashers import make_password
+
+@login_required
+def students_list_view(request):
+    # Отримуємо всіх користувачів з роллю 'student'
+    students = User.objects.filter(role='student').select_related('group').order_by('group__name', 'full_name')
+    groups = Group.objects.all()
+    
+    return render(request, 'students.html', {
+        'students': students, 
+        'groups': groups,
+        'active_page': 'students' # Для підсвічування меню (якщо використовується)
+    })
+
+@login_required
+@require_http_methods(["POST"])
+def student_add(request):
+    # Отримання даних з форми
+    full_name = request.POST.get('full_name')
+    group_id = request.POST.get('group_id')
+    email = request.POST.get('email')
+    password = request.POST.get('password')
+
+    if full_name and email and password:
+        # Перевірка чи існує email
+        if User.objects.filter(email=email).exists():
+            messages.error(request, f"Користувач з email {email} вже існує.")
+        else:
+            try:
+                group = Group.objects.get(pk=group_id) if group_id else None
+                
+                User.objects.create(
+                    full_name=full_name,
+                    email=email,
+                    password=make_password(password), # Хешуємо пароль
+                    role='student',
+                    group=group
+                )
+                messages.success(request, f"Студента {full_name} успішно додано.")
+            except Exception as e:
+                messages.error(request, f"Помилка при створенні: {e}")
+    else:
+        messages.error(request, "Заповніть всі обов'язкові поля.")
+
+    return redirect('students_list')
+
+@login_required
+@require_http_methods(["POST"])
+def student_delete(request, pk):
+    student = get_object_or_404(User, pk=pk, role='student')
+    name = student.full_name
+    student.delete()
+    messages.success(request, f"Студента {name} видалено.")
+    return redirect('students_list')

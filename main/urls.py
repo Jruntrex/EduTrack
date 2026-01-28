@@ -53,6 +53,10 @@ urlpatterns = [
     # =========================
     # 5. СТУДЕНТ
     # =========================
+# Студенти
+    path('students/', views.students_list_view, name='students_list'), # Важливо: name='students_list'
+    path('students/add/', views.student_add, name='student_add'),
+    path('students/delete/<int:pk>/', views.student_delete, name='student_delete'),
     path('student/grades/', views.student_grades_view, name='student_grades'),
     path('student/attendance/', views.student_attendance_view, name='student_attendance'),
 ]

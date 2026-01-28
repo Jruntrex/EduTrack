@@ -20,8 +20,7 @@
                     class="w-full px-4 py-3 border border-tableBorder rounded-xl text-dark bg-white appearance-none focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200 cursor-pointer"
                     aria-label="Предмет" onchange="this.form.submit()">
                     {% for subject in subjects %}
-                    <option value="{{ subject.pk }}" {% if
-                        subject.pk|stringformat:'s'==selected_subject_id|stringformat:'s' %}selected{% endif %}>
+                    <option value="{{ subject.pk }}" {% if subject.pk|stringformat:'s' == selected_subject_id|stringformat:'s' %}selected{% endif %}>
                         {{ subject.subject_name }}
                     </option>
                     {% empty %}
@@ -40,8 +39,7 @@
                     class="w-full px-4 py-3 border border-tableBorder rounded-xl text-dark bg-white appearance-none focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200 cursor-pointer"
                     aria-label="Група" onchange="this.form.submit()">
                     {% for group in groups %}
-                    <option value="{{ group.pk }}" {% if group.pk|stringformat:'s'==selected_group_id|stringformat:'s'
-                        %}selected{% endif %}>
+                    <option value="{{ group.pk }}" {% if group.pk|stringformat:'s' == selected_group_id|stringformat:'s' %}selected{% endif %}>
                         {{ group.name }}
                     </option>
                     {% empty %}
@@ -56,7 +54,6 @@
             </div>
         </div>
 
-        <!-- Кнопка налаштування типів оцінювання -->
         {% if selected_subject_id and selected_group_id and selected_assignment %}
         <div class="flex justify-end mt-3">
             <a href="{% url 'manage_evaluation_types' %}?assignment={{ selected_assignment.id }}"
@@ -134,9 +131,7 @@
                     <th
                         class="sticky top-[3.5rem] z-20 bg-gray-100/90 text-dark p-2 text-center border-l border-white/50 first:border-l-0 min-w-[100px] h-full align-top">
                         <div class="flex flex-col h-full justify-between gap-1">
-                            <span class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Пара {{
-                                lesson.lesson_num }}</span>
-
+                            <span class="text-[10px] uppercase font-bold text-gray-400 tracking-wider">Пара {{ lesson.lesson_num }}</span>
                             <div class="py-1">
                                 <span class="block text-xs font-bold text-primary leading-tight">
                                     {{ lesson.lesson_type|truncatechars:15 }}
@@ -159,11 +154,9 @@
                 <tr data-student="{{ student.full_name }}"
                     class="{% cycle 'bg-tableBgLight' 'bg-tableBgDark' %} hover:bg-primary/10 transition-colors duration-200 group">
 
-                    <td
-                        class="sticky left-0 z-10 p-4 font-medium text-dark border-b border-tableBorder shadow-[2px_0_5px_rgba(0,0,0,0.05)] {% cycle 'bg-tableBgLight' 'bg-tableBgDark' %} group-hover:bg-primary/10">
+                    <td class="sticky left-0 z-10 p-4 font-medium text-dark border-b border-tableBorder shadow-[2px_0_5px_rgba(0,0,0,0.05)] {% cycle 'bg-tableBgLight' 'bg-tableBgDark' %} group-hover:bg-primary/10">
                         {{ forloop.counter }}</td>
-                    <td
-                        class="sticky left-16 z-10 p-4 font-medium text-dark border-b border-tableBorder shadow-[2px_0_5px_rgba(0,0,0,0.05)] {% cycle 'bg-tableBgLight' 'bg-tableBgDark' %} group-hover:bg-primary/10">
+                    <td class="sticky left-16 z-10 p-4 font-medium text-dark border-b border-tableBorder shadow-[2px_0_5px_rgba(0,0,0,0.05)] {% cycle 'bg-tableBgLight' 'bg-tableBgDark' %} group-hover:bg-primary/10">
                         {{ student.full_name }}</td>
 
                     {% for header in lesson_headers %}
@@ -220,11 +213,9 @@
 {% block extra_js %}
 {{ block.super }}
 <script>
-    // JS-логіка для редагування клітинки (Grade OR Absence)
     $(document).ready(function () {
         const status = $('#status');
 
-        // Опції для випадаючого списку
         const gradeOptions = [
             { value: '—', label: '— (Очистити)', type: 'neutral' },
             { value: '-1', label: 'Н (Неявка)', type: 'fail' },
@@ -250,47 +241,32 @@
 
         $('#teacher-journal').on('click', '.editable', function () {
             const cell = $(this);
-            // Виправлення: Тепер дозволяємо як select, так і input
             if (cell.find('select, input').length > 0) return;
 
             const currentValue = cell.data('val');
-            const isGrade = currentValue > 0 || (currentValue > 0).toString() === 'true'; // Приблизна перевірка, чи це оцінка
+            const isGrade = currentValue > 0 || (currentValue > 0).toString() === 'true';
 
             let elementToFocus;
 
-            // Якщо це поле для вибору/введення
             if (isGrade) {
-                // Комбінований підхід: Input для введення оцінок 1-12
-                let inputElement = `
-                    <input type="text" value="${currentValue}"
-                           class="input-journal-grade"
-                           placeholder="1-12" maxlength="3">
-                `;
+                let inputElement = `<input type="text" value="${currentValue}" class="input-journal-grade" placeholder="1-12" maxlength="3">`;
                 cell.html(inputElement);
                 elementToFocus = cell.find('input').first();
 
-                // Додаємо обробку ручного введення
                 elementToFocus.on('blur change keydown', function (e) {
                     if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== 'Tab') return;
                     formatAndSaveInput(cell, $(this));
                 });
             } else {
-                // Select для вибору пропусків та швидких оцінок
                 let optionsHtml = gradeOptions.map(option => {
                     const selected = option.value.toString() === currentValue.toString() ? 'selected' : '';
                     return `<option value="${option.value}" data-type="${option.type}" ${selected}>${option.label}</option>`;
                 }).join('');
 
-                let selectElement = `
-                    <select class="input-journal-select">
-                        ${optionsHtml}
-                    </select>
-                `;
-
+                let selectElement = `<select class="input-journal-select">${optionsHtml}</select>`;
                 cell.html(selectElement);
                 elementToFocus = cell.find('select').first();
 
-                // Додаємо обробку вибору
                 elementToFocus.on('change blur', function (e) {
                     formatAndSaveSelect(cell, $(this));
                 });
@@ -299,7 +275,6 @@
             elementToFocus.focus();
         });
 
-        // Функція для форматування та збереження після ручного введення (для input)
         const formatAndSaveInput = function (cell, input) {
             let newValue = input.val().trim().toUpperCase();
             let displayText = newValue;
@@ -317,9 +292,7 @@
                 else if (finalValue < 6) textClass = 'grade-fail';
                 else if (finalValue >= 7 && finalValue <= 9) textClass = 'grade-good';
                 else if (finalValue == 6) textClass = 'grade-satisfactory';
-                else textClass = 'text-dark';
             } else {
-                // Якщо введено некоректне значення, повертаємо його до попереднього або очищаємо
                 displayText = '—';
                 textClass = 'attendance-neutral';
                 finalValue = '—';
@@ -329,7 +302,6 @@
             cell.data('val', finalValue);
         };
 
-        // Функція для форматування та збереження після вибору (для select)
         const formatAndSaveSelect = function (cell, select) {
             const selectedOption = select.find('option:selected');
             const newValue = selectedOption.val();
@@ -339,18 +311,14 @@
             let textClass = 'text-dark';
             if (type) textClass = `grade-${type} attendance-${type}`;
 
-            let finalValue = newValue;
-            if (newValue === '—') finalValue = '—';
-            else finalValue = parseInt(newValue);
+            let finalValue = newValue === '—' ? '—' : parseInt(newValue);
 
             cell.html(`<span class="font-bold ${textClass}">${displayText}</span>`);
             cell.data('val', finalValue);
         };
 
-        // 2. РЕАЛІЗАЦІЯ ЗБЕРЕЖЕННЯ: Збір даних та Fetch POST (Залишається незмінною)
         $('#saveBtn').on('click', function () {
             const status = $('#status');
-
             const changes = [];
             const selectedSubjectId = $('select[name="subject"]').val();
 
@@ -385,7 +353,6 @@
 
             status.removeClass('hidden').text('Збереження...').addClass('alert-info');
 
-            // ... (Fetch API call remains the same) ...
             fetch('{% url "save_journal_entries" %}', {
                 method: 'POST',
                 headers: {
@@ -394,26 +361,20 @@
                 },
                 body: JSON.stringify({ changes: changes }),
             })
-                .then(response => {
-                    if (!response.ok) {
-                        return response.json().then(errorData => {
-                            throw new Error(errorData.message || 'Помилка мережі або сервера.');
-                        });
-                    }
-                    return response.json();
-                })
-                .then(response => {
-                    status.text(response.message).removeClass('alert-info alert-error').addClass('alert-success');
-                    setTimeout(() => window.location.reload(), 500);
-                })
-                .catch(error => {
-                    const errorMsg = error.message || 'Невідома помилка збереження.';
-                    status.text('Помилка: ' + errorMsg).removeClass('alert-info').addClass('alert-error');
-                    setTimeout(() => status.addClass('hidden').removeClass('alert-error'), 8000);
-                });
+            .then(response => {
+                if (!response.ok) return response.json().then(errorData => { throw new Error(errorData.message || 'Помилка мережі.'); });
+                return response.json();
+            })
+            .then(response => {
+                status.text(response.message).removeClass('alert-info alert-error').addClass('alert-success');
+                setTimeout(() => window.location.reload(), 500);
+            })
+            .catch(error => {
+                status.text('Помилка: ' + error.message).removeClass('alert-info').addClass('alert-error');
+                setTimeout(() => status.addClass('hidden').removeClass('alert-error'), 8000);
+            });
         });
 
-        // 3. ДОПОМІЖНА ФУНКЦІЯ: Отримання CSRF-токена з cookie
         function getCookie(name) {
             let cookieValue = null;
             if (document.cookie && document.cookie !== '') {

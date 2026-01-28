@@ -144,3 +144,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 STATICFILES_DIRS = [
     BASE_DIR / 'main' / 'static',
 ]
+
+# Authentication URLs
+LOGIN_URL = '/'  # Redirects to custom login view (GET-enabled)
+LOGIN_REDIRECT_URL = '/admin/'  # Where to redirect after successful login
