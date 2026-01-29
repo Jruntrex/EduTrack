@@ -1,7 +1,7 @@
 from django.db import models
+from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
-from django.contrib.auth.hashers import make_password, check_password
 
 # ==========================================
 # 1. БАЗОВІ СУТНОСТІ (АДМІНІСТРАТИВНІ)
@@ -19,19 +19,35 @@ class StudyGroup(models.Model):
     def __str__(self):
         return self.name
 
-class User(models.Model):
-    """Єдина модель користувача"""
+class CustomUserManager(BaseUserManager):
+    """Менеджер для створення користувачів (потрібен для AbstractBaseUser)"""
+    def create_user(self, email, password=None, **extra_fields):
+        if not email:
+            raise ValueError('Email є обов\'язковим')
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
+        return user
+
+    def create_superuser(self, email, password=None, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
+        extra_fields.setdefault('is_superuser', True)
+        extra_fields.setdefault('role', 'admin') # Адмін за замовчуванням
+        return self.create_user(email, password, **extra_fields)
+
+class User(AbstractBaseUser, PermissionsMixin):
+    """Оновлена модель користувача з повною інтеграцією Django Auth"""
     ROLE_CHOICES = [
         ('admin', 'Адміністратор'),
         ('teacher', 'Викладач'),
         ('student', 'Студент'),
     ]
 
-    full_name = models.CharField(max_length=255, verbose_name="ПІБ")
     email = models.EmailField(unique=True, verbose_name="Email")
-    role = models.CharField(max_length=10, choices=ROLE_CHOICES, verbose_name="Роль")
-    password_hash = models.CharField(max_length=255)
-
+    full_name = models.CharField(max_length=255, verbose_name="ПІБ")
+    role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='student', verbose_name="Роль")
+    
     # Студент прив'язаний до групи, викладачі/адміни - ні
     group = models.ForeignKey(
         StudyGroup,
@@ -41,7 +57,15 @@ class User(models.Model):
         related_name='students',
     )
 
+    # Технічні поля Django
+    is_active = models.BooleanField(default=True)
+    is_staff = models.BooleanField(default=False) # Чи має доступ до адмінки
     created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = CustomUserManager()
+
+    USERNAME_FIELD = 'email' # Логін через Email
+    REQUIRED_FIELDS = ['full_name']
 
     class Meta:
         db_table = 'tbl_users'
@@ -51,18 +75,9 @@ class User(models.Model):
     def __str__(self):
         return f"{self.full_name} ({self.get_role_display()})"
 
-    def check_password(self, password):
-        """Перевіряє, чи пароль збігається з збереженим хешем."""
-        return check_password(password, self.password_hash)
-
-    def set_password(self, password):
-        """Встановлює пароль з хешуванням."""
-        self.password_hash = make_password(password)
-
 class Subject(models.Model):
     """
     Довідник предметів.
-    Тут немає викладача, бо один предмет можуть читати 10 різних людей.
     """
     name = models.CharField(max_length=100, unique=True, verbose_name="Назва предмету")
     description = models.TextField(blank=True, verbose_name="Опис")
@@ -82,7 +97,6 @@ class Subject(models.Model):
 class TeachingAssignment(models.Model):
     """
     ПРИЗНАЧЕННЯ: Головна таблиця зв'язку.
-    Адмін створює запис: "Викладач Петренко читає Математику у групи КН-41".
     """
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, verbose_name="Предмет")
     teacher = models.ForeignKey(
@@ -105,8 +119,6 @@ class TeachingAssignment(models.Model):
 class EvaluationType(models.Model):
     """
     КОНФІГУРАЦІЯ ОЦІНЮВАННЯ.
-    Викладач додає сюди: "Лекція (10%)", "Екзамен (40%)".
-    Прив'язано до TeachingAssignment, тому у кожного викладача свої налаштування.
     """
     assignment = models.ForeignKey(TeachingAssignment, on_delete=models.CASCADE, related_name='evaluation_types')
     name = models.CharField(max_length=50, verbose_name="Тип заняття (Лекція/Практика)")
@@ -132,14 +144,12 @@ class EvaluationType(models.Model):
 class WeeklySchedule(models.Model):
     """
     Шаблон розкладу (щотижневий).
-    Адмін заповнює, використовуючи вже створене призначення (TeachingAssignment).
     """
     DAY_CHOICES = [
         (1, 'Понеділок'), (2, 'Вівторок'), (3, 'Середа'),
         (4, 'Четвер'), (5, 'П\'ятниця'), (6, 'Субота'), (7, 'Неділя')
     ]
     
-    # Використовуємо assignment, щоб точно знати предмет+викладача+групу
     assignment = models.ForeignKey(TeachingAssignment, on_delete=models.CASCADE, verbose_name="Дисципліна")
     day_of_week = models.IntegerField(choices=DAY_CHOICES, verbose_name="День тижня")
     lesson_number = models.PositiveSmallIntegerField(verbose_name="Номер пари")
@@ -153,14 +163,11 @@ class WeeklySchedule(models.Model):
 class LessonSession(models.Model):
     """
     КОНКРЕТНИЙ ПРОВЕДЕНИЙ УРОК.
-    Створюється автоматично (за розкладом) або вручну викладачем.
-    Викладач обирає, що це було за заняття (EvaluationType).
     """
     assignment = models.ForeignKey(TeachingAssignment, on_delete=models.CASCADE)
     date = models.DateField(verbose_name="Дата проведення")
     lesson_number = models.PositiveSmallIntegerField()
     
-    # Викладач вказує тип цього конкретного уроку (напр. "Сьогодні була Лабораторна")
     evaluation_type = models.ForeignKey(EvaluationType, on_delete=models.PROTECT, verbose_name="Тип заняття")
     topic = models.CharField(max_length=255, blank=True, verbose_name="Тема заняття")
 
@@ -195,12 +202,10 @@ class AbsenceReason(models.Model):
 class StudentPerformance(models.Model):
     """
     Єдиний запис про успішність студента на уроці.
-    Може містити оцінку АБО пропуск, АБО і те і інше.
     """
     lesson = models.ForeignKey(LessonSession, on_delete=models.CASCADE, related_name='grades')
     student = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'role': 'student'})
     
-    # Оцінка (nullable, бо може бути тільки пропуск)
     grade = models.DecimalField(
         max_digits=5, decimal_places=2, 
         null=True, blank=True,
@@ -208,7 +213,6 @@ class StudentPerformance(models.Model):
         verbose_name="Оцінка"
     )
     
-    # Пропуск (nullable, бо студент може бути присутнім)
     absence = models.ForeignKey(AbsenceReason, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Пропуск")
     
     comment = models.CharField(max_length=255, blank=True, verbose_name="Коментар")

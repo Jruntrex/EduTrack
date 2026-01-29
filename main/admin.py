@@ -1,69 +1,42 @@
-# main/admin.py
-
 from django.contrib import admin
-from .models import (
-    StudyGroup, User, Subject, AbsenceReason, 
-    TeachingAssignment, EvaluationType, 
-    WeeklySchedule, LessonSession, StudentPerformance
-)
+from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
+from .models import User, StudyGroup, Subject, TeachingAssignment, EvaluationType, WeeklySchedule, LessonSession, StudentPerformance, AbsenceReason
+from .forms import UserAdminForm
 
-# =========================
-# РЕЄСТРАЦІЯ ОСНОВНИХ МОДЕЛЕЙ
-# =========================
+# Налаштовуємо відображення вашого кастомного юзера
+class UserAdmin(BaseUserAdmin):
+    form = UserAdminForm
+    add_form = UserAdminForm
+    # Поля, які видно у списку
+    list_display = ('email', 'full_name', 'role', 'group', 'is_staff')
+    # Поля для фільтрації збоку
+    list_filter = ('role', 'is_staff', 'is_active', 'group')
+    # Поля, по яким можна шукати
+    search_fields = ('email', 'full_name')
+    # Порядок полів при редагуванні (Django специфіка)
+    ordering = ('email',)
+    
+    # Конфігурація форми редагування
+    fieldsets = (
+        (None, {'fields': ('email', 'password')}),
+        ('Персональна інформація', {'fields': ('full_name', 'role', 'group')}),
+        ('Права доступу', {'fields': ('is_active', 'is_staff', 'is_superuser')}),
+    )
+    # Конфігурація форми створення
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('email', 'full_name', 'role', 'group', 'password', 'confirm_password'),
+        }),
+    )
 
-@admin.register(StudyGroup)
-class StudyGroupAdmin(admin.ModelAdmin):
-    list_display = ('name',)
-    search_fields = ('name',)
-
-@admin.register(Subject)
-class SubjectAdmin(admin.ModelAdmin):
-    list_display = ('name', 'description')
-    search_fields = ('name',)
-
-@admin.register(AbsenceReason)
-class AbsenceReasonAdmin(admin.ModelAdmin):
-    list_display = ('code', 'description', 'is_respectful')
-    list_filter = ('is_respectful',)
-
-# =========================
-# РОЗШИРЕНІ НАЛАШТУВАННЯ
-# =========================
-
-@admin.register(User)
-class UserAdmin(admin.ModelAdmin):
-    list_display = ('full_name', 'email', 'role', 'group', 'created_at')
-    list_filter = ('role', 'group')
-    search_fields = ('full_name', 'email')
-    readonly_fields = ('created_at',)
-
-@admin.register(TeachingAssignment)
-class TeachingAssignmentAdmin(admin.ModelAdmin):
-    list_display = ('subject', 'teacher', 'group')
-    list_filter = ('group', 'teacher', 'subject')
-    search_fields = ('subject__name', 'teacher__full_name')
-
-@admin.register(EvaluationType)
-class EvaluationTypeAdmin(admin.ModelAdmin):
-    list_display = ('name', 'assignment', 'weight_percent')
-    list_filter = ('assignment',)
-
-@admin.register(WeeklySchedule)
-class WeeklyScheduleAdmin(admin.ModelAdmin):
-    list_display = ('assignment', 'day_of_week', 'lesson_number')
-    list_filter = ('day_of_week', 'assignment__group')
-    search_fields = ('assignment__subject__name',)
-
-@admin.register(LessonSession)
-class LessonSessionAdmin(admin.ModelAdmin):
-    list_display = ('assignment', 'date', 'lesson_number', 'evaluation_type', 'topic')
-    list_filter = ('date', 'assignment__group', 'evaluation_type')
-    search_fields = ('topic', 'assignment__subject__name')
-    readonly_fields = ('date',)
-
-@admin.register(StudentPerformance)
-class StudentPerformanceAdmin(admin.ModelAdmin):
-    list_display = ('student', 'lesson', 'grade', 'absence', 'updated_at')
-    list_filter = ('lesson__date', 'absence', 'student__group')
-    search_fields = ('student__full_name', 'lesson__topic')
-    readonly_fields = ('updated_at',)
+# Реєструємо всі моделі
+admin.site.register(User, UserAdmin)
+admin.site.register(StudyGroup)
+admin.site.register(Subject)
+admin.site.register(TeachingAssignment)
+admin.site.register(EvaluationType)
+admin.site.register(WeeklySchedule)
+admin.site.register(LessonSession)
+admin.site.register(StudentPerformance)
+admin.site.register(AbsenceReason)

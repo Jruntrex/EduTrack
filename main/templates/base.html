@@ -34,8 +34,8 @@
             </div>
 
             <nav class="flex-grow flex flex-col gap-3" aria-label="Навігація">
-                {% if request.session.user_role == 'admin' or request.session.user_role == 'teacher' %}
-                {% if request.session.user_role == 'admin' %}
+                {% if user.role == 'admin' or user.role == 'teacher' %}
+                {% if user.role == 'admin' %}
                 <a href="{% url 'admin_panel' %}"
                     class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 {% if active_page == 'admin' %}bg-gradient-to-r from-primary to-primary/50 text-white font-semibold shadow-button{% else %}text-bodyText hover:bg-glass-hover hover:text-dark{% endif %}"
                     tabindex="0">
@@ -59,7 +59,7 @@
                 </a>
                 {% endif %}
 
-                {% if request.session.user_role == 'teacher' %}
+                {% if user.role == 'teacher' %}
                 <a href="{% url 'teacher_journal' %}"
                     class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 {% if active_page == 'teacher' %}bg-gradient-to-r from-primary to-primary/50 text-white font-semibold shadow-button{% else %}text-bodyText hover:bg-glass-hover hover:text-dark{% endif %}"
                     tabindex="0">
@@ -72,7 +72,7 @@
                 </a>
                 {% endif %}
 
-                {% if request.session.user_role == 'admin' %}
+                {% if user.role == 'admin' %}
                 <a href="{% url 'subjects_list' %}"
                     class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 {% if active_page == 'subjects' %}bg-gradient-to-r from-primary to-primary/50 text-white font-semibold shadow-button{% else %}text-bodyText hover:bg-glass-hover hover:text-dark{% endif %}"
                     tabindex="0">
@@ -119,7 +119,7 @@
                 {% endif %}
                 {% endif %}
 
-                {% if request.session.user_role == 'student' %}
+                {% if user.role == 'student' %}
                 <a href="{% url 'student_grades' %}"
                     class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 {% if active_page == 'student_grades' %}bg-gradient-to-r from-primary to-primary/50 text-white font-semibold shadow-button{% else %}text-bodyText hover:bg-glass-hover hover:text-dark{% endif %}"
                     tabindex="0">

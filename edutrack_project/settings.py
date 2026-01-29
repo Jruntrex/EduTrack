@@ -148,3 +148,5 @@ STATICFILES_DIRS = [
 # Authentication URLs
 LOGIN_URL = '/'  # Redirects to custom login view (GET-enabled)
 LOGIN_REDIRECT_URL = '/admin/'  # Where to redirect after successful login
+
+AUTH_USER_MODEL = 'main.User'
