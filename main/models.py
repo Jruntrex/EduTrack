@@ -1,4 +1,5 @@
 from django.db import models
+from typing import Optional, Any, List, Union
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.core.exceptions import ValidationError
@@ -16,12 +17,12 @@ class StudyGroup(models.Model):
         verbose_name = "Група"
         verbose_name_plural = "Групи"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 class CustomUserManager(BaseUserManager):
     """Менеджер для створення користувачів (потрібен для AbstractBaseUser)"""
-    def create_user(self, email, password=None, **extra_fields):
+    def create_user(self, email: str, password: Optional[str] = None, **extra_fields: Any) -> 'User':
         if not email:
             raise ValueError('Email є обов\'язковим')
         email = self.normalize_email(email)
@@ -30,7 +31,7 @@ class CustomUserManager(BaseUserManager):
         user.save(using=self._db)
         return user
 
-    def create_superuser(self, email, password=None, **extra_fields):
+    def create_superuser(self, email: str, password: Optional[str] = None, **extra_fields: Any) -> 'User':
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('role', 'admin') # Адмін за замовчуванням
@@ -72,7 +73,7 @@ class User(AbstractBaseUser, PermissionsMixin):
         verbose_name = "Користувач"
         verbose_name_plural = "Користувачі"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.full_name} ({self.get_role_display()})"
 
 class Subject(models.Model):
@@ -87,7 +88,7 @@ class Subject(models.Model):
         verbose_name = "Предмет"
         verbose_name_plural = "Предмети"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 class Classroom(models.Model):
@@ -101,7 +102,7 @@ class Classroom(models.Model):
         verbose_name = "Аудиторія"
         verbose_name_plural = "Аудиторії"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name} ({self.building})" if self.building else self.name
 
 class GradingScale(models.Model):
@@ -113,7 +114,7 @@ class GradingScale(models.Model):
         verbose_name = "Шкала оцінювання"
         verbose_name_plural = "Шкали оцінювання"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.name
 
 class GradeRule(models.Model):
@@ -128,7 +129,7 @@ class GradeRule(models.Model):
         verbose_name = "Правило оцінювання"
         verbose_name_plural = "Правила оцінювання"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.scale.name}: {self.label} (>= {self.min_points})"
 
 # ==========================================
@@ -154,7 +155,7 @@ class TeachingAssignment(models.Model):
         verbose_name = "Навантаження викладача"
         verbose_name_plural = "Навантаження викладачів"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.subject.name} - {self.group.name} ({self.teacher.full_name})"
 
 class EvaluationType(models.Model):
@@ -175,7 +176,7 @@ class EvaluationType(models.Model):
         verbose_name = "Тип оцінювання"
         verbose_name_plural = "Типи оцінювання"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.name} ({self.weight_percent}%)"
 
 class TimeSlot(models.Model):
@@ -190,10 +191,10 @@ class TimeSlot(models.Model):
         verbose_name = "Розклад дзвінків"
         verbose_name_plural = "Розклад дзвінків"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.lesson_number} пара ({self.start_time.strftime('%H:%M')} - {self.end_time.strftime('%H:%M')})"
 
-    def duration_minutes(self):
+    def duration_minutes(self) -> int:
         # Допоміжний метод для розрахунку довжини на графіку
         t1 = self.start_time
         t2 = self.end_time
@@ -206,7 +207,23 @@ class TimeSlot(models.Model):
 class ScheduleTemplate(models.Model):
     """
     Шаблон розкладу (правила).
+    
+    MIGRATION NOTE: teaching_assignment - новий зв'язок (від 04.02.2026)
+    Старі поля (subject, teacher, group) залишені для міграції.
     """
+    # НОВИЙ ЗВ'ЯЗОК: Single Source of Truth
+    teaching_assignment = models.ForeignKey(
+        TeachingAssignment,
+        on_delete=models.CASCADE,
+        null=True,  # Тимчасово nullable для міграції
+        blank=True,
+        related_name='schedule_templates',
+        verbose_name="Навантаження викладача",
+        help_text="Зв'язок з призначенням викладача (subject+teacher+group)"
+    )
+    
+    # СТАРІ ПОЛЯ (для зворотної сумісності під час міграції)
+    # TODO: Видалити після завершення міграції даних
     group = models.ForeignKey(StudyGroup, on_delete=models.CASCADE, verbose_name="Група")
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, verbose_name="Предмет")
     teacher = models.ForeignKey(
@@ -216,6 +233,7 @@ class ScheduleTemplate(models.Model):
         verbose_name="Викладач"
     )
     
+    # РОЗКЛАД
     day_of_week = models.IntegerField(
         choices=[(1, 'Пн'), (2, 'Вт'), (3, 'Ср'), (4, 'Чт'), (5, 'Пт'), (6, 'Сб'), (7, 'Нд')],
         verbose_name="День тижня"
@@ -233,7 +251,7 @@ class ScheduleTemplate(models.Model):
         verbose_name = "Шаблон розкладу"
         verbose_name_plural = "Шаблони розкладу"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.get_day_of_week_display()} {self.start_time} - {self.subject.name} ({self.group.name})"
 
 class Lesson(models.Model):
@@ -273,7 +291,7 @@ class Lesson(models.Model):
         verbose_name = "Урок"
         verbose_name_plural = "Уроки"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.date} {self.start_time} - {self.subject.name}"
 
 # ==========================================
@@ -291,7 +309,7 @@ class AbsenceReason(models.Model):
         verbose_name = "Причина пропуску"
         verbose_name_plural = "Причини пропусків"
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.code
 
 class StudentPerformance(models.Model):
@@ -318,7 +336,10 @@ class StudentPerformance(models.Model):
         verbose_name = "Успішність студента"
         verbose_name_plural = "Успішність студентів"
 
-    def clean(self):
+    def __str__(self) -> str:
+        return f"{self.student.full_name} - {self.lesson.subject.name} ({self.lesson.date})"
+
+    def clean(self) -> None:
         # Валідація: студент має належати до групи, яка вказана в уроці
         if self.student.group != self.lesson.group:
             raise ValidationError("Студент не належить до групи, для якої проводиться урок.")

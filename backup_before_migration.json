@@ -1,0 +1,1868 @@
+[
+{
+  "model": "auth.permission",
+  "pk": 1,
+  "fields": {
+    "name": "Can add log entry",
+    "content_type": 1,
+    "codename": "add_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 2,
+  "fields": {
+    "name": "Can change log entry",
+    "content_type": 1,
+    "codename": "change_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 3,
+  "fields": {
+    "name": "Can delete log entry",
+    "content_type": 1,
+    "codename": "delete_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 4,
+  "fields": {
+    "name": "Can view log entry",
+    "content_type": 1,
+    "codename": "view_logentry"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 5,
+  "fields": {
+    "name": "Can add permission",
+    "content_type": 3,
+    "codename": "add_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 6,
+  "fields": {
+    "name": "Can change permission",
+    "content_type": 3,
+    "codename": "change_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 7,
+  "fields": {
+    "name": "Can delete permission",
+    "content_type": 3,
+    "codename": "delete_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 8,
+  "fields": {
+    "name": "Can view permission",
+    "content_type": 3,
+    "codename": "view_permission"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 9,
+  "fields": {
+    "name": "Can add group",
+    "content_type": 2,
+    "codename": "add_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 10,
+  "fields": {
+    "name": "Can change group",
+    "content_type": 2,
+    "codename": "change_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 11,
+  "fields": {
+    "name": "Can delete group",
+    "content_type": 2,
+    "codename": "delete_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 12,
+  "fields": {
+    "name": "Can view group",
+    "content_type": 2,
+    "codename": "view_group"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 13,
+  "fields": {
+    "name": "Can add content type",
+    "content_type": 4,
+    "codename": "add_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 14,
+  "fields": {
+    "name": "Can change content type",
+    "content_type": 4,
+    "codename": "change_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 15,
+  "fields": {
+    "name": "Can delete content type",
+    "content_type": 4,
+    "codename": "delete_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 16,
+  "fields": {
+    "name": "Can view content type",
+    "content_type": 4,
+    "codename": "view_contenttype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 17,
+  "fields": {
+    "name": "Can add session",
+    "content_type": 5,
+    "codename": "add_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 18,
+  "fields": {
+    "name": "Can change session",
+    "content_type": 5,
+    "codename": "change_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 19,
+  "fields": {
+    "name": "Can delete session",
+    "content_type": 5,
+    "codename": "delete_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 20,
+  "fields": {
+    "name": "Can view session",
+    "content_type": 5,
+    "codename": "view_session"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 21,
+  "fields": {
+    "name": "Can add Причина пропуску",
+    "content_type": 6,
+    "codename": "add_absencereason"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 22,
+  "fields": {
+    "name": "Can change Причина пропуску",
+    "content_type": 6,
+    "codename": "change_absencereason"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 23,
+  "fields": {
+    "name": "Can delete Причина пропуску",
+    "content_type": 6,
+    "codename": "delete_absencereason"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 24,
+  "fields": {
+    "name": "Can view Причина пропуску",
+    "content_type": 6,
+    "codename": "view_absencereason"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 25,
+  "fields": {
+    "name": "Can add Тип оцінювання",
+    "content_type": 7,
+    "codename": "add_evaluationtype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 26,
+  "fields": {
+    "name": "Can change Тип оцінювання",
+    "content_type": 7,
+    "codename": "change_evaluationtype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 27,
+  "fields": {
+    "name": "Can delete Тип оцінювання",
+    "content_type": 7,
+    "codename": "delete_evaluationtype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 28,
+  "fields": {
+    "name": "Can view Тип оцінювання",
+    "content_type": 7,
+    "codename": "view_evaluationtype"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 29,
+  "fields": {
+    "name": "Can add Група",
+    "content_type": 12,
+    "codename": "add_studygroup"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 30,
+  "fields": {
+    "name": "Can change Група",
+    "content_type": 12,
+    "codename": "change_studygroup"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 31,
+  "fields": {
+    "name": "Can delete Група",
+    "content_type": 12,
+    "codename": "delete_studygroup"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 32,
+  "fields": {
+    "name": "Can view Група",
+    "content_type": 12,
+    "codename": "view_studygroup"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 33,
+  "fields": {
+    "name": "Can add Предмет",
+    "content_type": 13,
+    "codename": "add_subject"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 34,
+  "fields": {
+    "name": "Can change Предмет",
+    "content_type": 13,
+    "codename": "change_subject"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 35,
+  "fields": {
+    "name": "Can delete Предмет",
+    "content_type": 13,
+    "codename": "delete_subject"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 36,
+  "fields": {
+    "name": "Can view Предмет",
+    "content_type": 13,
+    "codename": "view_subject"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 37,
+  "fields": {
+    "name": "Can add Розклад дзвінків",
+    "content_type": 15,
+    "codename": "add_timeslot"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 38,
+  "fields": {
+    "name": "Can change Розклад дзвінків",
+    "content_type": 15,
+    "codename": "change_timeslot"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 39,
+  "fields": {
+    "name": "Can delete Розклад дзвінків",
+    "content_type": 15,
+    "codename": "delete_timeslot"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 40,
+  "fields": {
+    "name": "Can view Розклад дзвінків",
+    "content_type": 15,
+    "codename": "view_timeslot"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 41,
+  "fields": {
+    "name": "Can add Користувач",
+    "content_type": 16,
+    "codename": "add_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 42,
+  "fields": {
+    "name": "Can change Користувач",
+    "content_type": 16,
+    "codename": "change_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 43,
+  "fields": {
+    "name": "Can delete Користувач",
+    "content_type": 16,
+    "codename": "delete_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 44,
+  "fields": {
+    "name": "Can view Користувач",
+    "content_type": 16,
+    "codename": "view_user"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 45,
+  "fields": {
+    "name": "Can add Шаблон розкладу",
+    "content_type": 10,
+    "codename": "add_scheduletemplate"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 46,
+  "fields": {
+    "name": "Can change Шаблон розкладу",
+    "content_type": 10,
+    "codename": "change_scheduletemplate"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 47,
+  "fields": {
+    "name": "Can delete Шаблон розкладу",
+    "content_type": 10,
+    "codename": "delete_scheduletemplate"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 48,
+  "fields": {
+    "name": "Can view Шаблон розкладу",
+    "content_type": 10,
+    "codename": "view_scheduletemplate"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 49,
+  "fields": {
+    "name": "Can add Урок",
+    "content_type": 8,
+    "codename": "add_lesson"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 50,
+  "fields": {
+    "name": "Can change Урок",
+    "content_type": 8,
+    "codename": "change_lesson"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 51,
+  "fields": {
+    "name": "Can delete Урок",
+    "content_type": 8,
+    "codename": "delete_lesson"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 52,
+  "fields": {
+    "name": "Can view Урок",
+    "content_type": 8,
+    "codename": "view_lesson"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 53,
+  "fields": {
+    "name": "Can add Навантаження викладача",
+    "content_type": 14,
+    "codename": "add_teachingassignment"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 54,
+  "fields": {
+    "name": "Can change Навантаження викладача",
+    "content_type": 14,
+    "codename": "change_teachingassignment"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 55,
+  "fields": {
+    "name": "Can delete Навантаження викладача",
+    "content_type": 14,
+    "codename": "delete_teachingassignment"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 56,
+  "fields": {
+    "name": "Can view Навантаження викладача",
+    "content_type": 14,
+    "codename": "view_teachingassignment"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 57,
+  "fields": {
+    "name": "Can add Заняття (старе)",
+    "content_type": 9,
+    "codename": "add_lessonsession"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 58,
+  "fields": {
+    "name": "Can change Заняття (старе)",
+    "content_type": 9,
+    "codename": "change_lessonsession"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 59,
+  "fields": {
+    "name": "Can delete Заняття (старе)",
+    "content_type": 9,
+    "codename": "delete_lessonsession"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 60,
+  "fields": {
+    "name": "Can view Заняття (старе)",
+    "content_type": 9,
+    "codename": "view_lessonsession"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 61,
+  "fields": {
+    "name": "Can add Успішність студента",
+    "content_type": 11,
+    "codename": "add_studentperformance"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 62,
+  "fields": {
+    "name": "Can change Успішність студента",
+    "content_type": 11,
+    "codename": "change_studentperformance"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 63,
+  "fields": {
+    "name": "Can delete Успішність студента",
+    "content_type": 11,
+    "codename": "delete_studentperformance"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 64,
+  "fields": {
+    "name": "Can view Успішність студента",
+    "content_type": 11,
+    "codename": "view_studentperformance"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 65,
+  "fields": {
+    "name": "Can add Розклад (старий)",
+    "content_type": 17,
+    "codename": "add_weeklyschedule"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 66,
+  "fields": {
+    "name": "Can change Розклад (старий)",
+    "content_type": 17,
+    "codename": "change_weeklyschedule"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 67,
+  "fields": {
+    "name": "Can delete Розклад (старий)",
+    "content_type": 17,
+    "codename": "delete_weeklyschedule"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 68,
+  "fields": {
+    "name": "Can view Розклад (старий)",
+    "content_type": 17,
+    "codename": "view_weeklyschedule"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 69,
+  "fields": {
+    "name": "Can add Аудиторія",
+    "content_type": 18,
+    "codename": "add_classroom"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 70,
+  "fields": {
+    "name": "Can change Аудиторія",
+    "content_type": 18,
+    "codename": "change_classroom"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 71,
+  "fields": {
+    "name": "Can delete Аудиторія",
+    "content_type": 18,
+    "codename": "delete_classroom"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 72,
+  "fields": {
+    "name": "Can view Аудиторія",
+    "content_type": 18,
+    "codename": "view_classroom"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 73,
+  "fields": {
+    "name": "Can add Шкала оцінювання",
+    "content_type": 20,
+    "codename": "add_gradingscale"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 74,
+  "fields": {
+    "name": "Can change Шкала оцінювання",
+    "content_type": 20,
+    "codename": "change_gradingscale"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 75,
+  "fields": {
+    "name": "Can delete Шкала оцінювання",
+    "content_type": 20,
+    "codename": "delete_gradingscale"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 76,
+  "fields": {
+    "name": "Can view Шкала оцінювання",
+    "content_type": 20,
+    "codename": "view_gradingscale"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 77,
+  "fields": {
+    "name": "Can add Правило оцінювання",
+    "content_type": 19,
+    "codename": "add_graderule"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 78,
+  "fields": {
+    "name": "Can change Правило оцінювання",
+    "content_type": 19,
+    "codename": "change_graderule"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 79,
+  "fields": {
+    "name": "Can delete Правило оцінювання",
+    "content_type": 19,
+    "codename": "delete_graderule"
+  }
+},
+{
+  "model": "auth.permission",
+  "pk": 80,
+  "fields": {
+    "name": "Can view Правило оцінювання",
+    "content_type": 19,
+    "codename": "view_graderule"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 1,
+  "fields": {
+    "app_label": "admin",
+    "model": "logentry"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 2,
+  "fields": {
+    "app_label": "auth",
+    "model": "group"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 3,
+  "fields": {
+    "app_label": "auth",
+    "model": "permission"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 4,
+  "fields": {
+    "app_label": "contenttypes",
+    "model": "contenttype"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 5,
+  "fields": {
+    "app_label": "sessions",
+    "model": "session"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 6,
+  "fields": {
+    "app_label": "main",
+    "model": "absencereason"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 7,
+  "fields": {
+    "app_label": "main",
+    "model": "evaluationtype"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 8,
+  "fields": {
+    "app_label": "main",
+    "model": "lesson"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 9,
+  "fields": {
+    "app_label": "main",
+    "model": "lessonsession"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 10,
+  "fields": {
+    "app_label": "main",
+    "model": "scheduletemplate"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 11,
+  "fields": {
+    "app_label": "main",
+    "model": "studentperformance"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 12,
+  "fields": {
+    "app_label": "main",
+    "model": "studygroup"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 13,
+  "fields": {
+    "app_label": "main",
+    "model": "subject"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 14,
+  "fields": {
+    "app_label": "main",
+    "model": "teachingassignment"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 15,
+  "fields": {
+    "app_label": "main",
+    "model": "timeslot"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 16,
+  "fields": {
+    "app_label": "main",
+    "model": "user"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 17,
+  "fields": {
+    "app_label": "main",
+    "model": "weeklyschedule"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 18,
+  "fields": {
+    "app_label": "main",
+    "model": "classroom"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 19,
+  "fields": {
+    "app_label": "main",
+    "model": "graderule"
+  }
+},
+{
+  "model": "contenttypes.contenttype",
+  "pk": 20,
+  "fields": {
+    "app_label": "main",
+    "model": "gradingscale"
+  }
+},
+{
+  "model": "main.studygroup",
+  "pk": 4,
+  "fields": {
+    "name": "КН-41"
+  }
+},
+{
+  "model": "main.studygroup",
+  "pk": 5,
+  "fields": {
+    "name": "IT-12"
+  }
+},
+{
+  "model": "main.user",
+  "pk": 1,
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$2j4XR2A6upwAw6X7PRutCh$7KEtZA2mMEv28uzsW34Gb7+7cb80eeYEhF1Zr34qh3U=",
+    "last_login": "2026-02-02T17:42:30.413Z",
+    "is_superuser": true,
+    "email": "serhii@gmail.com",
+    "full_name": "Годісь Сергій Юрійович",
+    "role": "admin",
+    "group": null,
+    "is_active": true,
+    "is_staff": true,
+    "created_at": "2026-02-02T17:30:41.758Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "main.user",
+  "pk": 17,
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$Sie9HgGZJLi5Rh5pw0bC5E$cDoWSnxg57TidmiFnCj2PvShY8KeGHD8o6AYD4pd604=",
+    "last_login": null,
+    "is_superuser": false,
+    "email": "damian1@gmail.com",
+    "full_name": "Damian Teacher",
+    "role": "teacher",
+    "group": null,
+    "is_active": true,
+    "is_staff": false,
+    "created_at": "2026-02-02T17:41:23.794Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "main.user",
+  "pk": 18,
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$bN9jxnJKE0v86AU5dfUf42$XApDcp6z5luJ4+C17f/02gDEZTBFeAvuDyv12mNydM4=",
+    "last_login": null,
+    "is_superuser": false,
+    "email": "olena1@gmail.com",
+    "full_name": "Olena Teacher",
+    "role": "teacher",
+    "group": null,
+    "is_active": true,
+    "is_staff": false,
+    "created_at": "2026-02-02T17:41:25.151Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "main.user",
+  "pk": 19,
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$9ha7mXF4Ye8lNdaK6jcSED$C/hZptV/68K8VzzcQA5+rvk35ph0/7OhIunqH7Rcvn8=",
+    "last_login": null,
+    "is_superuser": false,
+    "email": "igor1@gmail.com",
+    "full_name": "Igor Teacher",
+    "role": "teacher",
+    "group": null,
+    "is_active": true,
+    "is_staff": false,
+    "created_at": "2026-02-02T17:41:27.193Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "main.user",
+  "pk": 20,
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$5pXnIuXBgov1UMIhTrKk12$Dxjy+cYote1inM04GTLDI+DE3bb/xrYbnMGN54LD47s=",
+    "last_login": null,
+    "is_superuser": false,
+    "email": "maryna1@gmail.com",
+    "full_name": "Maryna Teacher",
+    "role": "teacher",
+    "group": null,
+    "is_active": true,
+    "is_staff": false,
+    "created_at": "2026-02-02T17:41:29.573Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "main.user",
+  "pk": 21,
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$Umkn39F8uZidAi26Z00GrN$/dYsxnocsL+JPQsog7bEtQstGHcVf0mo5CWNRlt3H7c=",
+    "last_login": null,
+    "is_superuser": false,
+    "email": "petro1@gmail.com",
+    "full_name": "Petro Teacher",
+    "role": "teacher",
+    "group": null,
+    "is_active": true,
+    "is_staff": false,
+    "created_at": "2026-02-02T17:41:32.130Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "main.user",
+  "pk": 22,
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$C2ZZSY6AEaDLXcKqdHpYNT$8a3ONh5K/acy73uFR/PlI0JRtyIhyymsK3KLUyLgixw=",
+    "last_login": "2026-02-04T12:09:00.371Z",
+    "is_superuser": false,
+    "email": "alex2@gmail.com",
+    "full_name": "Alex Student",
+    "role": "student",
+    "group": 4,
+    "is_active": true,
+    "is_staff": false,
+    "created_at": "2026-02-02T17:41:35.016Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "main.user",
+  "pk": 23,
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$Q6BlsiSKz2snwfc6fP75XQ$kexCoSvbDrU2db7DGq1d5nPg06nOEJGNMqZBE1D9ECk=",
+    "last_login": null,
+    "is_superuser": false,
+    "email": "bob2@gmail.com",
+    "full_name": "Bob Student",
+    "role": "student",
+    "group": 5,
+    "is_active": true,
+    "is_staff": false,
+    "created_at": "2026-02-02T17:41:37.408Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "main.user",
+  "pk": 24,
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$ecnEzGVsWXMcOjFlyhlN06$VL3q/HTZREQ0jEfvEsjIu3VWa0Z1y+boOUukAYM330E=",
+    "last_login": null,
+    "is_superuser": false,
+    "email": "charity2@gmail.com",
+    "full_name": "Charity Student",
+    "role": "student",
+    "group": 4,
+    "is_active": true,
+    "is_staff": false,
+    "created_at": "2026-02-02T17:41:40.407Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "main.user",
+  "pk": 25,
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$XC3CSgAIMVwJ8N2IcXPctQ$lNNvt9b9oPJSsdrfguFgdsoNU8Xr3B03A90r497mKZk=",
+    "last_login": null,
+    "is_superuser": false,
+    "email": "david2@gmail.com",
+    "full_name": "David Student",
+    "role": "student",
+    "group": 5,
+    "is_active": true,
+    "is_staff": false,
+    "created_at": "2026-02-02T17:41:42.871Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "main.user",
+  "pk": 26,
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$ujQw1fXtCOOvsKZKTUC3B8$3QlqxRe/iGFqA9hNavHwrVF8FUJUWiHRBltSzRDp/JA=",
+    "last_login": null,
+    "is_superuser": false,
+    "email": "eva2@gmail.com",
+    "full_name": "Eva Student",
+    "role": "student",
+    "group": 4,
+    "is_active": true,
+    "is_staff": false,
+    "created_at": "2026-02-02T17:41:45.407Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "main.user",
+  "pk": 27,
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$wpwBXfJw65Hz2XgHnwyjob$vhKx6R2TvLjafJDkcFtKRRopyEGCMqNZHWj6Lp9EmfM=",
+    "last_login": null,
+    "is_superuser": false,
+    "email": "frank2@gmail.com",
+    "full_name": "Frank Student",
+    "role": "student",
+    "group": 5,
+    "is_active": true,
+    "is_staff": false,
+    "created_at": "2026-02-02T17:41:47.259Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "main.user",
+  "pk": 28,
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$6I7QKJL7MnGhk5cujRx1j7$jYk8MhGBPnc+sP7t3X4bTvDpu6YyFbkHncM8R+gIn7Q=",
+    "last_login": null,
+    "is_superuser": false,
+    "email": "grace2@gmail.com",
+    "full_name": "Grace Student",
+    "role": "student",
+    "group": 4,
+    "is_active": true,
+    "is_staff": false,
+    "created_at": "2026-02-02T17:41:48.976Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "main.user",
+  "pk": 29,
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$oWZhEjLeYw2iGXChbgX5UG$wAggfC3xlrHkYS5aEmVEgVnkqypgAfkZ2q/X6X714Fo=",
+    "last_login": null,
+    "is_superuser": false,
+    "email": "helen2@gmail.com",
+    "full_name": "Helen Student",
+    "role": "student",
+    "group": 5,
+    "is_active": true,
+    "is_staff": false,
+    "created_at": "2026-02-02T17:41:51.597Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "main.user",
+  "pk": 30,
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$aJDIfZgjjxpiwvKaoLvy5f$hsFY/uy8FQv6/u/4pJgHLNJvtyn7OIHDGnEzakepAA0=",
+    "last_login": null,
+    "is_superuser": false,
+    "email": "ivan2@gmail.com",
+    "full_name": "Ivan Student",
+    "role": "student",
+    "group": 4,
+    "is_active": true,
+    "is_staff": false,
+    "created_at": "2026-02-02T17:41:54.135Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "main.user",
+  "pk": 31,
+  "fields": {
+    "password": "pbkdf2_sha256$1200000$DAavRSkgJgUhjZNUbxclYr$WvRG5fDW43eCWLaNMzwAR5U9BuiW8rW0wGeb660GHjE=",
+    "last_login": null,
+    "is_superuser": false,
+    "email": "julia2@gmail.com",
+    "full_name": "Julia Student",
+    "role": "student",
+    "group": 5,
+    "is_active": true,
+    "is_staff": false,
+    "created_at": "2026-02-02T17:41:56.626Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "main.subject",
+  "pk": 8,
+  "fields": {
+    "name": "Вища математика",
+    "description": ""
+  }
+},
+{
+  "model": "main.subject",
+  "pk": 9,
+  "fields": {
+    "name": "Об'єктно-орієнтоване програмування",
+    "description": ""
+  }
+},
+{
+  "model": "main.subject",
+  "pk": 10,
+  "fields": {
+    "name": "Філософія",
+    "description": ""
+  }
+},
+{
+  "model": "main.subject",
+  "pk": 11,
+  "fields": {
+    "name": "Іноземна мова",
+    "description": ""
+  }
+},
+{
+  "model": "main.subject",
+  "pk": 12,
+  "fields": {
+    "name": "Фізика",
+    "description": ""
+  }
+},
+{
+  "model": "main.subject",
+  "pk": 13,
+  "fields": {
+    "name": "Бази даних",
+    "description": ""
+  }
+},
+{
+  "model": "main.subject",
+  "pk": 14,
+  "fields": {
+    "name": "Мережі",
+    "description": ""
+  }
+},
+{
+  "model": "main.teachingassignment",
+  "pk": 9,
+  "fields": {
+    "subject": 8,
+    "teacher": 17,
+    "group": 4
+  }
+},
+{
+  "model": "main.teachingassignment",
+  "pk": 10,
+  "fields": {
+    "subject": 9,
+    "teacher": 17,
+    "group": 5
+  }
+},
+{
+  "model": "main.teachingassignment",
+  "pk": 11,
+  "fields": {
+    "subject": 8,
+    "teacher": 18,
+    "group": 5
+  }
+},
+{
+  "model": "main.teachingassignment",
+  "pk": 12,
+  "fields": {
+    "subject": 10,
+    "teacher": 18,
+    "group": 4
+  }
+},
+{
+  "model": "main.teachingassignment",
+  "pk": 13,
+  "fields": {
+    "subject": 12,
+    "teacher": 19,
+    "group": 4
+  }
+},
+{
+  "model": "main.teachingassignment",
+  "pk": 14,
+  "fields": {
+    "subject": 13,
+    "teacher": 20,
+    "group": 5
+  }
+},
+{
+  "model": "main.teachingassignment",
+  "pk": 15,
+  "fields": {
+    "subject": 14,
+    "teacher": 21,
+    "group": 4
+  }
+},
+{
+  "model": "main.teachingassignment",
+  "pk": 16,
+  "fields": {
+    "subject": 11,
+    "teacher": 21,
+    "group": 5
+  }
+},
+{
+  "model": "main.evaluationtype",
+  "pk": 17,
+  "fields": {
+    "assignment": 9,
+    "name": "Лекція",
+    "weight_percent": "30.00"
+  }
+},
+{
+  "model": "main.evaluationtype",
+  "pk": 18,
+  "fields": {
+    "assignment": 9,
+    "name": "Практична",
+    "weight_percent": "70.00"
+  }
+},
+{
+  "model": "main.evaluationtype",
+  "pk": 19,
+  "fields": {
+    "assignment": 10,
+    "name": "Лекція",
+    "weight_percent": "30.00"
+  }
+},
+{
+  "model": "main.evaluationtype",
+  "pk": 20,
+  "fields": {
+    "assignment": 10,
+    "name": "Практична",
+    "weight_percent": "70.00"
+  }
+},
+{
+  "model": "main.evaluationtype",
+  "pk": 21,
+  "fields": {
+    "assignment": 11,
+    "name": "Лекція",
+    "weight_percent": "30.00"
+  }
+},
+{
+  "model": "main.evaluationtype",
+  "pk": 22,
+  "fields": {
+    "assignment": 11,
+    "name": "Практична",
+    "weight_percent": "70.00"
+  }
+},
+{
+  "model": "main.evaluationtype",
+  "pk": 23,
+  "fields": {
+    "assignment": 12,
+    "name": "Лекція",
+    "weight_percent": "30.00"
+  }
+},
+{
+  "model": "main.evaluationtype",
+  "pk": 24,
+  "fields": {
+    "assignment": 12,
+    "name": "Практична",
+    "weight_percent": "70.00"
+  }
+},
+{
+  "model": "main.evaluationtype",
+  "pk": 25,
+  "fields": {
+    "assignment": 13,
+    "name": "Лекція",
+    "weight_percent": "30.00"
+  }
+},
+{
+  "model": "main.evaluationtype",
+  "pk": 26,
+  "fields": {
+    "assignment": 13,
+    "name": "Практична",
+    "weight_percent": "70.00"
+  }
+},
+{
+  "model": "main.evaluationtype",
+  "pk": 27,
+  "fields": {
+    "assignment": 14,
+    "name": "Лекція",
+    "weight_percent": "30.00"
+  }
+},
+{
+  "model": "main.evaluationtype",
+  "pk": 28,
+  "fields": {
+    "assignment": 14,
+    "name": "Практична",
+    "weight_percent": "70.00"
+  }
+},
+{
+  "model": "main.evaluationtype",
+  "pk": 29,
+  "fields": {
+    "assignment": 15,
+    "name": "Лекція",
+    "weight_percent": "30.00"
+  }
+},
+{
+  "model": "main.evaluationtype",
+  "pk": 30,
+  "fields": {
+    "assignment": 15,
+    "name": "Практична",
+    "weight_percent": "70.00"
+  }
+},
+{
+  "model": "main.evaluationtype",
+  "pk": 31,
+  "fields": {
+    "assignment": 16,
+    "name": "Лекція",
+    "weight_percent": "30.00"
+  }
+},
+{
+  "model": "main.evaluationtype",
+  "pk": 32,
+  "fields": {
+    "assignment": 16,
+    "name": "Практична",
+    "weight_percent": "70.00"
+  }
+},
+{
+  "model": "main.scheduletemplate",
+  "pk": 3,
+  "fields": {
+    "group": 4,
+    "subject": 8,
+    "teacher": 17,
+    "day_of_week": 1,
+    "lesson_number": 1,
+    "start_time": "08:30:00",
+    "duration_minutes": 90,
+    "classroom": null,
+    "valid_from": "2026-02-01",
+    "valid_to": null
+  }
+},
+{
+  "model": "main.scheduletemplate",
+  "pk": 5,
+  "fields": {
+    "group": 5,
+    "subject": 8,
+    "teacher": 19,
+    "day_of_week": 2,
+    "lesson_number": 1,
+    "start_time": "08:30:00",
+    "duration_minutes": 80,
+    "classroom": null,
+    "valid_from": "2026-02-04",
+    "valid_to": null
+  }
+},
+{
+  "model": "main.scheduletemplate",
+  "pk": 6,
+  "fields": {
+    "group": 5,
+    "subject": 9,
+    "teacher": 18,
+    "day_of_week": 2,
+    "lesson_number": 2,
+    "start_time": "12:30:00",
+    "duration_minutes": 90,
+    "classroom": null,
+    "valid_from": "2026-02-04",
+    "valid_to": null
+  }
+},
+{
+  "model": "main.lesson",
+  "pk": 2,
+  "fields": {
+    "group": 4,
+    "subject": 8,
+    "teacher": 17,
+    "date": "2026-01-19",
+    "start_time": "08:30:00",
+    "end_time": "10:00:00",
+    "topic": "Тема від 2026-01-19",
+    "classroom": null,
+    "max_points": 5,
+    "evaluation_type": 17,
+    "template_source": 3
+  }
+},
+{
+  "model": "main.lesson",
+  "pk": 3,
+  "fields": {
+    "group": 5,
+    "subject": 9,
+    "teacher": 17,
+    "date": "2026-01-20",
+    "start_time": "10:05:00",
+    "end_time": "11:35:00",
+    "topic": "Тема від 2026-01-20",
+    "classroom": null,
+    "max_points": 5,
+    "evaluation_type": 19,
+    "template_source": null
+  }
+},
+{
+  "model": "main.lesson",
+  "pk": 4,
+  "fields": {
+    "group": 4,
+    "subject": 8,
+    "teacher": 17,
+    "date": "2026-01-26",
+    "start_time": "08:30:00",
+    "end_time": "10:00:00",
+    "topic": "Тема від 2026-01-26",
+    "classroom": null,
+    "max_points": 5,
+    "evaluation_type": 17,
+    "template_source": 3
+  }
+},
+{
+  "model": "main.lesson",
+  "pk": 5,
+  "fields": {
+    "group": 5,
+    "subject": 9,
+    "teacher": 17,
+    "date": "2026-01-27",
+    "start_time": "10:05:00",
+    "end_time": "11:35:00",
+    "topic": "Тема від 2026-01-27",
+    "classroom": null,
+    "max_points": 5,
+    "evaluation_type": 19,
+    "template_source": null
+  }
+},
+{
+  "model": "main.lesson",
+  "pk": 6,
+  "fields": {
+    "group": 4,
+    "subject": 8,
+    "teacher": 17,
+    "date": "2026-02-02",
+    "start_time": "08:30:00",
+    "end_time": "10:00:00",
+    "topic": "Тема від 2026-02-02",
+    "classroom": null,
+    "max_points": 5,
+    "evaluation_type": 17,
+    "template_source": 3
+  }
+},
+{
+  "model": "main.absencereason",
+  "pk": 4,
+  "fields": {
+    "code": "Н",
+    "description": "Неявка",
+    "is_respectful": false
+  }
+},
+{
+  "model": "main.absencereason",
+  "pk": 5,
+  "fields": {
+    "code": "Хв",
+    "description": "Хвороба",
+    "is_respectful": true
+  }
+},
+{
+  "model": "main.absencereason",
+  "pk": 6,
+  "fields": {
+    "code": "ПП",
+    "description": "Поважна причина",
+    "is_respectful": true
+  }
+},
+{
+  "model": "main.studentperformance",
+  "pk": 1,
+  "fields": {
+    "lesson": 2,
+    "student": 22,
+    "earned_points": null,
+    "absence": null,
+    "comment": "",
+    "updated_at": "2026-02-02T17:41:56.811Z"
+  }
+},
+{
+  "model": "main.studentperformance",
+  "pk": 2,
+  "fields": {
+    "lesson": 2,
+    "student": 24,
+    "earned_points": null,
+    "absence": null,
+    "comment": "",
+    "updated_at": "2026-02-02T17:41:56.818Z"
+  }
+},
+{
+  "model": "main.studentperformance",
+  "pk": 3,
+  "fields": {
+    "lesson": 2,
+    "student": 26,
+    "earned_points": null,
+    "absence": null,
+    "comment": "",
+    "updated_at": "2026-02-02T17:41:56.826Z"
+  }
+},
+{
+  "model": "main.studentperformance",
+  "pk": 4,
+  "fields": {
+    "lesson": 2,
+    "student": 28,
+    "earned_points": null,
+    "absence": null,
+    "comment": "",
+    "updated_at": "2026-02-02T17:41:56.834Z"
+  }
+},
+{
+  "model": "main.studentperformance",
+  "pk": 5,
+  "fields": {
+    "lesson": 3,
+    "student": 25,
+    "earned_points": null,
+    "absence": null,
+    "comment": "",
+    "updated_at": "2026-02-02T17:41:56.869Z"
+  }
+},
+{
+  "model": "main.studentperformance",
+  "pk": 6,
+  "fields": {
+    "lesson": 3,
+    "student": 27,
+    "earned_points": null,
+    "absence": null,
+    "comment": "",
+    "updated_at": "2026-02-02T17:41:56.877Z"
+  }
+},
+{
+  "model": "main.studentperformance",
+  "pk": 7,
+  "fields": {
+    "lesson": 3,
+    "student": 29,
+    "earned_points": null,
+    "absence": null,
+    "comment": "",
+    "updated_at": "2026-02-02T17:41:56.883Z"
+  }
+},
+{
+  "model": "main.studentperformance",
+  "pk": 8,
+  "fields": {
+    "lesson": 4,
+    "student": 22,
+    "earned_points": null,
+    "absence": null,
+    "comment": "",
+    "updated_at": "2026-02-02T17:41:56.927Z"
+  }
+},
+{
+  "model": "main.studentperformance",
+  "pk": 9,
+  "fields": {
+    "lesson": 4,
+    "student": 24,
+    "earned_points": null,
+    "absence": null,
+    "comment": "",
+    "updated_at": "2026-02-02T17:41:56.934Z"
+  }
+},
+{
+  "model": "main.studentperformance",
+  "pk": 10,
+  "fields": {
+    "lesson": 4,
+    "student": 26,
+    "earned_points": null,
+    "absence": null,
+    "comment": "",
+    "updated_at": "2026-02-02T17:41:56.940Z"
+  }
+},
+{
+  "model": "main.studentperformance",
+  "pk": 11,
+  "fields": {
+    "lesson": 4,
+    "student": 28,
+    "earned_points": null,
+    "absence": 4,
+    "comment": "",
+    "updated_at": "2026-02-02T17:41:56.951Z"
+  }
+},
+{
+  "model": "main.studentperformance",
+  "pk": 12,
+  "fields": {
+    "lesson": 4,
+    "student": 30,
+    "earned_points": null,
+    "absence": null,
+    "comment": "",
+    "updated_at": "2026-02-02T17:41:56.958Z"
+  }
+},
+{
+  "model": "main.studentperformance",
+  "pk": 13,
+  "fields": {
+    "lesson": 5,
+    "student": 23,
+    "earned_points": null,
+    "absence": null,
+    "comment": "",
+    "updated_at": "2026-02-02T17:41:56.990Z"
+  }
+},
+{
+  "model": "main.studentperformance",
+  "pk": 14,
+  "fields": {
+    "lesson": 5,
+    "student": 25,
+    "earned_points": null,
+    "absence": null,
+    "comment": "",
+    "updated_at": "2026-02-02T17:41:56.997Z"
+  }
+},
+{
+  "model": "main.studentperformance",
+  "pk": 15,
+  "fields": {
+    "lesson": 5,
+    "student": 27,
+    "earned_points": null,
+    "absence": null,
+    "comment": "",
+    "updated_at": "2026-02-02T17:41:57.004Z"
+  }
+},
+{
+  "model": "main.studentperformance",
+  "pk": 16,
+  "fields": {
+    "lesson": 5,
+    "student": 29,
+    "earned_points": null,
+    "absence": null,
+    "comment": "",
+    "updated_at": "2026-02-02T17:41:57.011Z"
+  }
+},
+{
+  "model": "main.studentperformance",
+  "pk": 17,
+  "fields": {
+    "lesson": 5,
+    "student": 31,
+    "earned_points": null,
+    "absence": null,
+    "comment": "",
+    "updated_at": "2026-02-02T17:41:57.017Z"
+  }
+},
+{
+  "model": "main.studentperformance",
+  "pk": 18,
+  "fields": {
+    "lesson": 6,
+    "student": 22,
+    "earned_points": null,
+    "absence": null,
+    "comment": "",
+    "updated_at": "2026-02-02T17:41:57.063Z"
+  }
+},
+{
+  "model": "main.studentperformance",
+  "pk": 19,
+  "fields": {
+    "lesson": 6,
+    "student": 24,
+    "earned_points": null,
+    "absence": null,
+    "comment": "",
+    "updated_at": "2026-02-02T17:41:57.070Z"
+  }
+},
+{
+  "model": "main.studentperformance",
+  "pk": 20,
+  "fields": {
+    "lesson": 6,
+    "student": 26,
+    "earned_points": null,
+    "absence": null,
+    "comment": "",
+    "updated_at": "2026-02-02T17:41:57.076Z"
+  }
+},
+{
+  "model": "main.studentperformance",
+  "pk": 21,
+  "fields": {
+    "lesson": 6,
+    "student": 28,
+    "earned_points": null,
+    "absence": null,
+    "comment": "",
+    "updated_at": "2026-02-02T17:41:57.082Z"
+  }
+}
+]

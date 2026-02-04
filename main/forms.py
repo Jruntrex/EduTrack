@@ -2,6 +2,7 @@
 
 from django import forms
 from django.forms import ModelForm
+from typing import Any, Dict, Optional, List
 from .models import User, StudyGroup, Subject, TeachingAssignment, EvaluationType, Lesson, Classroom
 from django.core.exceptions import ValidationError
 
@@ -34,7 +35,7 @@ class UserAdminForm(forms.ModelForm):
         model = User
         fields = ['full_name', 'email', 'role', 'password', 'group']
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
         # Якщо редагуємо користувача (instance), то завантажуємо його предмети
         if self.instance.pk:
@@ -52,7 +53,7 @@ class UserAdminForm(forms.ModelForm):
             self.fields['password'].required = True
             self.fields['confirm_password'].required = True
 
-    def clean(self):
+    def clean(self) -> Dict[str, Any]:
         cleaned_data = super().clean()
         password = cleaned_data.get("password")
         confirm_password = cleaned_data.get("confirm_password")
@@ -62,7 +63,7 @@ class UserAdminForm(forms.ModelForm):
                 raise ValidationError("Паролі не співпадають")
         return cleaned_data
 
-    def save(self, commit=True):
+    def save(self, commit: bool = True) -> User:
         user = super().save(commit=False)
 
         # Хешування нового пароля, якщо він був наданий
@@ -149,3 +150,34 @@ class ClassroomForm(ModelForm):
             'building': forms.TextInput(attrs={'placeholder': 'Корпус'}),
             'capacity': forms.NumberInput(attrs={'placeholder': 'Місткість'}),
         }
+
+
+# ==========================================
+# API VALIDATION FORMS
+# ==========================================
+
+class JournalEntryForm(forms.Form):
+    """Валідація одного запису журналу."""
+    student_pk = forms.IntegerField(label="ID студента")
+    date = forms.DateField(input_formats=['%Y-%m-%d'], label="Дата")
+    lesson_num = forms.IntegerField(min_value=1, max_value=8, label="Номер пари")
+    subject_id = forms.IntegerField(label="ID предмету")
+    value = forms.CharField(required=False, label="Значення")
+
+    def clean_value(self) -> Optional[str]:
+        val = self.cleaned_data.get('value')
+        if val in [None, '', '—']:
+            return None
+        return val
+
+
+class ScheduleSlotForm(forms.Form):
+    """Валідація слоту розкладу (API)."""
+    group_id = forms.IntegerField()
+    day = forms.IntegerField(min_value=1, max_value=7)
+    lesson_number = forms.IntegerField(min_value=1, max_value=8)
+    subject_id = forms.IntegerField(required=False)  # Може бути None для видалення
+    teacher_id = forms.IntegerField(required=False)
+    classroom_id = forms.IntegerField(required=False)
+    start_time = forms.TimeField(input_formats=['%H:%M'])
+    duration = forms.IntegerField(min_value=1, initial=80)

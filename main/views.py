@@ -2,6 +2,8 @@ import csv
 import json
 from collections import defaultdict
 from datetime import date, datetime, timedelta
+from typing import List, Dict, Any, Optional, Union, Callable, Tuple
+from django.http import HttpRequest, HttpResponse, JsonResponse
 
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
@@ -36,7 +38,7 @@ from datetime import time
 # UTILITY & DECORATORS
 # =========================
 
-def role_required(allowed_roles):
+def role_required(allowed_roles: Union[str, List[str]]) -> Callable:
     """
     Декоратор для перевірки ролі через стандартний request.user.
     allowed_roles може бути строкою ('admin') або списком (['admin', 'teacher']).
@@ -44,8 +46,8 @@ def role_required(allowed_roles):
     if isinstance(allowed_roles, str):
         allowed_roles = [allowed_roles]
 
-    def decorator(view_func):
-        def wrapper(request, *args, **kwargs):
+    def decorator(view_func: Callable) -> Callable:
+        def wrapper(request: HttpRequest, *args: Any, **kwargs: Any) -> Union[HttpResponse, JsonResponse]:
             # 1. Перевірка авторизації Django
             if not request.user.is_authenticated:
                 return redirect('login')
@@ -92,7 +94,7 @@ def generate_csv_response(filename, header, rows):
 # 1. АУТЕНТИФІКАЦІЯ
 # =========================
 
-def login_view(request):
+def login_view(request: HttpRequest) -> HttpResponse:
     """Сторінка входу."""
     if request.user.is_authenticated:
         role = request.user.role
@@ -132,7 +134,7 @@ def login_process(request):
         return redirect('login')
 
 
-def logout_view(request):
+def logout_view(request: HttpRequest) -> HttpResponse:
     """Вихід із системи."""
     logout(request)
     return redirect('login')
@@ -142,7 +144,7 @@ def logout_view(request):
 # =========================
 
 @role_required('admin')
-def admin_panel_view(request):
+def admin_panel_view(request: HttpRequest) -> HttpResponse:
     context = {
         'total_users': User.objects.count(),
         'student_count': User.objects.filter(role='student').count(),
@@ -155,7 +157,7 @@ def admin_panel_view(request):
 
 # --- USERS ---
 @role_required('admin')
-def users_list_view(request):
+def users_list_view(request: HttpRequest) -> HttpResponse:
     if request.method == 'POST':
         form = UserAdminForm(request.POST)
         if form.is_valid():
@@ -219,7 +221,7 @@ def users_list_view(request):
     )
 
 @role_required('admin')
-def user_edit_view(request, pk):
+def user_edit_view(request: HttpRequest, pk: int) -> HttpResponse:
     user = get_object_or_404(User, pk=pk)
     if request.method == 'POST':
         form = UserAdminForm(request.POST, instance=user)
@@ -508,7 +510,7 @@ def set_weekly_schedule_view(request):
 
 @require_POST
 @role_required('admin')
-def save_schedule_changes(request):
+def save_schedule_changes(request: HttpRequest) -> JsonResponse:
     """API endpoint для збереження розкладу."""
     try:
         data = json.loads(request.body)
@@ -562,6 +564,7 @@ def save_schedule_changes(request):
                                 group=group,
                                 subject_id=subject_id,
                                 teacher_id=teacher_id or assignment.teacher_id,
+                                teaching_assignment=assignment, # <-- НОВЕ ПОЛЕ
                                 day_of_week=day,
                                 start_time=start_time_str,
                                 classroom=classroom,
@@ -587,7 +590,7 @@ def save_schedule_changes(request):
         }, status=500)
 
 @role_required('admin')
-def schedule_editor_view(request):
+def schedule_editor_view(request: HttpRequest) -> HttpResponse:
     """Новий редактор розкладу (List View) з 8 слотами."""
     group_id = request.GET.get('group_id')
     groups = StudyGroup.objects.all().order_by('name')
@@ -646,23 +649,31 @@ def schedule_editor_view(request):
 
 @require_POST
 @role_required('admin')
-def api_save_schedule_slot(request):
+def api_save_schedule_slot(request: HttpRequest) -> JsonResponse:
     """API для збереження окремого слоту в ScheduleTemplate."""
     try:
+        # Імпорт сервісу та форми
+        from main.services.schedule_service import validate_schedule_slot
+        from main.forms import ScheduleSlotForm
+        
         data = json.loads(request.body)
-        group_id = data.get('group_id')
-        day = int(data.get('day'))
-        lesson_num = int(data.get('lesson_number'))
         
-        subject_id = data.get('subject_id')
-        teacher_id = data.get('teacher_id')
-        classroom_id = data.get('classroom_id')
-        start_time_str = data.get('start_time')
-        duration = int(data.get('duration', 80))
-        
-        if not all([group_id, day, lesson_num]):
-            return JsonResponse({'status': 'error', 'message': 'Недостатньо даних'}, status=400)
+        # Валідація вхідних даних через форму
+        form = ScheduleSlotForm(data)
+        if not form.is_valid():
+            return JsonResponse({'status': 'error', 'message': f"Помилка даних: {form.errors.as_text()}"}, status=400)
             
+        cd = form.cleaned_data
+        group_id = cd['group_id']
+        day = cd['day']
+        lesson_num = cd['lesson_number']
+        
+        subject_id = cd.get('subject_id')
+        teacher_id = cd.get('teacher_id')
+        classroom_id = cd.get('classroom_id')
+        start_time = cd['start_time']
+        duration = cd['duration']
+        
         group = get_object_or_404(StudyGroup, id=group_id)
         
         # Видалення якщо вибрано "пусто" (subject_id=None)
@@ -670,69 +681,55 @@ def api_save_schedule_slot(request):
             ScheduleTemplate.objects.filter(group=group, day_of_week=day, lesson_number=lesson_num).delete()
             return JsonResponse({'status': 'success', 'message': 'Слот очищено'})
 
-        # Конвертація часу
-        try:
-            h, m = map(int, start_time_str.split(':'))
-            start_time = time(h, m)
-        except:
-            return JsonResponse({'status': 'error', 'message': 'Невірний формат часу'}, status=400)
+        # (Конвертація часу вже зроблена формою)
 
-        # Розрахунок кінця пари (спрощено, без переходу через добу)
-        start_dt = datetime.combine(date.today(), start_time)
-        end_dt = start_dt + timedelta(minutes=duration)
-        end_time = end_dt.time()
+        # Отримання об'єктів
+        subject = get_object_or_404(Subject, id=subject_id)
+        teacher = User.objects.get(id=teacher_id) if teacher_id else None
+        classroom = Classroom.objects.get(id=classroom_id) if classroom_id else None
         
-        # VALIDATION: Overlap within the SAME group
-        # Перевірка з попередньою(lesson_num-1) та наступною(lesson_num+1) парою
-        conflicts = ScheduleTemplate.objects.filter(group=group, day_of_week=day).exclude(lesson_number=lesson_num)
-        for c in conflicts:
-            c_start = datetime.combine(date.today(), c.start_time)
-            c_end = c_start + timedelta(minutes=c.duration_minutes)
-            
-            # Перетин інтервалів: max(start) < min(end)
-            if max(start_dt, c_start) < min(end_dt, c_end):
-                return JsonResponse({
-                    'status': 'error', 
-                    'message': f'Конфлікт: Пара №{c.lesson_number} ({c.start_time.strftime("%H:%M")}) перетинається з цим часом.'
-                }, status=400)
+        # Знайти існуючий слот (для виключення при валідації)
+        existing_slot = ScheduleTemplate.objects.filter(
+            group=group, 
+            day_of_week=day, 
+            lesson_number=lesson_num
+        ).first()
+        exclude_id = existing_slot.id if existing_slot else None
         
-        # VALIDATION: Teacher busy
-        if teacher_id:
-            teacher_conflicts = ScheduleTemplate.objects.filter(
-                teacher_id=teacher_id, 
-                day_of_week=day
-            ).exclude(group=group, lesson_number=lesson_num)
-            for tc in teacher_conflicts:
-                tc_start = datetime.combine(date.today(), tc.start_time)
-                tc_end = tc_start + timedelta(minutes=tc.duration_minutes)
-                if max(start_dt, tc_start) < min(end_dt, tc_end):
-                    return JsonResponse({
-                        'status': 'error', 
-                        'message': f'Викладач уже зайнятий у групі {tc.group.name} о {tc.start_time.strftime("%H:%M")}'
-                    }, status=400)
+        # VALIDATION через сервіс (замість 60+ рядків коду!)
+        is_valid, error_message = validate_schedule_slot(
+            group=group,
+            day=day,
+            lesson_number=lesson_num,
+            start_time=start_time,
+            duration=duration,
+            subject=subject,
+            teacher=teacher,
+            classroom=classroom,
+            exclude_slot_id=exclude_id
+        )
+        
+        if not is_valid:
+            return JsonResponse({'status': 'error', 'message': error_message}, status=400)
 
-        # VALIDATION: Classroom busy
-        if classroom_id:
-            room_conflicts = ScheduleTemplate.objects.filter(
-                classroom_id=classroom_id, 
-                day_of_week=day
-            ).exclude(group=group, lesson_number=lesson_num)
-            for rc in room_conflicts:
-                rc_start = datetime.combine(date.today(), rc.start_time)
-                rc_end = rc_start + timedelta(minutes=rc.duration_minutes)
-                if max(start_dt, rc_start) < min(end_dt, rc_end):
-                    return JsonResponse({
-                        'status': 'error', 
-                        'message': f'Аудиторія зайнята групою {rc.group.name} о {rc.start_time.strftime("%H:%M")}'
-                    }, status=400)
+        # 1. Знаходимо або створюємо TeachingAssignment (SSOT)
+        # У майбутньому це буде обов'язковим, зараз - забезпечуємо міграцію нових даних
+        assignment = None
+        if teacher:
+            assignment, _ = TeachingAssignment.objects.get_or_create(
+                subject=subject,
+                teacher=teacher,
+                group=group
+            )
 
         # SAVE
         template, created = ScheduleTemplate.objects.update_or_create(
             group=group, day_of_week=day, lesson_number=lesson_num,
             defaults={
-                'subject_id': subject_id,
-                'teacher_id': teacher_id,
-                'classroom_id': classroom_id,
+                'subject': subject,
+                'teacher': teacher,
+                'teaching_assignment': assignment, # <-- НОВЕ ПОЛЕ
+                'classroom': classroom,
                 'start_time': start_time,
                 'duration_minutes': duration,
             }
@@ -811,7 +808,7 @@ def schedule_view(request):
 # =========================
 
 @role_required('teacher')
-def teacher_journal_view(request):
+def teacher_journal_view(request: HttpRequest) -> HttpResponse:
     # Отримуємо ID з request.user
     teacher_id = request.user.id
     
@@ -1013,10 +1010,14 @@ def teacher_journal_view(request):
 
 @role_required('teacher')
 @require_POST
-def save_journal_entries(request):
+def save_journal_entries(request: HttpRequest) -> JsonResponse:
+    """Збереження змін у журналі викладача."""
+    from main.constants import DEFAULT_LESSON_TIMES, AbsenceCode
+    from main.forms import JournalEntryForm
+    
     try:
         data = json.loads(request.body)
-        teacher_id = request.user.id  # Використовуємо request.user.id
+        teacher_id = request.user.id
         
         changes = data.get('changes', [])
         
@@ -1025,14 +1026,18 @@ def save_journal_entries(request):
 
         with transaction.atomic():
             for change in changes:
-                student_pk = change.get('student_pk')
-                lesson_date = change.get('date')
-                lesson_num = change.get('lesson_num')
-                value = change.get('value')
-                subject_id = change.get('subject_id')
-                
-                if not (student_pk and lesson_date and lesson_num and subject_id):
+                # Валідація через форму
+                form = JournalEntryForm(change)
+                if not form.is_valid():
+                    # Можна логувати помилки валідації form.errors
                     continue
+                
+                cd = form.cleaned_data
+                student_pk = cd['student_pk']
+                lesson_date = cd['date']
+                lesson_num = cd['lesson_num']
+                value = cd['value']
+                subject_id = cd['subject_id']
                 
                 try:
                     student = User.objects.get(pk=student_pk)
@@ -1052,10 +1057,8 @@ def save_journal_entries(request):
                         weight_percent=0
                     )
                 
-                # Створюємо урок в новій системі
-                # Припускаємо стандартний час для старого журналу
-                times = {1: "08:30", 2: "10:05", 3: "11:40", 4: "13:15", 5: "14:50", 6: "16:25"}
-                start_time = times.get(int(lesson_num), "08:30")
+                # Використовуємо константи для часу уроків
+                start_time = DEFAULT_LESSON_TIMES.get(int(lesson_num), "08:30")
                 
                 lesson_session, created = Lesson.objects.get_or_create(
                     group=student.group,
@@ -1072,6 +1075,7 @@ def save_journal_entries(request):
                 grade_value = None
                 absence_obj = None
                 
+                # Видалення запису якщо значення пусте
                 if value == '—' or value is None:
                     StudentPerformance.objects.filter(
                         lesson=lesson_session,
@@ -1079,13 +1083,15 @@ def save_journal_entries(request):
                     ).delete()
                     continue
                 
+                # Парсинг значення
                 try:
                     val_int = int(value)
                     if val_int > 0:
+                        # Позитивне значення = оцінка
                         grade_value = val_int
                     else:
-                        code_map = {-1: 'Н', -2: 'ДЛ', -3: 'ПП'}
-                        code_str = code_map.get(val_int, 'Н')
+                        # Негативне значення = код пропуску
+                        code_str = AbsenceCode.get_value_code(val_int)
                         absence_obj = AbsenceReason.objects.filter(code=code_str).first()
                         if not absence_obj:
                             absence_obj = AbsenceReason.objects.first()
@@ -1096,7 +1102,7 @@ def save_journal_entries(request):
                     lesson=lesson_session,
                     student_id=student_pk,
                     defaults={
-                        'grade': grade_value,
+                        'earned_points': grade_value,
                         'absence': absence_obj
                     }
                 )
@@ -1113,49 +1119,30 @@ def save_journal_entries(request):
 # =========================
 
 @role_required('student')
-def student_grades_view(request):
-    # Отримуємо студента з request.user
+def student_grades_view(request: HttpRequest) -> HttpResponse:
+    """Сторінка оцінок студента."""
+    from main.selectors import get_student_performance_data, get_subjects_for_group
+    
     student = request.user
     
-    date_from = request.GET.get('date_from')
-    date_to = request.GET.get('date_to')
-    subject_id = request.GET.get('subject')
-    min_grade = request.GET.get('min_grade')
-    max_grade = request.GET.get('max_grade')
-    search_query = request.GET.get('search')
-
-    grades = StudentPerformance.objects.filter(
-        student=student, 
-        grade__isnull=False
-    ).select_related(
-        'lesson', 
-        'lesson__subject', 
-        'lesson__teacher',
-        'lesson__evaluation_type'
-    ).order_by('-lesson__date')
-
-    if date_from:
-        grades = grades.filter(lesson__date__gte=date_from)
-    if date_to:
-        grades = grades.filter(lesson__date__lte=date_to)
+    # Збираємо фільтри з request.GET
+    filters = {
+        'date_from': request.GET.get('date_from'),
+        'date_to': request.GET.get('date_to'),
+        'subject_id': request.GET.get('subject'),
+        'min_grade': request.GET.get('min_grade'),
+        'max_grade': request.GET.get('max_grade'),
+        'search_query': request.GET.get('search'),
+    }
     
-    if subject_id:
-        grades = grades.filter(lesson__subject_id=subject_id)
-        
-    if min_grade:
-        grades = grades.filter(grade__gte=min_grade)
-    if max_grade:
-        grades = grades.filter(grade__lte=max_grade)
-
-    if search_query:
-        grades = grades.filter(
-            Q(comment__icontains=search_query) | 
-            Q(lesson__topic__icontains=search_query)
-        )
-
-    student_subjects = Subject.objects.filter(
-        teachingassignment__group=student.group
-    ).distinct()
+    # Видаляємо None значення
+    filters = {k: v for k, v in filters.items() if v}
+    
+    # Використовуємо селектор для отримання оцінок
+    grades = get_student_performance_data(student, filters)
+    
+    # Отримуємо предмети групи
+    student_subjects = get_subjects_for_group(student.group)
 
     return render(request, 'student_grades.html', {
         'grades': grades,
@@ -1164,7 +1151,7 @@ def student_grades_view(request):
     })
 
 @role_required('student')
-def student_attendance_view(request):
+def student_attendance_view(request: HttpRequest) -> HttpResponse:
     student = request.user
     
     search_query = request.GET.get('search', '')
@@ -1652,18 +1639,20 @@ def timeline_schedule_view(request):
     days_data = []
     days_names = {1: 'Понеділок', 2: 'Вівторок', 3: 'Середа', 4: 'Четвер', 5: 'П\'ятниця'}
     
-    now = datetime.now()
-    current_time_minutes = now.hour * 60 + now.minute
-    current_day = now.weekday() + 1
+    # TIMEZONE FIX
+    from django.utils import timezone
+    now_aware = timezone.localtime(timezone.now())
+    current_time_minutes = now_aware.hour * 60 + now_aware.minute
+    current_day = now_aware.weekday() + 1 # 1=Monday
 
     if group:
         # Беремо шаблони розкладу
         templates = ScheduleTemplate.objects.filter(
             group=group
-        ).select_related('subject', 'teacher')
+        ).select_related('subject', 'teacher', 'teaching_assignment')
 
         # Дні тижня для таймлайну
-        today_date = date.today()
+        today_date = now_aware.date()
         start_week = today_date - timedelta(days=today_date.weekday())
 
         for day_num, day_name in days_names.items():
