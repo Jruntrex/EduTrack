@@ -16,8 +16,12 @@ urlpatterns = [
     # =========================
     path('admin/', views.admin_panel_view, name='admin_panel'),
     path('users/', views.users_list_view, name='users_list'),
+    path('schedule/', views.schedule_view, name='schedule_view'),
+    path('schedule/timeline/', views.timeline_schedule_view, name='timeline_schedule'),
     path('schedule/set/', views.set_weekly_schedule_view, name='set_weekly_schedule'),
     path('schedule/save/', views.save_schedule_changes, name='save_schedule'),
+    path('schedule/editor/', views.schedule_editor_view, name='schedule_editor'),
+    path('api/schedule/slot/save/', views.api_save_schedule_slot, name='api_save_schedule_slot'),
     # Управління Користувачами (CRUD)
     path('users/edit/<int:pk>/', views.user_edit_view, name='user_edit'),
     path('users/delete/<int:pk>/', views.user_delete_view, name='user_delete'),
@@ -29,6 +33,10 @@ urlpatterns = [
     path('subjects/', views.subjects_list_view, name='subjects_list'),
     path('subjects/add/', views.subject_add_view, name='subject_add'),
     path('subjects/delete/<int:pk>/', views.subject_delete_view, name='subject_delete'),
+    # Управління Аудиторіями (CRUD)
+    path('classrooms/', views.classrooms_list_view, name='classrooms_list'),
+    path('classrooms/add/', views.classroom_add_view, name='classroom_add'),
+    path('classrooms/delete/<int:pk>/', views.classroom_delete_view, name='classroom_delete'),
     # =========================
     # 3. ЗВІТИ (CSV)
     # =========================

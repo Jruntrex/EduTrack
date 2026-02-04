@@ -1,0 +1,124 @@
+{% extends "base.html" %}
+
+{% block title %}Управління Аудиторіями{% endblock %}
+
+{% block header_title %}Управління Аудиторіями{% endblock %}
+
+{% block content %}
+<div class="glass-panel rounded-3xl p-8 mb-8" role="region" aria-label="Панель управління аудиторіями">
+
+    <div class="flex justify-between items-center mb-8">
+        <h3 class="text-2xl font-bold text-dark">Список аудиторій</h3>
+        <button onclick="toggleForm()"
+            class="btn bg-primary text-white shadow-button hover:bg-blue-600 hover:shadow-button-hover flex items-center gap-2 animate-fade-in">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </svg>
+            Додати аудиторію
+        </button>
+    </div>
+
+    <!-- Фільтр пошуку -->
+    <div class="glass-panel shadow-sm rounded-3xl p-6 mb-8 bg-white/80 border border-gray-100">
+        <form method="GET" action="{% url 'classrooms_list' %}"
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
+            <div class="flex flex-col gap-1 lg:col-span-2">
+                <label class="text-xs font-bold text-gray-500 uppercase">Пошук аудиторії</label>
+                <input type="text" name="search" value="{{ request.GET.search }}"
+                    placeholder="Введіть назву або корпус..."
+                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm">
+            </div>
+            <div class="flex justify-end gap-3">
+                <a href="{% url 'classrooms_list' %}"
+                    class="px-6 py-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition">
+                    Скинути
+                </a>
+                <button type="submit"
+                    class="px-8 py-2 rounded-lg bg-primary text-white hover:bg-blue-700 shadow-md transition font-medium">
+                    Знайти
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <div id="addForm" class="hidden glass-panel bg-white/50 rounded-2xl p-6 mb-8 animate-slide-down" aria-hidden="true">
+        <h4 class="text-xl font-bold text-dark mb-6">Додати нову аудиторію</h4>
+        <form method="POST" action="{% url 'classroom_add' %}"
+            class="grid grid-cols-1 md:grid-cols-3 gap-4 pb-4 border-b border-gray-100">
+            {% csrf_token %}
+            <div class="space-y-1">
+                <label for="{{ form.name.id_for_label }}"
+                    class="block text-sm font-medium text-dark mb-1">Назва/Номер</label>
+                <input type="text" name="{{ form.name.name }}" id="{{ form.name.id_for_label }}" required
+                    class="w-full px-4 py-2 border border-tableBorder rounded-xl text-dark bg-white focus:outline-none focus:border-primary transition-all">
+            </div>
+            <div class="space-y-1">
+                <label for="{{ form.building.id_for_label }}"
+                    class="block text-sm font-medium text-dark mb-1">Корпус</label>
+                <input type="text" name="{{ form.building.name }}" id="{{ form.building.id_for_label }}"
+                    class="w-full px-4 py-2 border border-tableBorder rounded-xl text-dark bg-white focus:outline-none focus:border-primary transition-all">
+            </div>
+            <div class="space-y-1">
+                <label for="{{ form.capacity.id_for_label }}"
+                    class="block text-sm font-medium text-dark mb-1">Місткість</label>
+                <input type="number" name="{{ form.capacity.name }}" id="{{ form.capacity.id_for_label }}"
+                    class="w-full px-4 py-2 border border-tableBorder rounded-xl text-dark bg-white focus:outline-none focus:border-primary transition-all">
+            </div>
+            <div class="md:col-span-3 flex justify-end gap-3 mt-2">
+                <button type="button" onclick="toggleForm()"
+                    class="btn bg-gray-100 text-gray-700 hover:bg-gray-200 py-2 px-6 rounded-xl transition font-semibold">Скасувати</button>
+                <button type="submit"
+                    class="btn bg-accent text-white shadow-button hover:bg-green-600 hover:shadow-button-hover py-2 px-6 rounded-xl transition font-semibold">Додати</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="overflow-x-auto rounded-xl border border-tableBorder bg-white shadow-sm mt-8">
+        <table class="w-full border-collapse">
+            <thead>
+                <tr>
+                    <th class="bg-primary text-white p-4 text-left text-xs font-bold uppercase tracking-wider">Назва
+                    </th>
+                    <th class="bg-primary text-white p-4 text-left text-xs font-bold uppercase tracking-wider">Корпус
+                    </th>
+                    <th class="bg-primary text-white p-4 text-center text-xs font-bold uppercase tracking-wider">
+                        Місткість</th>
+                    <th class="bg-primary text-white p-4 text-center text-xs font-bold uppercase tracking-wider w-32">
+                        Дії</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-tableBorder text-bodyText">
+                {% for room in classrooms %}
+                <tr class="hover:bg-primary/5 transition-colors duration-200">
+                    <td class="p-4 font-medium text-dark">{{ room.name }}</td>
+                    <td class="p-4 text-dark">{{ room.building|default:"—" }}</td>
+                    <td class="p-4 text-center text-dark">{{ room.capacity|default:"—" }}</td>
+                    <td class="p-4 text-center">
+                        <form method="POST" action="{% url 'classroom_delete' pk=room.pk %}" style="display:inline;"
+                            onsubmit="return confirm('Ви справді хочете видалити аудиторію {{ room.name|escapejs }}?');">
+                            {% csrf_token %}
+                            <button type="submit"
+                                class="text-error hover:text-red-700 hover:bg-red-50 px-3 py-1 rounded-lg transition-colors duration-200 text-sm font-semibold">Видалити</button>
+                        </form>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" class="p-8 text-center text-neutral text-lg">Аудиторій не знайдено.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    function toggleForm() {
+        const form = document.getElementById('addForm');
+        form.classList.toggle('hidden');
+    }
+</script>
+{% endblock %}

@@ -1,6 +1,11 @@
 from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
-from .models import User, StudyGroup, Subject, TeachingAssignment, EvaluationType, WeeklySchedule, LessonSession, StudentPerformance, AbsenceReason
+from .models import (
+    User, StudyGroup, Subject, TeachingAssignment, EvaluationType, 
+    StudentPerformance, AbsenceReason, 
+    TimeSlot, ScheduleTemplate, Lesson,
+    Classroom, GradingScale, GradeRule
+)
 from .forms import UserAdminForm
 
 # Налаштовуємо відображення вашого кастомного юзера
@@ -36,7 +41,11 @@ admin.site.register(StudyGroup)
 admin.site.register(Subject)
 admin.site.register(TeachingAssignment)
 admin.site.register(EvaluationType)
-admin.site.register(WeeklySchedule)
-admin.site.register(LessonSession)
+admin.site.register(ScheduleTemplate)
+admin.site.register(Lesson)
 admin.site.register(StudentPerformance)
 admin.site.register(AbsenceReason)
+admin.site.register(TimeSlot)
+admin.site.register(Classroom)
+admin.site.register(GradingScale)
+admin.site.register(GradeRule)

@@ -14,18 +14,23 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST, require_http_methods
 
-from .forms import StudyGroupForm, SubjectForm, UserAdminForm
+from .forms import ClassroomForm, StudyGroupForm, SubjectForm, UserAdminForm
 from .models import (
     AbsenceReason,
     EvaluationType,
-    LessonSession,
+    Lesson,
     StudentPerformance,
     StudyGroup,
     Subject,
     TeachingAssignment,
     User,
-    WeeklySchedule,
+    ScheduleTemplate,
+    TimeSlot,
+    Classroom,
+    GradingScale,
+    GradeRule,
 )
+from datetime import time
 
 # =========================
 # UTILITY & DECORATORS
@@ -143,6 +148,7 @@ def admin_panel_view(request):
         'student_count': User.objects.filter(role='student').count(),
         'group_count': StudyGroup.objects.count(),
         'subject_count': Subject.objects.count(),
+        'classroom_count': Classroom.objects.count(),
         'active_page': 'admin',
     }
     return render(request, 'admin.html', context)
@@ -358,6 +364,51 @@ def subject_delete_view(request, pk):
     return redirect('subjects_list')
 
 
+# --- CLASSROOMS ---
+@role_required('admin')
+def classrooms_list_view(request):
+    search_query = request.GET.get('search', '')
+    classrooms = Classroom.objects.all().order_by('name')
+    
+    if search_query:
+        classrooms = classrooms.filter(
+            Q(name__icontains=search_query) | 
+            Q(building__icontains=search_query)
+        )
+        
+    form = ClassroomForm()
+    return render(request, 'classrooms.html', {'classrooms': classrooms, 'form': form, 'active_page': 'classrooms'})
+
+
+@role_required('admin')
+@require_POST
+def classroom_add_view(request):
+    form = ClassroomForm(request.POST)
+    if form.is_valid():
+        form.save()
+        messages.success(request, "Аудиторію додано")
+    else:
+        for field, errors in form.errors.items():
+            for error in errors:
+                messages.error(request, f"{field}: {error}")
+    return redirect('classrooms_list')
+
+
+@role_required('admin')
+@require_POST
+def classroom_delete_view(request, pk):
+    classroom = get_object_or_404(Classroom, pk=pk)
+    try:
+        classroom.delete()
+        messages.success(request, "Аудиторію видалено")
+    except Exception as e:
+        messages.error(
+            request,
+            "Неможливо видалити аудиторію, вона використовується в системі.",
+        )
+    return redirect('classrooms_list')
+
+
 # --- SCHEDULE ---
 @role_required('admin')
 def set_weekly_schedule_view(request):
@@ -378,24 +429,33 @@ def set_weekly_schedule_view(request):
         if teacher_tuple not in subject_teachers[subj_id]:
             subject_teachers[subj_id].append(teacher_tuple)
     
-    current_schedule = WeeklySchedule.objects.all().select_related(
-        'assignment__subject',
-        'assignment__teacher',
-        'assignment__group'
+    current_schedule = ScheduleTemplate.objects.all().select_related(
+        'subject',
+        'teacher',
+        'group'
     )
     
     schedule_map_temp = defaultdict(lambda: defaultdict(dict))
     for item in current_schedule:
-        grp_id = str(item.assignment.group.id)
+        grp_id = str(item.group.id)
         day = str(item.day_of_week)
-        lesson = str(item.lesson_number)
-        schedule_map_temp[grp_id][day][lesson] = {
-            'assignment_id': item.assignment.id,
-            'subject_id': item.assignment.subject.id,
-            'subject_name': item.assignment.subject.name,
-            'teacher_id': item.assignment.teacher.id,
-            'teacher_name': item.assignment.teacher.full_name
-        }
+        
+        # Намагаємося визначити номер пари за часом
+        # У новому конструкторі ми використовуємо номери слотів.
+        # Для сумісності спробуємо знайти найбільш підходящий слот.
+        slot_times = {"08:30": 1, "10:15": 2, "12:15": 3, "14:15": 4, "16:00": 5, "17:45": 6}
+        start_time_str = item.start_time.strftime("%H:%M")
+        lesson_num = slot_times.get(start_time_str, None)
+        
+        if lesson_num:
+            schedule_map_temp[grp_id][day][str(lesson_num)] = {
+                'subject_id': item.subject.id,
+                'subject_name': item.subject.name,
+                'teacher_id': item.teacher.id,
+                'teacher_name': item.teacher.full_name,
+                'start_time': start_time_str,
+                'classroom': item.classroom or ""
+            }
     
     schedule_map = {}
     for grp_id, days in schedule_map_temp.items():
@@ -441,7 +501,7 @@ def set_weekly_schedule_view(request):
         'subject_teachers_map': subject_teachers_map,
         'days': [(1, 'Пн'), (2, 'Вт'), (3, 'Ср'), (4, 'Чт'), (5, 'Пт')],
         'lesson_numbers': range(1, 7),
-        'active_page': 'schedule',
+        'active_page': 'schedule_builder',
     }
     return render(request, 'main/schedule_builder.html', context)
 
@@ -461,8 +521,8 @@ def save_schedule_changes(request):
         group = get_object_or_404(StudyGroup, id=group_id)
         
         with transaction.atomic():
-            WeeklySchedule.objects.filter(
-                assignment__group=group
+            ScheduleTemplate.objects.filter(
+                group=group
             ).delete()
             
             for day_str, lessons in schedule_entries.items():
@@ -491,10 +551,21 @@ def save_schedule_changes(request):
                             ).first()
                         
                         if assignment:
-                            WeeklySchedule.objects.create(
-                                assignment=assignment,
+                            # Використовуємо дані з фронтенду
+                            start_time_str = "08:30"
+                            classroom = ""
+                            if isinstance(lesson_data, dict):
+                                start_time_str = lesson_data.get('startTime', lesson_data.get('start_time', "08:30"))
+                                classroom = lesson_data.get('classroom', "")
+                            
+                            ScheduleTemplate.objects.create(
+                                group=group,
+                                subject_id=subject_id,
+                                teacher_id=teacher_id or assignment.teacher_id,
                                 day_of_week=day,
-                                lesson_number=lesson_num
+                                start_time=start_time_str,
+                                classroom=classroom,
+                                valid_from=date.today()
                             )
         
         return JsonResponse({
@@ -514,6 +585,225 @@ def save_schedule_changes(request):
             'status': 'error',
             'message': str(e)
         }, status=500)
+
+@role_required('admin')
+def schedule_editor_view(request):
+    """Новий редактор розкладу (List View) з 8 слотами."""
+    group_id = request.GET.get('group_id')
+    groups = StudyGroup.objects.all().order_by('name')
+    
+    selected_group = None
+    if group_id:
+        selected_group = get_object_or_404(StudyGroup, id=group_id)
+    
+    # Структура днів та слотів
+    days_info = [
+        (1, 'ПОНЕДІЛОК'),
+        (2, 'ВІВТОРОК'),
+        (3, 'СЕРЕДА'),
+        (4, 'ЧЕТВЕР'),
+        (5, 'П’ЯТНИЦЯ'),
+    ]
+    
+    schedule_data = [] # Список об'єктів для кожного дня
+    
+    if selected_group:
+        templates = ScheduleTemplate.objects.filter(group=selected_group).select_related('subject', 'teacher', 'classroom')
+        template_dict = defaultdict(dict)
+        for t in templates:
+            template_dict[t.day_of_week][t.lesson_number] = t
+            
+        for day_num, day_name in days_info:
+            slots = []
+            for i in range(1, 9): # 8 слотів
+                template = template_dict[day_num].get(i)
+                slots.append({
+                    'number': i,
+                    'template': template,
+                    'is_empty': template is None
+                })
+            schedule_data.append({
+                'day_num': day_num,
+                'day_name': day_name,
+                'slots': slots
+            })
+            
+    # Довідкові дані для модального вікна
+    subjects = Subject.objects.all().order_by('name')
+    teachers = User.objects.filter(role='teacher').order_by('full_name')
+    classrooms = Classroom.objects.all().order_by('name')
+    
+    context = {
+        'groups': groups,
+        'selected_group': selected_group,
+        'schedule_data': schedule_data,
+        'subjects': subjects,
+        'teachers': teachers,
+        'classrooms': classrooms,
+        'active_page': 'schedule_editor',
+    }
+    return render(request, 'main/schedule_editor.html', context)
+
+@require_POST
+@role_required('admin')
+def api_save_schedule_slot(request):
+    """API для збереження окремого слоту в ScheduleTemplate."""
+    try:
+        data = json.loads(request.body)
+        group_id = data.get('group_id')
+        day = int(data.get('day'))
+        lesson_num = int(data.get('lesson_number'))
+        
+        subject_id = data.get('subject_id')
+        teacher_id = data.get('teacher_id')
+        classroom_id = data.get('classroom_id')
+        start_time_str = data.get('start_time')
+        duration = int(data.get('duration', 80))
+        
+        if not all([group_id, day, lesson_num]):
+            return JsonResponse({'status': 'error', 'message': 'Недостатньо даних'}, status=400)
+            
+        group = get_object_or_404(StudyGroup, id=group_id)
+        
+        # Видалення якщо вибрано "пусто" (subject_id=None)
+        if not subject_id:
+            ScheduleTemplate.objects.filter(group=group, day_of_week=day, lesson_number=lesson_num).delete()
+            return JsonResponse({'status': 'success', 'message': 'Слот очищено'})
+
+        # Конвертація часу
+        try:
+            h, m = map(int, start_time_str.split(':'))
+            start_time = time(h, m)
+        except:
+            return JsonResponse({'status': 'error', 'message': 'Невірний формат часу'}, status=400)
+
+        # Розрахунок кінця пари (спрощено, без переходу через добу)
+        start_dt = datetime.combine(date.today(), start_time)
+        end_dt = start_dt + timedelta(minutes=duration)
+        end_time = end_dt.time()
+        
+        # VALIDATION: Overlap within the SAME group
+        # Перевірка з попередньою(lesson_num-1) та наступною(lesson_num+1) парою
+        conflicts = ScheduleTemplate.objects.filter(group=group, day_of_week=day).exclude(lesson_number=lesson_num)
+        for c in conflicts:
+            c_start = datetime.combine(date.today(), c.start_time)
+            c_end = c_start + timedelta(minutes=c.duration_minutes)
+            
+            # Перетин інтервалів: max(start) < min(end)
+            if max(start_dt, c_start) < min(end_dt, c_end):
+                return JsonResponse({
+                    'status': 'error', 
+                    'message': f'Конфлікт: Пара №{c.lesson_number} ({c.start_time.strftime("%H:%M")}) перетинається з цим часом.'
+                }, status=400)
+        
+        # VALIDATION: Teacher busy
+        if teacher_id:
+            teacher_conflicts = ScheduleTemplate.objects.filter(
+                teacher_id=teacher_id, 
+                day_of_week=day
+            ).exclude(group=group, lesson_number=lesson_num)
+            for tc in teacher_conflicts:
+                tc_start = datetime.combine(date.today(), tc.start_time)
+                tc_end = tc_start + timedelta(minutes=tc.duration_minutes)
+                if max(start_dt, tc_start) < min(end_dt, tc_end):
+                    return JsonResponse({
+                        'status': 'error', 
+                        'message': f'Викладач уже зайнятий у групі {tc.group.name} о {tc.start_time.strftime("%H:%M")}'
+                    }, status=400)
+
+        # VALIDATION: Classroom busy
+        if classroom_id:
+            room_conflicts = ScheduleTemplate.objects.filter(
+                classroom_id=classroom_id, 
+                day_of_week=day
+            ).exclude(group=group, lesson_number=lesson_num)
+            for rc in room_conflicts:
+                rc_start = datetime.combine(date.today(), rc.start_time)
+                rc_end = rc_start + timedelta(minutes=rc.duration_minutes)
+                if max(start_dt, rc_start) < min(end_dt, rc_end):
+                    return JsonResponse({
+                        'status': 'error', 
+                        'message': f'Аудиторія зайнята групою {rc.group.name} о {rc.start_time.strftime("%H:%M")}'
+                    }, status=400)
+
+        # SAVE
+        template, created = ScheduleTemplate.objects.update_or_create(
+            group=group, day_of_week=day, lesson_number=lesson_num,
+            defaults={
+                'subject_id': subject_id,
+                'teacher_id': teacher_id,
+                'classroom_id': classroom_id,
+                'start_time': start_time,
+                'duration_minutes': duration,
+            }
+        )
+        
+        return JsonResponse({
+            'status': 'success', 
+            'message': 'Збережено',
+            'data': {
+                'subject': template.subject.name,
+                'teacher': template.teacher.full_name if template.teacher else '—',
+                'classroom': template.classroom.name if template.classroom else '—',
+                'time': f'{template.start_time.strftime("%H:%M")} (+{template.duration_minutes}хв)'
+            }
+        })
+
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@login_required
+def schedule_view(request):
+    user = request.user
+    
+    group_id = request.GET.get('group_id')
+    week_shift = int(request.GET.get('week', 0))
+    
+    group = None
+    if user.role == 'student':
+        group = user.group
+    elif group_id:
+        group = get_object_or_404(StudyGroup, id=group_id)
+    
+    # Розрахунок дат тижня
+    today = date.today()
+    days_since_monday = today.weekday()
+    monday = today - timedelta(days=days_since_monday)
+    start_of_week = monday + timedelta(weeks=week_shift)
+    end_of_week = start_of_week + timedelta(days=6)
+    
+    lessons = []
+    if group:
+        lessons = Lesson.objects.filter(
+            group=group,
+            date__gte=start_of_week,
+            date__lte=end_of_week
+        ).select_related('subject', 'teacher', 'evaluation_type')
+
+    # Дні тижня для заголовка
+    week_days = []
+    day_names = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд']
+    for i in range(7):
+        d = start_of_week + timedelta(days=i)
+        week_days.append({
+            'date': d,
+            'day_name': day_names[i],
+            'is_today': d == today
+        })
+
+    context = {
+        'lessons': lessons,
+        'week_days': week_days,
+        'group': group,
+        'all_groups': StudyGroup.objects.all().order_by('name') if user.role != 'student' else None,
+        'week_shift': week_shift,
+        'start_of_week': start_of_week,
+        'end_of_week': end_of_week,
+        'active_page': 'schedule'
+    }
+    
+    return render(request, 'schedule_timelord.html', context)
 
 
 # =========================
@@ -581,9 +871,11 @@ def teacher_journal_view(request):
             
             students = students_query.order_by('full_name')
             
-            schedule_items = WeeklySchedule.objects.filter(
-                assignment=selected_assignment
-            ).order_by('day_of_week', 'lesson_number')
+            schedule_items = ScheduleTemplate.objects.filter(
+                group=selected_assignment.group,
+                subject=selected_assignment.subject,
+                teacher=selected_assignment.teacher
+            ).order_by('day_of_week')
             
             date_lessons_map = {}
             
@@ -597,14 +889,17 @@ def teacher_journal_view(request):
                 
                 date_lessons_map[lesson_date].append({
                     'lesson_num': schedule_item.lesson_number,
-                    'lesson_type': lesson_type
+                    'lesson_type': lesson_type,
+                    'classroom': schedule_item.classroom
                 })
             
-            existing_sessions = LessonSession.objects.filter(
-                assignment=selected_assignment,
+            existing_sessions = Lesson.objects.filter(
+                group=selected_assignment.group,
+                subject=selected_assignment.subject,
+                teacher=selected_assignment.teacher,
                 date__gte=start_of_week,
                 date__lte=end_of_week
-            ).select_related('evaluation_type')
+            ).select_related('evaluation_type', 'classroom')
             
             sessions_map = {
                 (sess.date, sess.lesson_number): sess 
@@ -629,26 +924,31 @@ def teacher_journal_view(request):
                     session = sessions_map.get((lesson_date, l_num))
                     
                     if session:
-                        l_type = session.evaluation_type.name
-                        l_weight = session.evaluation_type.weight_percent
+                        l_type = session.evaluation_type.name if session.evaluation_type else 'Заняття'
+                        l_weight = session.evaluation_type.weight_percent if session.evaluation_type else None
                         l_topic = session.topic
+                        l_classroom = session.classroom
                     else:
                         l_type = 'Заняття'
                         l_weight = None
                         l_topic = ''
+                        l_classroom = lesson_info.get('classroom')
 
                     lesson_obj = type('Lesson', (), {
                         'lesson_num': l_num,
                         'lesson_type': l_type,
                         'weight_percent': l_weight,
-                        'topic': l_topic
+                        'topic': l_topic,
+                        'classroom': l_classroom
                     })()
                     lesson_header.lessons.append(lesson_obj)
                 
                 lesson_headers.append(lesson_header)
             
-            lessons = LessonSession.objects.filter(
-                assignment=selected_assignment,
+            lessons = Lesson.objects.filter(
+                group=selected_assignment.group,
+                subject=selected_assignment.subject,
+                teacher=selected_assignment.teacher,
                 date__gte=start_of_week,
                 date__lte=end_of_week
             )
@@ -752,11 +1052,21 @@ def save_journal_entries(request):
                         weight_percent=0
                     )
                 
-                lesson_session, created = LessonSession.objects.get_or_create(
-                    assignment=assignment,
+                # Створюємо урок в новій системі
+                # Припускаємо стандартний час для старого журналу
+                times = {1: "08:30", 2: "10:05", 3: "11:40", 4: "13:15", 5: "14:50", 6: "16:25"}
+                start_time = times.get(int(lesson_num), "08:30")
+                
+                lesson_session, created = Lesson.objects.get_or_create(
+                    group=student.group,
+                    subject=assignment.subject,
+                    teacher=assignment.teacher,
                     date=lesson_date,
-                    lesson_number=lesson_num,
-                    defaults={'evaluation_type': eval_type}
+                    start_time=start_time,
+                    defaults={
+                        'evaluation_type': eval_type,
+                        'end_time': (datetime.combine(date.today(), datetime.strptime(start_time, "%H:%M").time()) + timedelta(minutes=90)).time()
+                    }
                 )
                 
                 grade_value = None
@@ -819,8 +1129,8 @@ def student_grades_view(request):
         grade__isnull=False
     ).select_related(
         'lesson', 
-        'lesson__assignment__subject', 
-        'lesson__assignment__teacher',
+        'lesson__subject', 
+        'lesson__teacher',
         'lesson__evaluation_type'
     ).order_by('-lesson__date')
 
@@ -830,7 +1140,7 @@ def student_grades_view(request):
         grades = grades.filter(lesson__date__lte=date_to)
     
     if subject_id:
-        grades = grades.filter(lesson__assignment__subject_id=subject_id)
+        grades = grades.filter(lesson__subject_id=subject_id)
         
     if min_grade:
         grades = grades.filter(grade__gte=min_grade)
@@ -867,8 +1177,8 @@ def student_attendance_view(request):
         student=student,
         absence__isnull=False
     ).select_related(
-        'lesson__assignment__subject',
-        'lesson__assignment__teacher',
+        'lesson__subject',
+        'lesson__teacher',
         'absence'
     )
 
@@ -876,7 +1186,7 @@ def student_attendance_view(request):
         absences = absences.filter(lesson__topic__icontains=search_query)
     
     if subject_id:
-        absences = absences.filter(lesson__assignment__subject_id=subject_id)
+        absences = absences.filter(lesson__subject_id=subject_id)
         
     if date_from:
         absences = absences.filter(lesson__date__gte=date_from)
@@ -931,7 +1241,7 @@ def report_absences_view(request):
     perf_filter = Q(studentperformance__absence__isnull=False)
     
     if subject_id:
-        perf_filter &= Q(studentperformance__lesson__assignment__subject_id=subject_id)
+        perf_filter &= Q(studentperformance__lesson__subject_id=subject_id)
     if date_from:
         perf_filter &= Q(studentperformance__lesson__date__gte=date_from)
     if date_to:
@@ -1091,7 +1401,7 @@ def report_weekly_absences_view(request):
     )
     
     if subject_id:
-        perf_filter &= Q(studentperformance__lesson__assignment__subject_id=subject_id)
+        perf_filter &= Q(studentperformance__lesson__subject_id=subject_id)
 
     unexcused_filter = perf_filter & Q(studentperformance__absence__is_respectful=False)
 
@@ -1231,7 +1541,7 @@ def evaluation_type_delete_view(request, pk):
     
     assignment_id = eval_type.assignment.id
     
-    if LessonSession.objects.filter(evaluation_type=eval_type).exists():
+    if Lesson.objects.filter(evaluation_type=eval_type).exists():
         messages.error(request, "Неможливо видалити тип оцінювання, оскільки він використовується в занятях")
     else:
         eval_type.delete()
@@ -1324,6 +1634,89 @@ def student_add(request):
         messages.error(request, "Заповніть всі обов'язкові поля.")
 
     return redirect('students_list')
+
+
+@login_required
+def timeline_schedule_view(request):
+    user = request.user
+    
+    # Визначаємо групу
+    group = user.group if user.role == 'student' else None
+    if not group and request.GET.get('group_id'):
+        group = get_object_or_404(StudyGroup, id=request.GET.get('group_id'))
+
+    # Отримуємо всі часові слоти
+    time_slots = TimeSlot.objects.all()
+    
+    # Дні тижня
+    days_data = []
+    days_names = {1: 'Понеділок', 2: 'Вівторок', 3: 'Середа', 4: 'Четвер', 5: 'П\'ятниця'}
+    
+    now = datetime.now()
+    current_time_minutes = now.hour * 60 + now.minute
+    current_day = now.weekday() + 1
+
+    if group:
+        # Беремо шаблони розкладу
+        templates = ScheduleTemplate.objects.filter(
+            group=group
+        ).select_related('subject', 'teacher')
+
+        # Дні тижня для таймлайну
+        today_date = date.today()
+        start_week = today_date - timedelta(days=today_date.weekday())
+
+        for day_num, day_name in days_names.items():
+            day_lessons = []
+            current_day_date = start_week + timedelta(days=day_num - 1)
+            
+            # Шукаємо уроки в цей день (згенеровані)
+            lessons_in_db = Lesson.objects.filter(
+                group=group,
+                date=current_day_date
+            ).select_related('subject', 'teacher')
+
+            for slot in time_slots:
+                # Мапінг слота в урок за часом
+                lesson = lessons_in_db.filter(start_time=slot.start_time).first()
+                
+                start_min = slot.start_time.hour * 60 + slot.start_time.minute
+                end_min = slot.end_time.hour * 60 + slot.end_time.minute
+                duration = end_min - start_min
+                
+                status = 'future'
+                progress = 0
+                
+                if day_num < current_day:
+                    status = 'past'
+                elif day_num == current_day:
+                    if current_time_minutes > end_min:
+                        status = 'past'
+                    elif current_time_minutes >= start_min:
+                        status = 'current'
+                        passed = current_time_minutes - start_min
+                        progress = int((passed / duration) * 100) if duration > 0 else 0
+                
+                day_lessons.append({
+                    'slot': slot,
+                    'assignment': lesson if lesson else None,
+                    'status': status,
+                    'progress': min(max(progress, 0), 100),
+                    'duration': duration
+                })
+            
+            days_data.append({
+                'day_name': day_name,
+                'is_today': day_num == current_day,
+                'lessons': day_lessons
+            })
+
+    return render(request, 'timeline_schedule.html', {
+        'days_data': days_data,
+        'group': group,
+        'all_groups': StudyGroup.objects.all().order_by('name') if user.role != 'student' else None,
+        'active_page': 'schedule'
+    })
 
 @login_required
 @require_http_methods(["POST"])

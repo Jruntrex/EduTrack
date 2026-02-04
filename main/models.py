@@ -90,6 +90,47 @@ class Subject(models.Model):
     def __str__(self):
         return self.name
 
+class Classroom(models.Model):
+    """Аудиторія (напр. 305-А)"""
+    name = models.CharField(max_length=50, unique=True, verbose_name="Назва/Номер")
+    building = models.CharField(max_length=100, blank=True, verbose_name="Корпус")
+    capacity = models.PositiveIntegerField(null=True, blank=True, verbose_name="Місткість")
+
+    class Meta:
+        db_table = 'classrooms'
+        verbose_name = "Аудиторія"
+        verbose_name_plural = "Аудиторії"
+
+    def __str__(self):
+        return f"{self.name} ({self.building})" if self.building else self.name
+
+class GradingScale(models.Model):
+    """Шкала оцінювання (напр. 100-бальна, ЄКТС)"""
+    name = models.CharField(max_length=50, unique=True, verbose_name="Назва шкали")
+
+    class Meta:
+        db_table = 'grading_scales'
+        verbose_name = "Шкала оцінювання"
+        verbose_name_plural = "Шкали оцінювання"
+
+    def __str__(self):
+        return self.name
+
+class GradeRule(models.Model):
+    """Правила переведення балів у оцінки (напр. 90+ = Відмінно)"""
+    scale = models.ForeignKey(GradingScale, on_delete=models.CASCADE, related_name='rules')
+    label = models.CharField(max_length=50, verbose_name="Оцінка (словом/буквою)")
+    min_points = models.DecimalField(max_digits=5, decimal_places=2, verbose_name="Мінімальний бал")
+
+    class Meta:
+        db_table = 'grade_rules'
+        ordering = ['-min_points']
+        verbose_name = "Правило оцінювання"
+        verbose_name_plural = "Правила оцінювання"
+
+    def __str__(self):
+        return f"{self.scale.name}: {self.label} (>= {self.min_points})"
+
 # ==========================================
 # 2. НАВЧАЛЬНИЙ ПРОЦЕС (ЗВ'ЯЗКИ)
 # ==========================================
@@ -137,49 +178,103 @@ class EvaluationType(models.Model):
     def __str__(self):
         return f"{self.name} ({self.weight_percent}%)"
 
-# ==========================================
-# 3. РОЗКЛАД І ЖУРНАЛ
-# ==========================================
-
-class WeeklySchedule(models.Model):
-    """
-    Шаблон розкладу (щотижневий).
-    """
-    DAY_CHOICES = [
-        (1, 'Понеділок'), (2, 'Вівторок'), (3, 'Середа'),
-        (4, 'Четвер'), (5, 'П\'ятниця'), (6, 'Субота'), (7, 'Неділя')
-    ]
-    
-    assignment = models.ForeignKey(TeachingAssignment, on_delete=models.CASCADE, verbose_name="Дисципліна")
-    day_of_week = models.IntegerField(choices=DAY_CHOICES, verbose_name="День тижня")
-    lesson_number = models.PositiveSmallIntegerField(verbose_name="Номер пари")
-    
-    class Meta:
-        db_table = 'weekly_schedule'
-        unique_together = ('assignment', 'day_of_week', 'lesson_number')
-        verbose_name = "Розклад"
-        verbose_name_plural = "Розклад"
-
-class LessonSession(models.Model):
-    """
-    КОНКРЕТНИЙ ПРОВЕДЕНИЙ УРОК.
-    """
-    assignment = models.ForeignKey(TeachingAssignment, on_delete=models.CASCADE)
-    date = models.DateField(verbose_name="Дата проведення")
-    lesson_number = models.PositiveSmallIntegerField()
-    
-    evaluation_type = models.ForeignKey(EvaluationType, on_delete=models.PROTECT, verbose_name="Тип заняття")
-    topic = models.CharField(max_length=255, blank=True, verbose_name="Тема заняття")
+class TimeSlot(models.Model):
+    """Часові слоти для пар (Дзвінки)"""
+    lesson_number = models.PositiveSmallIntegerField(unique=True, verbose_name="Номер пари")
+    start_time = models.TimeField(verbose_name="Початок")
+    end_time = models.TimeField(verbose_name="Кінець")
 
     class Meta:
-        db_table = 'lesson_sessions'
-        unique_together = ('assignment', 'date', 'lesson_number')
-        ordering = ['-date', 'lesson_number']
-        verbose_name = "Проведене заняття"
-        verbose_name_plural = "Проведені заняття"
+        db_table = 'time_slots'
+        ordering = ['start_time']
+        verbose_name = "Розклад дзвінків"
+        verbose_name_plural = "Розклад дзвінків"
 
     def __str__(self):
-        return f"{self.date} - {self.assignment.subject.name} ({self.evaluation_type.name})"
+        return f"{self.lesson_number} пара ({self.start_time.strftime('%H:%M')} - {self.end_time.strftime('%H:%M')})"
+
+    def duration_minutes(self):
+        # Допоміжний метод для розрахунку довжини на графіку
+        t1 = self.start_time
+        t2 = self.end_time
+        return (t2.hour * 60 + t2.minute) - (t1.hour * 60 + t1.minute)
+
+# ==========================================
+# 3. РОЗКЛАД І ЖУРНАЛ (TIMELORD EDITION)
+# ==========================================
+
+class ScheduleTemplate(models.Model):
+    """
+    Шаблон розкладу (правила).
+    """
+    group = models.ForeignKey(StudyGroup, on_delete=models.CASCADE, verbose_name="Група")
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, verbose_name="Предмет")
+    teacher = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        limit_choices_to={'role': 'teacher'},
+        verbose_name="Викладач"
+    )
+    
+    day_of_week = models.IntegerField(
+        choices=[(1, 'Пн'), (2, 'Вт'), (3, 'Ср'), (4, 'Чт'), (5, 'Пт'), (6, 'Сб'), (7, 'Нд')],
+        verbose_name="День тижня"
+    )
+    lesson_number = models.PositiveSmallIntegerField(default=1, verbose_name="Номер пари")
+    start_time = models.TimeField(verbose_name="Час початку")
+    duration_minutes = models.IntegerField(default=80, verbose_name="Тривалість (хв)")
+    classroom = models.ForeignKey(Classroom, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Аудиторія")
+    
+    valid_from = models.DateField(auto_now_add=True, verbose_name="Діє з")
+    valid_to = models.DateField(null=True, blank=True, verbose_name="Діє до")
+
+    class Meta:
+        db_table = 'schedule_templates'
+        verbose_name = "Шаблон розкладу"
+        verbose_name_plural = "Шаблони розкладу"
+
+    def __str__(self):
+        return f"{self.get_day_of_week_display()} {self.start_time} - {self.subject.name} ({self.group.name})"
+
+class Lesson(models.Model):
+    """
+    Конкретний урок у календарі.
+    """
+    group = models.ForeignKey(StudyGroup, on_delete=models.CASCADE, verbose_name="Група")
+    subject = models.ForeignKey(Subject, on_delete=models.CASCADE, verbose_name="Предмет")
+    teacher = models.ForeignKey(
+        User, 
+        on_delete=models.CASCADE, 
+        limit_choices_to={'role': 'teacher'},
+        verbose_name="Викладач"
+    )
+    
+    date = models.DateField(verbose_name="Дата")
+    start_time = models.TimeField(verbose_name="Час початку")
+    end_time = models.TimeField(verbose_name="Час закінчення")
+    
+    topic = models.CharField(max_length=255, blank=True, verbose_name="Тема заняття")
+    classroom = models.ForeignKey(Classroom, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Аудиторія")
+    max_points = models.PositiveIntegerField(default=5, verbose_name="Макс. балів")
+    evaluation_type = models.ForeignKey(EvaluationType, on_delete=models.PROTECT, null=True, blank=True, verbose_name="Тип заняття")
+    
+    template_source = models.ForeignKey(
+        ScheduleTemplate, 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True, 
+        verbose_name="Джерело (шаблон)"
+    )
+
+    class Meta:
+        db_table = 'lessons'
+        unique_together = ('group', 'date', 'start_time')
+        ordering = ['-date', 'start_time']
+        verbose_name = "Урок"
+        verbose_name_plural = "Уроки"
+
+    def __str__(self):
+        return f"{self.date} {self.start_time} - {self.subject.name}"
 
 # ==========================================
 # 4. УСПІШНІСТЬ СТУДЕНТА
@@ -203,14 +298,13 @@ class StudentPerformance(models.Model):
     """
     Єдиний запис про успішність студента на уроці.
     """
-    lesson = models.ForeignKey(LessonSession, on_delete=models.CASCADE, related_name='grades')
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='grades')
     student = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'role': 'student'})
     
-    grade = models.DecimalField(
+    earned_points = models.DecimalField(
         max_digits=5, decimal_places=2, 
         null=True, blank=True,
-        validators=[MinValueValidator(0), MaxValueValidator(100)], 
-        verbose_name="Оцінка"
+        verbose_name="Набрані бали"
     )
     
     absence = models.ForeignKey(AbsenceReason, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Пропуск")
@@ -226,5 +320,5 @@ class StudentPerformance(models.Model):
 
     def clean(self):
         # Валідація: студент має належати до групи, яка вказана в уроці
-        if self.student.group != self.lesson.assignment.group:
+        if self.student.group != self.lesson.group:
             raise ValidationError("Студент не належить до групи, для якої проводиться урок.")

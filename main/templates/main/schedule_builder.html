@@ -1,596 +1,492 @@
 {% extends "base.html" %}
 {% load journal_filters %}
 
-{% block title %}Конструктор Розкладу{% endblock %}
+{% block title %}Конструктор розкладу - EduTrack{% endblock %}
 
-{% block header_title %}
-<div class="flex-align-center space-between">
-    <h1>Конструктор Розкладу</h1>
-    <!-- <span class="text-small text-secondary">Виберіть групу та заповніть розклад на тиждень</span> -->
-</div>
-{% endblock %}
-
-{% block content %}
-<div class="glass-panel rounded-3xl p-8 mb-8" role="region" aria-label="Конструктор розкладу">
-
-    <!-- ВИБІР ГРУПИ -->
-    <div class="mb-8">
-        <div class="flex flex-col gap-2 max-w-sm">
-            <label for="groupSelect" class="text-sm font-medium text-dark">Оберіть Групу:</label>
-            <select id="groupSelect"
-                class="w-full px-4 py-3 border border-tableBorder rounded-xl text-dark bg-white appearance-none focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200 cursor-pointer">
-                <option value="">-- Виберіть групу --</option>
-                {% for group in groups %}
-                <option value="{{ group.id }}">{{ group.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div id="groupInfo" class="hidden mt-4 p-4 rounded-xl bg-blue-50 text-blue-700 font-medium">
-            <span id="groupInfoText"></span>
-        </div>
-    </div>
-
-    <!-- ТАБЛИЦЯ РОЗКЛАДУ -->
-    <div id="scheduleContainer" class="hidden mt-8 animate-fade-in">
-
-        <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
-            <button type="button" id="clearAllBtn"
-                class="btn bg-error text-white shadow-button hover:bg-red-600 hover:shadow-button-hover flex items-center gap-2 py-2.5 px-6">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-                Очистити все
-            </button>
-            <span class="text-sm font-medium italic" id="autoSaveStatus"></span>
-        </div>
-
-        <div class="overflow-x-auto rounded-xl border border-tableBorder bg-white shadow-sm">
-            <table class="w-full border-collapse">
-                <thead>
-                    <tr>
-                        <th
-                            class="bg-gray-100 text-dark p-3 text-center text-sm font-semibold border-r border-gray-200 w-20">
-                            Пара</th>
-                        {% for day_id, day_name in days %}
-                        <th
-                            class="bg-primary text-white p-3 text-center text-sm font-semibold border-r border-white/20 last:border-r-0 min-w-[140px]">
-                            <div class="flex flex-col items-center gap-1">
-                                <span class="uppercase tracking-wider">{{ day_name }}</span>
-                            </div>
-                        </th>
-                        {% endfor %}
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-tableBorder">
-                    {% for lesson_num in lesson_numbers %}
-                    <tr class="schedule-row" data-lesson="{{ lesson_num }}">
-                        <td class="bg-gray-50 p-2 text-center text-lg font-semibold text-dark border-r border-gray-200">
-                            <div
-                                class="w-8 h-8 flex items-center justify-center bg-white rounded-full shadow-sm mx-auto text-sm">
-                                {{ lesson_num }}</div>
-                        </td>
-                        {% for day_id, day_name in days %}
-                        <td class="p-0 border-r border-gray-200 last:border-r-0 hover:bg-blue-50 cursor-pointer transition-colors duration-200 schedule-cell bg-white relative h-24"
-                            data-day="{{ day_id }}" data-lesson="{{ lesson_num }}">
-                            <div class="flex flex-col items-center justify-center p-2 h-full w-full text-center">
-                                <select class="hidden subject-select" data-day="{{ day_id }}"
-                                    data-lesson="{{ lesson_num }}">
-                                    <option value="">--</option>
-                                    {% for subject in subject_data %}
-                                    <option value="{{ subject.id }}" data-teacher-id="{{ subject.teacher_id }}"
-                                        data-teacher-name="{{ subject.teacher_name }}">
-                                        {{ subject.name }}
-                                    </option>
-                                    {% endfor %}
-                                </select>
-                                <div class="cell-display w-full h-full flex flex-col justify-center">
-                                    <div class="subject-name text-sm font-bold text-dark mb-1 empty:hidden">-</div>
-                                    <div class="teacher-name text-xs text-gray-500 italic truncate max-w-full px-1">
-                                    </div>
-                                </div>
-                            </div>
-                        </td>
-                        {% endfor %}
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-
-        <div
-            class="mt-8 flex flex-col md:flex-row justify-between items-center gap-4 bg-gray-50 p-6 rounded-2xl border border-gray-200">
-            <button type="button" id="cancelBtn"
-                class="btn bg-primary text-white shadow-button hover:bg-blue-600 py-3 px-8 w-full md:w-auto">Скасувати</button>
-            <button type="button" id="saveBtn"
-                class="btn bg-accent text-white shadow-button hover:bg-green-600 hover:shadow-button-hover flex items-center justify-center gap-2 py-3 px-8 w-full md:w-auto font-bold text-lg">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-6 h-6">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                </svg>
-                Зберегти Розклад
-            </button>
-        </div>
-    </div>
-
-    <!-- МОДАЛЬНЕ ВІКНО ДЛЯ ВИБОРУ ПРЕДМЕТУ -->
-    <div id="subjectModal" class="hidden fixed inset-0 z-50 flex items-center justify-center">
-        <div class="fixed inset-0 bg-black/50 backdrop-blur-sm modal-overlay"></div>
-        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 animate-slide-up overflow-hidden">
-            <div class="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-                <h3 class="text-xl font-bold text-dark">Налаштування Пари</h3>
-                <button type="button"
-                    class="text-gray-400 hover:text-dark transition-colors modal-close text-2xl leading-none">&times;</button>
-            </div>
-
-            <div class="p-6 space-y-6">
-                <div class="space-y-2">
-                    <label for="modalSubjectSelect" class="block text-sm font-medium text-dark">Предмет
-                        (Викладач):</label>
-                    <select id="modalSubjectSelect"
-                        class="w-full px-4 py-3 border border-tableBorder rounded-xl text-dark bg-white focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200">
-                        <option value="">-- Виберіть предмет --</option>
-                        {% for subject in subject_data %}
-                        <option value="{{ subject.id }}" data-teacher-id="{{ subject.teacher_id }}"
-                            data-teacher-name="{{ subject.teacher_name }}">
-                            {{ subject.name }}
-                        </option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <div id="noTeacherInfo"
-                    class="hidden p-4 rounded-xl bg-yellow-50 text-yellow-800 text-sm border border-yellow-200">
-                    Для цього предмету немає призначених викладачів. Спочатку створіть призначення викладача.
-                </div>
-
-                <div class="space-y-2">
-                    <label for="modalLessonCount" class="block text-sm font-medium text-dark">Кількість занять
-                        підряд:</label>
-                    <input type="number" id="modalLessonCount"
-                        class="w-full px-4 py-3 border border-tableBorder rounded-xl text-dark bg-white focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200 placeholder-gray-400"
-                        value="1" min="1" max="6">
-                </div>
-
-                <div class="space-y-2">
-                    <label for="modalStartTime" class="block text-sm font-medium text-dark">Час початку:</label>
-                    <input type="time" id="modalStartTime"
-                        class="w-full px-4 py-3 border border-tableBorder rounded-xl text-dark bg-white focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200 placeholder-gray-400"
-                        value="08:00">
-                </div>
-
-                <div class="space-y-2">
-                    <label for="modalDuration" class="block text-sm font-medium text-dark">Тривалість заняття
-                        (хв):</label>
-                    <select id="modalDuration"
-                        class="w-full px-4 py-3 border border-tableBorder rounded-xl text-dark bg-white focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200">
-                        <option value="45">45 хв</option>
-                        <option value="60" selected>60 хв</option>
-                        <option value="90">90 хв</option>
-                        <option value="120">120 хв</option>
-                    </select>
-                </div>
-            </div>
-
-            <div class="p-6 border-t border-gray-100 flex justify-end gap-3 bg-gray-50 rounded-b-2xl">
-                <button type="button"
-                    class="btn bg-white border border-gray-300 text-dark hover:bg-gray-100 py-2.5 px-6 modal-cancel shadow-sm">Скасувати</button>
-                <button type="button"
-                    class="btn bg-accent text-white hover:bg-green-600 shadow-button hover:shadow-button-hover py-2.5 px-6 modal-confirm">Вибрати</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ПРИХОВАНІ ДАНІ ДЛЯ JAVASCRIPT -->
-    {{ schedule_map|json_script:"schedule-data" }}
-    {{ subject_teachers_map|json_script:"subject-teachers-data" }}
-
-</div>
-{% endblock %}
-
-{% block extra_js %}
-{{ block.super }}
+{% block extra_css %}
 <style>
-    /* Стилі для filled cells */
-    .schedule-cell.filled {
-        background-color: #f0fdf4 !important;
-        /* bg-green-50 */
+    :root {
+        --primary: #000;
+        --primary-hover: #333;
+        --bg-gray: #f8fafc;
+        --border-color: #000;
     }
 
-    .schedule-cell.filled:hover {
-        background-color: #dcfce7 !important;
-        /* bg-green-100 */
+    .builder-container {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 2rem;
+        height: calc(100vh - 160px);
+        margin-top: 1rem;
     }
 
-    /* Додаткова анімація */
-    @keyframes slideUp {
-        from {
-            transform: translateY(20px);
-            opacity: 0;
-        }
-
-        to {
-            transform: translateY(0);
-            opacity: 1;
-        }
+    .sidebar-panel {
+        background: white;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        border: 2px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
     }
 
-    .animate-slide-up {
-        animation: slideUp 0.3s ease-out forwards;
+    .main-grid-panel {
+        background: white;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        border: 2px solid var(--border-color);
+        overflow-y: auto;
+    }
+
+    .schedule-grid {
+        display: grid;
+        grid-template-columns: 80px repeat(5, 1fr);
+        border: 2px solid var(--border-color);
+        background-color: var(--border-color);
+        gap: 2px;
+    }
+
+    .grid-header {
+        background: #f1f5f9;
+        padding: 1rem;
+        text-align: center;
+        font-weight: 900;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+    }
+
+    .time-cell-header {
+        background: #e2e8f0;
+        padding: 1rem;
+        text-align: center;
+        font-weight: 900;
+        font-size: 0.75rem;
+    }
+
+    .schedule-cell {
+        background: white;
+        min-height: 110px;
+        padding: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+    }
+
+    .cell-inner {
+        height: 100%;
+        border: 2px dashed #cbd5e1;
+        border-radius: 4px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        padding: 10px;
+        gap: 5px;
+    }
+
+    .schedule-cell:hover .cell-inner {
+        border-color: var(--primary);
+        background: #f0f7ff;
+    }
+
+    .schedule-cell.filled .cell-inner {
+        background-color: #fff;
+        border: 2px solid var(--border-color);
+        border-style: solid;
+    }
+
+    .subject-name {
+        font-weight: 900;
+        font-size: 0.85rem;
+        line-height: 1.2;
+        color: #000;
+    }
+
+    .teacher-name {
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #444;
+        margin-top: 4px;
+    }
+
+    .time-info {
+        font-size: 0.65rem;
+        font-weight: 800;
+        color: #64748b;
+        margin-top: 4px;
+    }
+
+    /* Modal Styling - Classic High Contrast */
+    .modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        z-index: 1000;
+        backdrop-filter: blur(4px);
+    }
+
+    .modal-content {
+        background: white;
+        width: 100%;
+        max-width: 500px;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        border: 3px solid #000;
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-header {
+        padding: 1.5rem 2rem;
+        border-bottom: 2px solid #000;
+        background: #f8fafc;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-body {
+        padding: 2rem;
+    }
+
+    .form-label {
+        display: block;
+        margin-bottom: 8px;
+        font-size: 0.75rem;
+        font-weight: 900;
+        color: #000;
+        text-transform: uppercase;
+    }
+
+    .classic-input {
+        width: 100%;
+        padding: 0.75rem 1rem;
+        border: 2px solid #000;
+        border-radius: 4px;
+        font-weight: 700;
+        font-family: inherit;
+        font-size: 0.9rem;
+    }
+
+    .btn-classic {
+        padding: 0.75rem 1.5rem;
+        border: 2px solid #000;
+        border-radius: 4px;
+        font-weight: 900;
+        text-transform: uppercase;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 0.85rem;
+    }
+
+    .btn-classic.black {
+        background: #000;
+        color: #fff;
+    }
+
+    .btn-classic.black:hover {
+        background: #333;
+    }
+
+    .btn-classic.outline {
+        background: #fff;
+        color: #000;
+    }
+
+    .btn-classic.outline:hover {
+        background: #f1f5f9;
+    }
+
+    #autoSaveStatus {
+        font-weight: 800;
+        font-size: 0.8rem;
+    }
+
+    #autoSaveStatus.saved {
+        color: #059669;
+    }
+
+    #autoSaveStatus.error {
+        color: #dc2626;
     }
 </style>
+{% endblock %}
+
+{% block header_title %}КОНСТРУКТОР РОЗКЛАДУ{% endblock %}
+
+{% block content %}
+<div class="animate-fade-in">
+    <div class="builder-container">
+        <!-- Sidebar -->
+        <div class="sidebar-panel">
+            <div>
+                <label class="form-label">Оберіть групу</label>
+                <select id="groupSelect" class="classic-input">
+                    <option value="">-- ГРУПА --</option>
+                    {% for g in groups %}
+                    <option value="{{ g.id }}">{{ g.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div id="groupInfo"
+                style="padding: 1.5rem; background: #f8fafc; border: 2px solid #000; border-radius: 4px;">
+                <div id="groupInfoText"
+                    style="display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 1.1rem; color: #000;">
+                    Оберіть групу для початку
+                </div>
+            </div>
+
+            <div id="autoSaveStatus"></div>
+
+            <div style="margin-top: auto; display: flex; flex-direction: column; gap: 10px;">
+                <button id="saveBtn" class="btn-classic black">ЗБЕРЕГТИ РОЗКЛАД</button>
+                <button id="clearAllBtn" class="btn-classic outline">ОЧИСТИТИ ВСЕ</button>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="main-grid-panel" id="scheduleContainer" style="display: none;">
+            <div class="schedule-grid">
+                <div class="grid-header" style="background: #000; color: #fff;">ПАРА</div>
+                {% for day_id, day_name in days %}
+                <div class="grid-header">{{ day_name }}</div>
+                {% endfor %}
+
+                {% for num in lesson_numbers %}
+                <div class="time-cell-header">
+                    <div style="font-size: 1.2rem; margin-bottom: 4px;">{{ num }}</div>
+                    {% if num == 1 %}08:30{% elif num == 2 %}10:15{% elif num == 3 %}12:15{% elif num == 4 %}14:15{%
+                    elif num == 5 %}16:00{% elif num == 6 %}17:45{% endif %}
+                </div>
+                {% for day_id, day_name in days %}
+                <div class="schedule-cell" data-day="{{ day_id }}" data-lesson="{{ num }}">
+                    <div class="cell-inner">
+                        <div class="subject-name">-</div>
+                        <div class="teacher-name"></div>
+                        <div class="time-info" style="visibility: hidden;"></div>
+                    </div>
+                </div>
+                {% endfor %}
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div id="subjectModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 style="font-weight: 900; margin: 0; text-transform: uppercase; letter-spacing: 1px;">Редагувати пару
+            </h3>
+            <button class="modal-close"
+                style="background: none; border: none; font-size: 1.5rem; cursor: pointer; font-weight: 900;">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div style="margin-bottom: 1.5rem;">
+                <label class="form-label">Предмет та викладач</label>
+                <select id="modalSubjectSelect" class="classic-input">
+                    <option value="">-- ОБЕРІТЬ ПРЕДМЕТ --</option>
+                    {% for item in subject_data %}
+                    <option value="{{ item.id }}" data-teacher-id="{{ item.teacher_id }}"
+                        data-teacher-name="{{ item.teacher_name }}">
+                        {{ item.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="margin-bottom: 1.5rem;">
+                <label class="form-label">Аудиторія</label>
+                <input type="text" id="modalClassroom" class="classic-input" placeholder="н-р: 402, Каф. фіз.">
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
+                <div>
+                    <label class="form-label">Початок</label>
+                    <input type="time" id="modalStartTime" class="classic-input" value="08:30">
+                </div>
+                <div>
+                    <label class="form-label">Кількість пар підряд</label>
+                    <input type="number" id="modalLessonCount" class="classic-input" value="1" min="1" max="6">
+                </div>
+            </div>
+
+            <input type="hidden" id="modalDuration" value="90">
+        </div>
+        <div
+            style="padding: 1.5rem 2rem; border-top: 2px solid #000; background: #f8fafc; display: flex; justify-content: flex-end; gap: 1rem;">
+            <button class="btn-classic outline modal-cancel">СКАСУВАТИ</button>
+            <button class="btn-classic black modal-confirm">ОК</button>
+        </div>
+    </div>
+</div>
+
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // ================== ЕЛЕМЕНТИ ==================
-        const groupSelect = document.getElementById('groupSelect');
-        const scheduleContainer = document.getElementById('scheduleContainer');
-        const subjectModal = document.getElementById('subjectModal');
-        const modalSubjectSelect = document.getElementById('modalSubjectSelect');
-        const modalLessonCount = document.getElementById('modalLessonCount');
-        const modalStartTime = document.getElementById('modalStartTime');
-        const modalDuration = document.getElementById('modalDuration');
-        const noTeacherInfo = document.getElementById('noTeacherInfo');
-        const saveBtn = document.getElementById('saveBtn');
-        const cancelBtn = document.getElementById('cancelBtn');
-        const clearAllBtn = document.getElementById('clearAllBtn');
-        const autoSaveStatus = document.getElementById('autoSaveStatus');
-        const groupInfo = document.getElementById('groupInfo');
-        const groupInfoText = document.getElementById('groupInfoText');
+        const elements = {
+            groupSelect: document.getElementById('groupSelect'),
+            scheduleContainer: document.getElementById('scheduleContainer'),
+            subjectModal: document.getElementById('subjectModal'),
+            modalSubjectSelect: document.getElementById('modalSubjectSelect'),
+            modalLessonCount: document.getElementById('modalLessonCount'),
+            modalStartTime: document.getElementById('modalStartTime'),
+            modalClassroom: document.getElementById('modalClassroom'),
+            saveBtn: document.getElementById('saveBtn'),
+            autoSaveStatus: document.getElementById('autoSaveStatus'),
+            groupInfoText: document.getElementById('groupInfoText')
+        };
 
-        // ================== СТАН ==================
-        let currentGroup = null;
-        let schedule = {};
-        let selectedCell = null;
-        let scheduleModified = false;
+        const config = {
+            times: { 1: "08:30", 2: "10:15", 3: "12:15", 4: "14:15", 5: "16:00", 6: "17:45" }
+        };
 
-        // ================== ОБРОБНИКИ ГРУПИ ==================
-        groupSelect.addEventListener('change', function () {
-            currentGroup = this.value;
-            if (currentGroup) {
-                loadScheduleForGroup(currentGroup);
-                scheduleContainer.classList.remove('hidden');
-                groupInfo.classList.remove('hidden');
-                groupInfoText.textContent = `Розклад для групи: ${this.options[this.selectedIndex].text}`;
-                scheduleModified = false;
+        let state = {
+            currentGroup: null,
+            schedule: {},
+            selectedCell: null,
+            modified: false
+        };
+
+        elements.groupSelect.addEventListener('change', function () {
+            state.currentGroup = this.value;
+            if (state.currentGroup) {
+                loadSchedule(state.currentGroup);
+                elements.scheduleContainer.style.display = 'block';
+                elements.groupInfoText.textContent = `Група: ${this.options[this.selectedIndex].text}`;
+                state.modified = false;
             } else {
-                scheduleContainer.classList.add('hidden');
-                groupInfo.classList.add('hidden');
+                elements.scheduleContainer.style.display = 'none';
             }
         });
 
-        // ================== КЛІТИНКИ ТАБЛИЦІ ==================
         document.querySelectorAll('.schedule-cell').forEach(cell => {
             cell.addEventListener('click', function () {
-                selectedCell = this;
-                openSubjectModal(this);
+                state.selectedCell = this;
+                const lesson = this.dataset.lesson;
+                elements.modalStartTime.value = config.times[lesson] || "08:30";
+
+                const currentData = state.schedule[this.dataset.day]?.[lesson];
+                if (currentData) {
+                    elements.modalSubjectSelect.value = currentData.subject_id || currentData.subjectId || "";
+                    elements.modalClassroom.value = currentData.classroom || "";
+                } else {
+                    elements.modalSubjectSelect.value = "";
+                    elements.modalClassroom.value = "";
+                }
+
+                elements.subjectModal.style.display = 'flex';
             });
         });
 
-        function openSubjectModal(cell) {
-            const day = cell.dataset.day;
-            const lesson = cell.dataset.lesson;
-
-            // Заповнюємо поточне значення, якщо є
-            const subjectDisplay = cell.querySelector('.subject-name');
-            if (subjectDisplay.textContent !== '-') {
-                // Вже заповнено, показуємо поточне значення
-                const subjectId = schedule[day] && schedule[day][lesson];
-                if (subjectId) {
-                    modalSubjectSelect.value = subjectId;
-                    onSubjectSelectChange();
-                }
-            }
-
-            subjectModal.classList.remove('hidden');
-        }
-
-        function closeSubjectModal() {
-            subjectModal.classList.add('hidden');
-            selectedCell = null;
-        }
-
-        // ================== МОДАЛЬНЕ ВІКНО ==================
-        document.querySelectorAll('.modal-cancel, .modal-close').forEach(btn => {
-            btn.addEventListener('click', closeSubjectModal);
-        });
-
-        subjectModal.querySelector('.modal-overlay').addEventListener('click', closeSubjectModal);
-
-        modalSubjectSelect.addEventListener('change', onSubjectSelectChange);
-
-        function onSubjectSelectChange() {
-            const subjectId = parseInt(modalSubjectSelect.value);
-            if (subjectId) {
-                const option = modalSubjectSelect.options[modalSubjectSelect.selectedIndex];
-                const teacherId = option.dataset.teacherId;
-                const teacherName = option.dataset.teacherName;
-
-                if (teacherId && teacherName) {
-                    noTeacherInfo.classList.add('hidden');
-                } else {
-                    noTeacherInfo.classList.remove('hidden');
-                }
-            }
-        }
+        const closeModal = () => elements.subjectModal.style.display = 'none';
+        document.querySelectorAll('.modal-cancel, .modal-close').forEach(b => b.addEventListener('click', closeModal));
 
         document.querySelector('.modal-confirm').addEventListener('click', function () {
-            if (selectedCell) {
-                const day = selectedCell.dataset.day;
-                const lesson = selectedCell.dataset.lesson;
-                const subjectId = modalSubjectSelect.value;
-                const subjectName = modalSubjectSelect.options[modalSubjectSelect.selectedIndex].text;
-                const option = modalSubjectSelect.options[modalSubjectSelect.selectedIndex];
-                const teacherId = option.dataset.teacherId;
-                const teacherName = option.dataset.teacherName;
-                const lessonCount = parseInt(modalLessonCount.value) || 1;
-                const startTime = modalStartTime.value;
-                const duration = modalDuration.value;
+            if (!state.selectedCell) return;
 
-                if (subjectId && teacherId) {
-                    // Зберігаємо у локальний стан з нав ими полями
-                    if (!schedule[day]) schedule[day] = {};
+            const day = state.selectedCell.dataset.day;
+            const startLesson = parseInt(state.selectedCell.dataset.lesson);
+            const count = parseInt(elements.modalLessonCount.value) || 1;
+            const subjectId = elements.modalSubjectSelect.value;
+            const option = elements.modalSubjectSelect.options[elements.modalSubjectSelect.selectedIndex];
 
-                    // Заповнюємо кілька клітинок, якщо користувач вибрав кількість занять > 1
-                    for (let i = 0; i < lessonCount; i++) {
-                        const currentLesson = parseInt(lesson) + i;
-                        if (currentLesson <= 6) { // Макс 6 пар
-                            schedule[day][currentLesson] = {
-                                subjectId: parseInt(subjectId),
-                                teacherId: parseInt(teacherId),
-                                subjectName: subjectName,
-                                teacherName: teacherName,
-                                startTime: startTime,
-                                duration: duration
-                            };
+            if (!subjectId) return;
 
-                            // Оновлюємо відображення для всіх клітинок
-                            const cellSelector = document.querySelector(`[data-day="${day}"][data-lesson="${currentLesson}"]`);
-                            if (cellSelector) {
-                                cellSelector.classList.add('filled');
-                                cellSelector.querySelector('.subject-name').textContent = subjectName + (lessonCount > 1 && i === 0 ? ` (${lessonCount}×)` : '');
-                                cellSelector.querySelector('.teacher-name').textContent = `(${teacherName}) ${startTime}`;
-                            }
-                        }
-                    }
+            const subjectName = option.text.split(' (')[0];
+            const teacherId = option.dataset.teacherId;
+            const teacherName = option.dataset.teacherName || '';
+            const classroom = elements.modalClassroom.value;
 
-                    scheduleModified = true;
+            if (!state.schedule[day]) state.schedule[day] = {};
 
-                    // Зберігаємо чернетку в localStorage
-                    saveScheduleDraft();
+            for (let i = 0; i < count; i++) {
+                const lesson = startLesson + i;
+                if (lesson > 6) break;
 
-                    closeSubjectModal();
-                    updateAutoSaveStatus();
+                const currentStartTime = config.times[lesson] || elements.modalStartTime.value;
+
+                state.schedule[day][lesson] = {
+                    subjectId: parseInt(subjectId),
+                    teacherId: teacherId ? parseInt(teacherId) : null,
+                    subjectName: subjectName,
+                    teacherName: teacherName,
+                    startTime: currentStartTime,
+                    duration: 90,
+                    classroom: classroom
+                };
+
+                const cell = document.querySelector(`[data-day="${day}"][data-lesson="${lesson}"]`);
+                if (cell) {
+                    cell.classList.add('filled');
+                    cell.querySelector('.subject-name').textContent = subjectName;
+                    cell.querySelector('.teacher-name').textContent = (classroom ? '[' + classroom + '] ' : '') + teacherName;
+                    cell.querySelector('.time-info').textContent = currentStartTime;
                 }
             }
+
+            state.modified = true;
+            closeModal();
+            elements.autoSaveStatus.innerHTML = '● Є незбережені зміни';
+            elements.autoSaveStatus.className = 'error';
         });
 
-        // ================== КНОПКИ ДІЙ ==================
-        clearAllBtn.addEventListener('click', function () {
-            if (confirm('Ви впевнені? Це очистить весь розклад для цієї групи.')) {
-                schedule = {};
-                scheduleModified = true;
-                document.querySelectorAll('.schedule-cell').forEach(cell => {
-                    cell.classList.remove('filled');
-                    cell.querySelector('.subject-name').textContent = '-';
-                    cell.querySelector('.teacher-name').textContent = '';
-                });
-                // Зберігаємо чернетку в localStorage
-                saveScheduleDraft();
-                updateAutoSaveStatus();
-            }
-        });
+        elements.saveBtn.addEventListener('click', function () {
+            if (!state.currentGroup || !state.modified) return;
 
-        cancelBtn.addEventListener('click', function () {
-            if (scheduleModified && confirm('Ви маєте незбережені зміни. Скасувати?')) {
-                // Видаляємо чернетку з localStorage
-                const localStorageKey = `schedule_draft_${currentGroup}`;
-                localStorage.removeItem(localStorageKey);
-                loadScheduleForGroup(currentGroup);
-                scheduleModified = false;
-            } else if (!scheduleModified) {
-                groupSelect.value = '';
-                scheduleContainer.classList.add('hidden');
-                groupInfo.classList.add('hidden');
-            }
-        });
-
-        saveBtn.addEventListener('click', saveSchedule);
-
-        // ================== ФУНКЦІЇ ЗАВАНТАЖЕННЯ ТА ЗБЕРЕЖЕННЯ ==================
-
-        function saveScheduleDraft() {
-            /**Зберігаємо поточний стан розкладу в localStorage як чернетку*/
-            if (!currentGroup) return;
-
-            const localStorageKey = `schedule_draft_${currentGroup}`;
-            try {
-                localStorage.setItem(localStorageKey, JSON.stringify(schedule));
-                console.log('Чернетка розкладу збережена для групи', currentGroup);
-            } catch (e) {
-                console.warn('Помилка при збереженні у localStorage:', e);
-            }
-        }
-        function loadScheduleForGroup(groupId) {
-            // Спочатку перевіряємо localStorage на наявність чернетки
-            const localStorageKey = `schedule_draft_${groupId}`;
-            const draftSchedule = localStorage.getItem(localStorageKey);
-
-            let scheduleData = {};
-            let useLocalStorage = false;
-
-            if (draftSchedule) {
-                try {
-                    scheduleData = JSON.parse(draftSchedule);
-                    useLocalStorage = true;
-                    console.log('Завантажено чернетку з localStorage для групи', groupId);
-                } catch (e) {
-                    console.warn('Помилка парсингу localStorage:', e);
-                    scheduleData = window.scheduleData && window.scheduleData[groupId] || {};
-                }
-            } else {
-                // Завантажуємо з серверу через window.scheduleData
-                scheduleData = window.scheduleData && window.scheduleData[groupId] || {};
-            }
-
-            schedule = {};
-
-            document.querySelectorAll('.schedule-cell').forEach(cell => {
-                cell.classList.remove('filled');
-                cell.querySelector('.subject-name').textContent = '-';
-                cell.querySelector('.teacher-name').textContent = '';
-            });
-
-            // Заповнюємо дані, якщо вони є
-            Object.keys(scheduleData).forEach(day => {
-                const dayLessons = scheduleData[day];
-                Object.keys(dayLessons).forEach(lesson => {
-                    const cellData = dayLessons[lesson];
-                    const cell = document.querySelector(`[data-day="${day}"][data-lesson="${lesson}"]`);
-                    if (cell) {
-                        cell.classList.add('filled');
-
-                        // Проверяємо формат даних для сумісності
-                        if (typeof cellData === 'string') {
-                            // Старий формат: просто строка
-                            cell.querySelector('.subject-name').textContent = cellData;
-                            cell.querySelector('.teacher-name').textContent = '';
-                            if (!schedule[day]) schedule[day] = {};
-                            schedule[day][lesson] = { subjectId: parseInt(cellData) };
-                        } else if (cellData && cellData.subject_name) {
-                            // Новий формат з серверу
-                            cell.querySelector('.subject-name').textContent = cellData.subject_name;
-                            cell.querySelector('.teacher-name').textContent = `(${cellData.teacher_name})`;
-
-                            if (!schedule[day]) schedule[day] = {};
-                            schedule[day][lesson] = {
-                                subjectId: cellData.subject_id || cellData.assignment_id,
-                                teacherId: cellData.teacher_id,
-                                subjectName: cellData.subject_name,
-                                teacherName: cellData.teacher_name
-                            };
-                        } else if (cellData && cellData.subjectId) {
-                            // Формат з локального сховища
-                            const subjectName = cellData.subjectName || '-';
-                            const teacherName = cellData.teacherName || '';
-                            const startTime = cellData.startTime || '';
-                            cell.querySelector('.subject-name').textContent = subjectName;
-                            cell.querySelector('.teacher-name').textContent = teacherName ? `(${teacherName}) ${startTime}` : '';
-
-                            if (!schedule[day]) schedule[day] = {};
-                            schedule[day][lesson] = cellData;
-                        }
-                    }
-                });
-            });
-        }
-
-        function saveSchedule() {
-            if (!currentGroup) {
-                alert('Будь ласка, спочатку виберіть групу');
-                return;
-            }
-
-            // Перевіряємо, чи були зміни
-            if (!scheduleModified) {
-                alert('Немає змін для збереження');
-                return;
-            }
-
-            updateAutoSaveStatus('saving');
-            autoSaveStatus.textContent = 'Збереження...';
-
-            // Готуємо дані для сервера
-            const scheduleToSend = {};
-            Object.keys(schedule).forEach(day => {
-                scheduleToSend[day] = {};
-                Object.keys(schedule[day]).forEach(lesson => {
-                    const item = schedule[day][lesson];
-                    // Передаємо subject_id та teacher_id для пошуку assignment на сервері
-                    scheduleToSend[day][lesson] = {
-                        subject_id: item.subject_id || item.subjectId,
-                        teacher_id: item.teacher_id || item.teacherId
-                    };
-                });
-            });
+            elements.autoSaveStatus.textContent = 'Збереження...';
+            elements.autoSaveStatus.className = 'saving';
 
             fetch('{% url "save_schedule" %}', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken'),
-                },
-                body: JSON.stringify({
-                    group_id: parseInt(currentGroup),
-                    schedule: scheduleToSend
-                })
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+                body: JSON.stringify({ group_id: parseInt(state.currentGroup), schedule: state.schedule })
             })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        updateAutoSaveStatus('saved');
-                        autoSaveStatus.textContent = 'Збережено ✓';
-                        scheduleModified = false;
-
-                        // Очищуємо чернетку з localStorage
-                        const localStorageKey = `schedule_draft_${currentGroup}`;
-                        localStorage.removeItem(localStorageKey);
-                        console.log('Чернетка видалена для групи', currentGroup);
-
-                        setTimeout(() => {
-                            autoSaveStatus.textContent = '';
-                            autoSaveStatus.classList.remove('saved');
-                        }, 3000);
-                    } else {
-                        updateAutoSaveStatus('error');
-                        autoSaveStatus.textContent = 'Помилка: ' + (data.message || 'Невідома помилка');
-                        setTimeout(() => {
-                            autoSaveStatus.textContent = '';
-                            autoSaveStatus.classList.remove('error');
-                        }, 5000);
+                .then(r => r.json())
+                .then(res => {
+                    if (res.status === 'success') {
+                        state.modified = false;
+                        elements.autoSaveStatus.innerHTML = '✓ Збережено успішно!';
+                        elements.autoSaveStatus.className = 'saved';
                     }
-                })
-                .catch(error => {
-                    console.error('Помилка:', error);
-                    updateAutoSaveStatus('error');
-                    autoSaveStatus.textContent = 'Помилка збереження';
-                    setTimeout(() => {
-                        autoSaveStatus.textContent = '';
-                        autoSaveStatus.classList.remove('error');
-                    }, 5000);
                 });
-        }
+        });
 
-        function updateAutoSaveStatus(status = '') {
-            autoSaveStatus.classList.remove('saving', 'saved', 'error');
-            if (status) {
-                autoSaveStatus.classList.add(status);
-            }
-        }
+        function loadSchedule(groupId) {
+            document.querySelectorAll('.schedule-cell').forEach(c => {
+                c.classList.remove('filled');
+                c.querySelector('.subject-name').textContent = '-';
+                c.querySelector('.teacher-name').textContent = '';
+                c.querySelector('.time-info').textContent = '';
+            });
 
-        // ================== УТИЛІТА ==================
-        function getCookie(name) {
-            let cookieValue = null;
-            if (document.cookie && document.cookie !== '') {
-                const cookies = document.cookie.split(';');
-                for (let i = 0; i < cookies.length; i++) {
-                    const cookie = cookies[i].trim();
-                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                        break;
+            const dataEl = document.getElementById('schedule-data');
+            if (!dataEl) return;
+            const rawData = JSON.parse(dataEl.textContent);
+            state.schedule = rawData[groupId] || {};
+
+            Object.keys(state.schedule).forEach(day => {
+                const dayObj = state.schedule[day];
+                Object.keys(dayObj).forEach(lesson => {
+                    const item = dayObj[lesson];
+                    const cell = document.querySelector(`[data-day="${day}"][data-lesson="${lesson}"]`);
+                    if (cell) {
+                        cell.classList.add('filled');
+                        cell.querySelector('.subject-name').textContent = item.subject_name || item.subjectId;
+                        const teacher = item.teacher_name || '';
+                        const classroom = item.classroom || '';
+                        cell.querySelector('.teacher-name').textContent = (classroom ? '[' + classroom + '] ' : '') + teacher;
+                        cell.querySelector('.time-info').textContent = item.start_time || '';
                     }
-                }
-            }
-            return cookieValue;
+                });
+            });
         }
-
-        // ================== ІНІЧІАЛІЗАЦІЯ ДАНИХ РОЗКЛАДУ ==================
-        // Передаємо дані розкладу в JavaScript
-        const scheduleDataElement = document.getElementById('schedule-data');
-        const subjectTeachersElement = document.getElementById('subject-teachers-data');
-
-        window.scheduleData = scheduleDataElement ? JSON.parse(scheduleDataElement.textContent) : {};
-        window.subjectTeachersMap = subjectTeachersElement ? JSON.parse(subjectTeachersElement.textContent) : {};
-
-        console.log('Schedule data loaded:', window.scheduleData);
     });
 </script>
+
+{{ schedule_map|json_script:"schedule-data" }}
 {% endblock %}

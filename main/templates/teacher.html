@@ -134,6 +134,12 @@
                                 <span class="block text-xs font-bold text-primary leading-tight">
                                     {{ lesson.lesson_type|truncatechars:15 }}
                                 </span>
+                                {% if lesson.classroom %}
+                                <span
+                                    class="inline-block mt-1 px-1.5 py-0.5 rounded bg-accent/10 text-accent text-[9px] font-black uppercase tracking-tighter">
+                                    {{ lesson.classroom.name }}
+                                </span>
+                                {% endif %}
                                 {% if lesson.weight_percent %}
                                 <span class="block text-[10px] font-medium text-accent mt-0.5">
                                     Вага: {{ lesson.weight_percent }}%

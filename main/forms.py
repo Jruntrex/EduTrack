@@ -2,7 +2,7 @@
 
 from django import forms
 from django.forms import ModelForm
-from .models import User, StudyGroup, Subject, TeachingAssignment, EvaluationType
+from .models import User, StudyGroup, Subject, TeachingAssignment, EvaluationType, Lesson, Classroom
 from django.core.exceptions import ValidationError
 
 
@@ -90,14 +90,17 @@ class UserAdminForm(forms.ModelForm):
                     for group in StudyGroup.objects.all():
                         desired_assignments.add((subject.id, group.id))
                 
-                # Знаходимо призначення які треба видалити (тільки ті, що не мають LessonSession)
+                # Знаходимо призначення які треба видалити (тільки ті, що не мають Lesson)
                 for assignment in current_assignments:
                     pair = (assignment.subject_id, assignment.group_id)
                     if pair not in desired_assignments:
-                        # Перевіряємо чи є пов'язані заняття
-                        if not assignment.lessonsession_set.exists():
+                        # Перевіряємо чи є пов'язані заняття в новій системі
+                        if not Lesson.objects.filter(
+                            teacher=user, 
+                            subject=assignment.subject, 
+                            group=assignment.group
+                        ).exists():
                             assignment.delete()
-                        # Якщо є заняття - просто залишаємо це призначення
                 
                 # Додаємо нові призначення (якщо вони ще не існують)
                 existing_pairs = set(
@@ -132,4 +135,17 @@ class SubjectForm(ModelForm):
         fields = ['name', 'description']
         widgets = {
             'name': forms.TextInput(attrs={'placeholder': 'Назва предмета'}),
+        }
+
+
+class ClassroomForm(ModelForm):
+    """Форма для додавання/редагування аудиторії."""
+
+    class Meta:
+        model = Classroom
+        fields = ['name', 'building', 'capacity']
+        widgets = {
+            'name': forms.TextInput(attrs={'placeholder': 'Номер/Назва'}),
+            'building': forms.TextInput(attrs={'placeholder': 'Корпус'}),
+            'capacity': forms.NumberInput(attrs={'placeholder': 'Місткість'}),
         }
