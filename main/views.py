@@ -968,10 +968,10 @@ def teacher_journal_view(request: HttpRequest) -> HttpResponse:
                 if lesson_date not in journal_data[student_id]:
                     journal_data[student_id][lesson_date] = {}
                 
-                if perf.grade is not None:
-                    value = perf.grade
+                if perf.earned_points is not None:
+                    value = perf.earned_points
                     is_grade = True
-                    display_value = str(perf.grade)
+                    display_value = str(perf.earned_points)
                 elif perf.absence:
                     value = -1
                     is_grade = False
@@ -1275,13 +1275,13 @@ def report_rating_view(request):
     
     MIN_VOTES = 5
     
-    perf_base_filter = Q(grade__isnull=False)
-    perf_user_filter = Q(studentperformance__grade__isnull=False)
+    perf_base_filter = Q(earned_points__isnull=False)
+    perf_user_filter = Q(studentperformance__earned_points__isnull=False)
     
     if subject_id:
-        term = Q(lesson__assignment__subject_id=subject_id)
+        term = Q(lesson__subject_id=subject_id)
         perf_base_filter &= term
-        perf_user_filter &= Q(studentperformance__lesson__assignment__subject_id=subject_id)
+        perf_user_filter &= Q(studentperformance__lesson__subject_id=subject_id)
     if date_from:
         term = Q(lesson__date__gte=date_from)
         perf_base_filter &= term
@@ -1292,7 +1292,7 @@ def report_rating_view(request):
         perf_user_filter &= Q(studentperformance__lesson__date__lte=date_to)
 
     global_stats = StudentPerformance.objects.filter(perf_base_filter).annotate(
-        weighted_val=F('grade') * F('lesson__evaluation_type__weight_percent')
+        weighted_val=F('earned_points') * F('lesson__evaluation_type__weight_percent')
     ).aggregate(
         total_weighted=Sum('weighted_val'),
         total_weights=Sum('lesson__evaluation_type__weight_percent')
@@ -1309,7 +1309,7 @@ def report_rating_view(request):
     students_data = students_query.annotate(
         v=Count('studentperformance', filter=perf_user_filter),
         weighted_sum=Sum(
-            F('studentperformance__grade') * F('studentperformance__lesson__evaluation_type__weight_percent'),
+            F('studentperformance__earned_points') * F('studentperformance__lesson__evaluation_type__weight_percent'),
             filter=perf_user_filter
         ),
         weight_total=Sum(
