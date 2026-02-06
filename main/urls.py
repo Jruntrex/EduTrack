@@ -52,7 +52,14 @@ urlpatterns = [
     # 4. ВИКЛАДАЧ ТА ЖУРНАЛ
     # =========================
     path('teacher/', views.teacher_journal_view, name='teacher_journal'),
-    path('teacher/save/', views.save_journal_entries, name='save_journal_entries'),
+    # Use the new API for saving (even if frontend calls it 'save_journal_entries' or we rename it)
+    path('api/teacher/save-grade/', views.api_save_grade, name='api_save_grade'),
+    path('api/teacher/update-lesson/', views.api_update_lesson, name='api_update_lesson'),
+    path('teacher/settings/', views.teacher_settings_view, name='teacher_settings'),
+    path('api/teacher/manage-eval-types/', views.api_manage_evaluation_types, name='api_manage_evaluation_types'),
+    path('api/teacher/card-scan/', views.api_card_scan, name='api_card_scan'),
+    # Restore compat name if needed, or better:
+    path('teacher/save/', views.api_save_grade, name='save_journal_entries'), # Alias for compatibility
     # Управління типами оцінювання
     path('teacher/evaluation-types/', views.manage_evaluation_types_view, name='manage_evaluation_types'),
     path('teacher/evaluation-type/edit/<int:pk>/', views.evaluation_type_edit_view, name='edit_evaluation_type'),

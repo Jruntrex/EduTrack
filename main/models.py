@@ -294,6 +294,15 @@ class Lesson(models.Model):
     def __str__(self) -> str:
         return f"{self.date} {self.start_time} - {self.subject.name}"
 
+    @property
+    def lesson_number(self) -> int:
+        """Повертає номер пари на основі часу початку."""
+        from main.constants import DEFAULT_TIME_SLOTS
+        for num, (start, _) in DEFAULT_TIME_SLOTS.items():
+            if self.start_time == start:
+                return num
+        return 0
+
 # ==========================================
 # 4. УСПІШНІСТЬ СТУДЕНТА
 # ==========================================
@@ -327,8 +336,10 @@ class StudentPerformance(models.Model):
     
     absence = models.ForeignKey(AbsenceReason, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Пропуск")
     
-    comment = models.CharField(max_length=255, blank=True, verbose_name="Коментар")
+    comment = models.TextField(blank=True, verbose_name="Коментар")
     updated_at = models.DateTimeField(auto_now=True)
+
+
 
     class Meta:
         db_table = 'student_performance'
@@ -343,3 +354,26 @@ class StudentPerformance(models.Model):
         # Валідація: студент має належати до групи, яка вказана в уроці
         if self.student.group != self.lesson.group:
             raise ValidationError("Студент не належить до групи, для якої проводиться урок.")
+
+class BuildingAccessLog(models.Model):
+    """
+    Лог доступу до будівлі (Турнікет).
+    Фіксує вхід/вихід студентів.
+    """
+    ACTION_CHOICES = [
+        ('ENTER', 'Вхід'),
+        ('EXIT', 'Вихід'),
+    ]
+
+    student = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'role': 'student'}, verbose_name="Студент")
+    timestamp = models.DateTimeField(auto_now_add=True, verbose_name="Час події")
+    action = models.CharField(max_length=10, choices=ACTION_CHOICES, verbose_name="Дія")
+
+    class Meta:
+        db_table = 'building_access_logs'
+        ordering = ['-timestamp']
+        verbose_name = "Лог доступу"
+        verbose_name_plural = "Логи доступу"
+
+    def __str__(self) -> str:
+        return f"{self.student.full_name} - {self.get_action_display()} at {self.timestamp}"

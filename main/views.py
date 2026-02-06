@@ -809,309 +809,243 @@ def schedule_view(request):
 
 @role_required('teacher')
 def teacher_journal_view(request: HttpRequest) -> HttpResponse:
-    # Отримуємо ID з request.user
+    from main.services.grading_service import get_teacher_journal_context
+    
     teacher_id = request.user.id
     
+    # Get all assignments for the teacher to populate filters
     assignments = TeachingAssignment.objects.filter(
         teacher_id=teacher_id
     ).select_related('subject', 'group')
 
     selected_subject_id = request.GET.get('subject')
     selected_group_id = request.GET.get('group')
-    week_shift = int(request.GET.get('week', 0))
     
-    today = date.today()
-    days_since_monday = today.weekday()
-    current_monday = today - timedelta(days=days_since_monday)
-    start_of_week = current_monday + timedelta(weeks=week_shift)
-    end_of_week = start_of_week + timedelta(days=4)
+    # Parse week offset
+    try:
+        week_offset = int(request.GET.get('week', 0))
+    except (ValueError, TypeError):
+        week_offset = 0
     
-    subjects = []
     groups = []
-    seen_subjects = set()
     seen_groups = set()
-    
     for assignment in assignments:
-        if assignment.subject.id not in seen_subjects:
-            subject_obj = type('SubjectFilter', (), {
-                'pk': assignment.subject.id,
-                'subject_name': assignment.subject.name
-            })()
-            subjects.append(subject_obj)
-            seen_subjects.add(assignment.subject.id)
-        
         if assignment.group.id not in seen_groups:
-            group_obj = type('GroupFilter', (), {
-                'pk': assignment.group.id,
+            groups.append({
+                'id': assignment.group.id,
                 'name': assignment.group.name
-            })()
-            groups.append(group_obj)
+            })
             seen_groups.add(assignment.group.id)
     
-    selected_assignment = None
-    students = []
-    lesson_headers = []
-    journal_data = {}
+    # Filter subjects based on selected group if one is picked
+    subjects = []
+    seen_subjects = set()
+    subject_assignments = assignments
+    if selected_group_id:
+        subject_assignments = assignments.filter(group_id=selected_group_id)
     
-    if selected_subject_id and selected_group_id:
-        try:
-            selected_assignment = assignments.get(
-                subject_id=selected_subject_id,
-                group_id=selected_group_id
-            )
+    for assignment in subject_assignments:
+        if assignment.subject.id not in seen_subjects:
+            subjects.append({
+                'id': assignment.subject.id,
+                'name': assignment.subject.name
+            })
+            seen_subjects.add(assignment.subject.id)
             
-            search_query = request.GET.get('search', '')
-            students_query = selected_assignment.group.students.filter(role='student')
-            
-            if search_query:
-                students_query = students_query.filter(full_name__icontains=search_query)
-            
-            students = students_query.order_by('full_name')
-            
-            schedule_items = ScheduleTemplate.objects.filter(
-                group=selected_assignment.group,
-                subject=selected_assignment.subject,
-                teacher=selected_assignment.teacher
-            ).order_by('day_of_week')
-            
-            date_lessons_map = {}
-            
-            for schedule_item in schedule_items:
-                lesson_date = start_of_week + timedelta(days=schedule_item.day_of_week - 1)
-                
-                if lesson_date not in date_lessons_map:
-                    date_lessons_map[lesson_date] = []
-                
-                lesson_type = 'Л'
-                
-                date_lessons_map[lesson_date].append({
-                    'lesson_num': schedule_item.lesson_number,
-                    'lesson_type': lesson_type,
-                    'classroom': schedule_item.classroom
-                })
-            
-            existing_sessions = Lesson.objects.filter(
-                group=selected_assignment.group,
-                subject=selected_assignment.subject,
-                teacher=selected_assignment.teacher,
-                date__gte=start_of_week,
-                date__lte=end_of_week
-            ).select_related('evaluation_type', 'classroom')
-            
-            sessions_map = {
-                (sess.date, sess.lesson_number): sess 
-                for sess in existing_sessions
-            }
-
-            for lesson_date in sorted(date_lessons_map.keys()):
-                day_names = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Нд']
-                day_name = day_names[lesson_date.weekday()]
-                date_formatted = lesson_date.strftime('%d.%m')
-                
-                lesson_header = type('LessonHeader', (), {
-                    'date': lesson_date,
-                    'date_formatted': date_formatted,
-                    'day_name': day_name,
-                    'lessons': []
-                })()
-                
-                for lesson_info in date_lessons_map[lesson_date]:
-                    l_num = lesson_info['lesson_num']
-                    
-                    session = sessions_map.get((lesson_date, l_num))
-                    
-                    if session:
-                        l_type = session.evaluation_type.name if session.evaluation_type else 'Заняття'
-                        l_weight = session.evaluation_type.weight_percent if session.evaluation_type else None
-                        l_topic = session.topic
-                        l_classroom = session.classroom
-                    else:
-                        l_type = 'Заняття'
-                        l_weight = None
-                        l_topic = ''
-                        l_classroom = lesson_info.get('classroom')
-
-                    lesson_obj = type('Lesson', (), {
-                        'lesson_num': l_num,
-                        'lesson_type': l_type,
-                        'weight_percent': l_weight,
-                        'topic': l_topic,
-                        'classroom': l_classroom
-                    })()
-                    lesson_header.lessons.append(lesson_obj)
-                
-                lesson_headers.append(lesson_header)
-            
-            lessons = Lesson.objects.filter(
-                group=selected_assignment.group,
-                subject=selected_assignment.subject,
-                teacher=selected_assignment.teacher,
-                date__gte=start_of_week,
-                date__lte=end_of_week
-            )
-            
-            performances = StudentPerformance.objects.filter(
-                lesson__in=lessons
-            ).select_related('lesson', 'absence')
-            
-            for student in students:
-                journal_data[student.pk] = {}
-            
-            for perf in performances:
-                student_id = perf.student_id
-                lesson_date = perf.lesson.date
-                lesson_num = perf.lesson.lesson_number
-                
-                if student_id not in journal_data:
-                    journal_data[student_id] = {}
-                
-                if lesson_date not in journal_data[student_id]:
-                    journal_data[student_id][lesson_date] = {}
-                
-                if perf.earned_points is not None:
-                    value = perf.earned_points
-                    is_grade = True
-                    display_value = str(perf.earned_points)
-                elif perf.absence:
-                    value = -1
-                    is_grade = False
-                    display_value = perf.absence.code
-                else:
-                    value = None
-                    is_grade = False
-                    display_value = '—'
-                
-                entry = type('JournalEntry', (), {
-                    'value': value,
-                    'is_grade': is_grade,
-                    'get_display_value': display_value
-                })()
-                
-                journal_data[student_id][lesson_date][lesson_num] = entry
-                
-        except TeachingAssignment.DoesNotExist:
-            messages.error(request, "Призначення не знайдено")
-
     context = {
-        'subjects': subjects,
-        'groups': groups,
+        'subjects': sorted(subjects, key=lambda x: x['name']),
+        'groups': sorted(groups, key=lambda x: x['name']),
         'selected_subject_id': selected_subject_id,
         'selected_group_id': selected_group_id,
-        'selected_assignment': selected_assignment,
-        'students': students,
-        'lesson_headers': lesson_headers,
-        'journal_data': journal_data,
-        'week_shift': week_shift,
-        'start_of_week': start_of_week,
-        'end_of_week': end_of_week,
+        'week_offset': week_offset,
         'active_page': 'teacher',
     }
+
+    if selected_subject_id and selected_group_id:
+        try:
+            # Check if this specific assignment exists for the teacher
+            selected_assignment = assignments.filter(
+                subject_id=selected_subject_id,
+                group_id=selected_group_id
+            ).first()
+
+            if not selected_assignment:
+                messages.warning(request, "У вас немає призначення на цей предмет у цій групі.")
+            else:
+                journal_context = get_teacher_journal_context(
+                    group_id=int(selected_group_id),
+                    subject_id=int(selected_subject_id),
+                    week_offset=week_offset
+                )
+                context.update(journal_context)
+                context['selected_assignment'] = selected_assignment
+            
+        except Exception as e:
+            messages.error(request, f"Помилка завантаження журналу: {str(e)}")
+
     return render(request, 'teacher.html', context)
 
-@role_required('teacher')
 @require_POST
-def save_journal_entries(request: HttpRequest) -> JsonResponse:
-    """Збереження змін у журналі викладача."""
-    from main.constants import DEFAULT_LESSON_TIMES, AbsenceCode
-    from main.forms import JournalEntryForm
-    
+def api_save_grade(request: HttpRequest) -> JsonResponse:
+    """
+    API for saving a single grade entry instantly.
+    Payload: { student_id, date, lesson_num, subject_id, value, comment }
+    """
+    from main.constants import DEFAULT_LESSON_TIMES
+    from datetime import datetime, timedelta, date
+
     try:
         data = json.loads(request.body)
+        
+        # Handle both flat and nested (for compatibility if needed, but preference for flat)
+        if 'changes' in data and len(data['changes']) > 0:
+            data = data['changes'][0]
+            student_id = data.get('student_pk')
+        else:
+            student_id = data.get('student_id')
+
+        lesson_id = data.get('lesson_id')
+        lesson_date_str = data.get('date')
+        lesson_num = data.get('lesson_num')
+        subject_id = data.get('subject_id')
+        raw_value = data.get('value')
+        comment_text = data.get('comment', '')
+
+        if not lesson_id and not (student_id and lesson_date_str and lesson_num and subject_id):
+            return JsonResponse({'status': 'error', 'message': f'Missing coordinates or lesson_id: s:{student_id} d:{lesson_date_str} n:{lesson_num} sub:{subject_id}'}, status=400)
+
+        # 1. Resolve Teacher and Authorization
+        if not request.user.is_authenticated or request.user.role != 'teacher':
+             return JsonResponse({'status': 'error', 'message': 'Forbidden'}, status=403)
         teacher_id = request.user.id
-        
-        changes = data.get('changes', [])
-        
-        if not changes:
-            return JsonResponse({'status': 'error', 'message': 'Відсутні дані'}, status=400)
 
-        with transaction.atomic():
-            for change in changes:
-                # Валідація через форму
-                form = JournalEntryForm(change)
-                if not form.is_valid():
-                    # Можна логувати помилки валідації form.errors
-                    continue
-                
-                cd = form.cleaned_data
-                student_pk = cd['student_pk']
-                lesson_date = cd['date']
-                lesson_num = cd['lesson_num']
-                value = cd['value']
-                subject_id = cd['subject_id']
-                
-                try:
-                    student = User.objects.get(pk=student_pk)
-                    assignment = TeachingAssignment.objects.get(
-                        teacher_id=teacher_id,
-                        subject_id=subject_id,
-                        group=student.group
-                    )
-                except (User.DoesNotExist, TeachingAssignment.DoesNotExist):
-                    continue
-                
-                eval_type = assignment.evaluation_types.first()
-                if not eval_type:
-                    eval_type = EvaluationType.objects.create(
-                        assignment=assignment, 
-                        name="Заняття", 
-                        weight_percent=0
-                    )
-                
-                # Використовуємо константи для часу уроків
-                start_time = DEFAULT_LESSON_TIMES.get(int(lesson_num), "08:30")
-                
-                lesson_session, created = Lesson.objects.get_or_create(
-                    group=student.group,
-                    subject=assignment.subject,
-                    teacher=assignment.teacher,
-                    date=lesson_date,
-                    start_time=start_time,
-                    defaults={
-                        'evaluation_type': eval_type,
-                        'end_time': (datetime.combine(date.today(), datetime.strptime(start_time, "%H:%M").time()) + timedelta(minutes=90)).time()
-                    }
-                )
-                
-                grade_value = None
-                absence_obj = None
-                
-                # Видалення запису якщо значення пусте
-                if value == '—' or value is None:
-                    StudentPerformance.objects.filter(
-                        lesson=lesson_session,
-                        student_id=student_pk
-                    ).delete()
-                    continue
-                
-                # Парсинг значення
-                try:
-                    val_int = int(value)
-                    if val_int > 0:
-                        # Позитивне значення = оцінка
-                        grade_value = val_int
-                    else:
-                        # Негативне значення = код пропуску
-                        code_str = AbsenceCode.get_value_code(val_int)
-                        absence_obj = AbsenceReason.objects.filter(code=code_str).first()
-                        if not absence_obj:
-                            absence_obj = AbsenceReason.objects.first()
-                except (ValueError, TypeError):
-                    continue
-                
-                StudentPerformance.objects.update_or_create(
-                    lesson=lesson_session,
-                    student_id=student_pk,
-                    defaults={
-                        'earned_points': grade_value,
-                        'absence': absence_obj
-                    }
-                )
+        # 2. Resolve Student and Group
+        student = get_object_or_404(User, pk=student_id)
+        group = student.group
+        if not group:
+             return JsonResponse({'status': 'error', 'message': 'Student has no group'}, status=400)
 
-        return JsonResponse({'status': 'success', 'message': 'Дані збережено'})
+        # 3. Resolve Lesson
+        # Get start_time for the lesson number
+        start_time_str = DEFAULT_LESSON_TIMES.get(int(lesson_num), "08:30")
+        start_time = datetime.strptime(start_time_str, "%H:%M").time()
+        
+        # Determine Assignment
+        try:
+            assignment = TeachingAssignment.objects.get(
+                teacher_id=teacher_id,
+                subject_id=int(subject_id),
+                group=group
+            )
+        except TeachingAssignment.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': f'Assignment not found for teacher {teacher_id}, subject {subject_id}, group {group.id}'}, status=403)
+
+        # Get/Create Lesson
+        eval_type = assignment.evaluation_types.first()
+        if not eval_type:
+            eval_type = EvaluationType.objects.create(
+                assignment=assignment, 
+                name="Заняття", 
+                weight_percent=0
+            )
+
+        if lesson_id:
+             current_lesson = get_object_or_404(Lesson, id=lesson_id)
+        else:
+             # Fallback to coordinates with safer time lookup
+             from main.constants import DEFAULT_TIME_SLOTS
+             start_time_info = DEFAULT_TIME_SLOTS.get(int(lesson_num))
+             if start_time_info:
+                  start_time = start_time_info[0]
+             else:
+                  # Last resort fallback to deprecated mapping
+                  start_time_str = DEFAULT_LESSON_TIMES.get(int(lesson_num), "08:30")
+                  start_time = datetime.strptime(start_time_str, "%H:%M").time()
+
+             # CRITICAL: Use only unique fields for lookup to avoid IntegrityError
+             current_lesson, created = Lesson.objects.get_or_create(
+                 group=group,
+                 date=lesson_date_str,
+                 start_time=start_time,
+                 defaults={
+                     'subject_id': int(subject_id),
+                     'teacher_id': teacher_id,
+                     'end_time': (datetime.combine(date.today(), start_time) + timedelta(minutes=90)).time(),
+                     'evaluation_type': eval_type
+                 }
+             )
+             
+             if not created:
+                 # Check for subject conflict
+                 if current_lesson.subject_id != int(subject_id):
+                     print(f"[DEBUG] Lesson subject conflict: DB={current_lesson.subject_id}, REQ={subject_id}. Updating lesson subject.")
+                     current_lesson.subject_id = int(subject_id)
+                     current_lesson.teacher_id = teacher_id
+                     current_lesson.evaluation_type = eval_type
+                     current_lesson.save()
+                 elif current_lesson.evaluation_type_id != eval_type.id:
+                     current_lesson.evaluation_type = eval_type
+                     current_lesson.save()
+        
+        print(f"[DEBUG] Using Lesson: id={current_lesson.id}, subject={current_lesson.subject_id}, group={current_lesson.group_id}")
+        
+        # 4. Parse Value and Save Performance
+        grade_value = None
+        absence_obj = None
+
+        if raw_value in [None, '', '—']:
+             StudentPerformance.objects.filter(lesson=current_lesson, student_id=student_id).delete()
+             return JsonResponse({'status': 'success', 'message': 'Cleared'})
+
+        # Refined Parsing (Compatible with 'H', 'N', and numeric grades)
+        raw_str = str(raw_value).upper().strip()
+        if raw_str in ['H', 'N', 'Н']: # Cyrillic H
+             absence_obj = AbsenceReason.objects.filter(code='Н').first() or AbsenceReason.objects.first()
+        elif raw_str.isdigit() or (raw_str.startswith('-') and raw_str[1:].isdigit()):
+             grade_value = int(raw_str)
+        
+        print(f"[DEBUG] Saving Grade: Student={student_id}, Lesson={current_lesson.id}, Value={raw_value}")
+        
+        perf, created = StudentPerformance.objects.update_or_create(
+            lesson=current_lesson,
+            student_id=student_id,
+            defaults={
+                'earned_points': grade_value,
+                'absence': absence_obj,
+                'comment': comment_text
+            }
+        )
+        print(f"[DEBUG] Performance saved: id={perf.id}, created={created}")
+        
+        return JsonResponse({'status': 'success', 'message': 'Saved'})
 
     except Exception as e:
         import traceback
-        traceback.print_exc()
+        print(traceback.format_exc())
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@require_POST
+def api_card_scan(request) -> JsonResponse:
+    """
+    Simulates RFID Scan.
+    Payload: { student_id, action (ENTER/EXIT) }
+    """
+    from main.models import BuildingAccessLog
+    
+    try:
+        data = json.loads(request.body)
+        student_id = data.get('student_id')
+        action = data.get('action', 'ENTER') # ENTER or EXIT
+        
+        BuildingAccessLog.objects.create(
+            student_id=student_id,
+            action=action
+        )
+        return JsonResponse({'status': 'success'})
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc()) # Print to server console
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
 # =========================
@@ -1715,3 +1649,106 @@ def student_delete(request, pk):
     student.delete()
     messages.success(request, f"Студента {name} видалено.")
     return redirect('students_list')
+
+@require_POST
+@role_required('teacher')
+def api_update_lesson(request: HttpRequest) -> JsonResponse:
+    """API для оновлення теми та типу уроку."""
+    try:
+        data = json.loads(request.body)
+        lesson_id = data.get('lesson_id')
+        topic = data.get('topic')
+        type_id = data.get('type_id')
+        
+        lesson = get_object_or_404(Lesson, id=lesson_id, teacher=request.user)
+        
+        if topic is not None:
+            lesson.topic = topic
+            
+        if type_id:
+            etype = get_object_or_404(EvaluationType, id=type_id, assignment__teacher=request.user)
+            lesson.evaluation_type = etype
+            
+        lesson.save()
+        
+        return JsonResponse({
+            'status': 'success',
+            'topic': lesson.topic,
+            'type_name': lesson.evaluation_type.name if lesson.evaluation_type else '—',
+            'max_points': float(lesson.evaluation_type.weight_percent) if lesson.evaluation_type else 12
+        })
+        
+    except Exception as e:
+        import traceback
+        print(traceback.format_exc())
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+@role_required('teacher')
+def teacher_settings_view(request: HttpRequest) -> HttpResponse:
+    """Сторінка налаштувань викладача для керування типами занять."""
+    teacher = request.user
+    assignments = TeachingAssignment.objects.filter(teacher=teacher).select_related('subject', 'group')
+    
+    settings_data = []
+    for a in assignments:
+        types = a.evaluation_types.all()
+        settings_data.append({
+            'assignment': a,
+            'types': types
+        })
+        
+    return render(request, 'teacher_settings.html', {
+        'settings_data': settings_data,
+        'active_page': 'teacher'
+    })
+
+@require_POST
+@role_required('teacher')
+def api_manage_evaluation_types(request: HttpRequest) -> JsonResponse:
+    """API для CRUD операцій над EvaluationType."""
+    try:
+        data = json.loads(request.body)
+        action = data.get('action')
+        
+        if action == 'create':
+            assignment_id = data.get('assignment_id')
+            name = data.get('name')
+            weight = data.get('weight', 0)
+            
+            assignment = get_object_or_404(TeachingAssignment, id=assignment_id, teacher=request.user)
+            etype = EvaluationType.objects.create(
+                assignment=assignment,
+                name=name,
+                weight_percent=weight
+            )
+            return JsonResponse({'status': 'success', 'id': etype.id})
+            
+        elif action == 'update':
+            type_id = data.get('id')
+            name = data.get('name')
+            weight = data.get('weight')
+            
+            etype = get_object_or_404(EvaluationType, id=type_id, assignment__teacher=request.user)
+            etype.name = name
+            etype.weight_percent = weight
+            etype.save()
+            return JsonResponse({'status': 'success'})
+            
+        elif action == 'delete':
+            type_id = data.get('id')
+            etype = get_object_or_404(EvaluationType, id=type_id, assignment__teacher=request.user)
+            
+            if Lesson.objects.filter(evaluation_type=etype).exists():
+                return JsonResponse({
+                    'status': 'error', 
+                    'message': 'Цей тип вже використовується в уроках і не може бути видалений.'
+                }, status=400)
+                
+            etype.delete()
+            return JsonResponse({'status': 'success'})
+            
+        return JsonResponse({'status': 'error', 'message': 'Unknown action'}, status=400)
+        
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
