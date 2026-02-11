@@ -1,0 +1,283 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Дашборд{% endblock %}
+{% block header_title %}Мій Дашборд{% endblock %}
+
+{% block extra_head %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    .glass-tile {
+        background: rgba(255, 255, 255, 0.7);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .custom-shadow {
+        box-shadow: 0 10px 30px -5px rgba(0, 0, 0, 0.05);
+    }
+
+    canvas {
+        width: 100% !important;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="grid grid-cols-1 md:grid-cols-4 gap-6 pb-10">
+
+    <!-- 1. Динаміка успішності (Large Tile) -->
+    <div
+        class="col-span-1 md:col-span-3 bg-white rounded-3xl custom-shadow p-8 relative overflow-hidden flex flex-col justify-between min-h-[400px]">
+        <div>
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-gray-500 font-semibold tracking-wide uppercase text-sm">Динаміка успішності</h3>
+                <div class="flex gap-2">
+                    <button
+                        class="px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-xs font-bold border border-blue-100">Останні
+                        30 оцінок</button>
+                    <!-- <button class="px-4 py-1.5 bg-white text-gray-400 rounded-full text-xs font-semibold hover:bg-gray-50 transition-colors">Семестр</button> -->
+                </div>
+            </div>
+            <div class="relative h-64">
+                <canvas id="performanceChart"></canvas>
+            </div>
+        </div>
+        <div class="mt-4 pt-4 border-t border-gray-50 flex justify-between items-center text-xs text-gray-400">
+            <span>Показано останні навчальні активності</span>
+            <a href="{% url 'student_grades' %}" class="text-blue-500 font-bold hover:underline">Детальніше →</a>
+        </div>
+    </div>
+
+    <!-- 2. Середній бал (Accent Tile) -->
+    <div
+        class="col-span-1 bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-3xl shadow-xl p-8 flex flex-col justify-between">
+        <div>
+            <div class="bg-blue-400/30 w-12 h-12 rounded-2xl flex items-center justify-center mb-6">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+            </div>
+            <span class="text-blue-100 text-sm font-medium">Ваш середній бал</span>
+            <div class="text-7xl font-black mt-2 tracking-tighter">{{ avg_score }}</div>
+        </div>
+        <div class="text-xs text-blue-200/80 font-medium">
+            <span class="bg-white/20 px-2 py-1 rounded-lg">Загальний рейтинг</span>
+        </div>
+    </div>
+
+    <!-- 3. Наступна пара (Info Tile) -->
+    <div
+        class="col-span-1 md:col-span-2 bg-white rounded-3xl custom-shadow p-8 flex flex-col justify-between relative overflow-hidden">
+        {% with lesson=current_lesson|default:next_lesson %}
+        {% if lesson %}
+        <div class="absolute top-0 right-0 p-6 opacity-5">
+            <svg class="w-32 h-32 text-gray-900" fill="currentColor" viewBox="0 0 24 24">
+                <path
+                    d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67V7z" />
+            </svg>
+        </div>
+        <div>
+            <div
+                class="text-xs {% if current_lesson %}text-green-500{% else %}text-blue-500{% endif %} uppercase font-black tracking-widest mb-4 flex items-center gap-2">
+                <span
+                    class="w-2 h-2 {% if current_lesson %}bg-green-500 animate-pulse{% else %}bg-blue-500{% endif %} rounded-full"></span>
+                {% if current_lesson %}ЗАРАЗ У ЕФІРІ{% else %}Наступна подія{% endif %}
+            </div>
+            <div class="text-3xl font-extrabold text-gray-800 mb-2 leading-tight">{{ lesson.subject.name }}</div>
+            <div class="flex items-center gap-4 text-gray-500 mb-6">
+                <div class="flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span class="font-bold">{{ lesson.start_time|time:"H:i" }}</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span class="font-bold">Ауд. {{ lesson.classroom.name|default:"—" }}</span>
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 font-bold">
+                {{ lesson.teacher.full_name|slice:":1" }}
+            </div>
+            <div class="text-sm">
+                <div class="text-gray-900 font-bold">{{ lesson.teacher.full_name }}</div>
+                <div class="text-gray-400 text-xs">Викладач</div>
+            </div>
+        </div>
+        {% else %}
+        <div class="flex flex-col items-center justify-center h-full text-center text-gray-400">
+            <svg class="w-12 h-12 mb-2 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+            <p class="font-medium">На найближчий час пар немає</p>
+        </div>
+        {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- 4. Відвідуваність (Stats Tile) -->
+    <div class="col-span-1 md:col-span-2 bg-white rounded-3xl custom-shadow p-8 flex items-center justify-between">
+        <div>
+            <h3 class="text-gray-400 font-bold text-xs uppercase tracking-widest mb-1">Відвідуваність</h3>
+            <div class="text-5xl font-black text-gray-800">{{ attendance_percent }}%</div>
+            <div class="mt-4 flex gap-4">
+                <div class="flex items-center gap-1.5">
+                    <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
+                    <span class="text-xs font-bold text-gray-500">Присутній</span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <span class="w-2 h-2 bg-red-400 rounded-full"></span>
+                    <span class="text-xs font-bold text-gray-500">Пропуски</span>
+                </div>
+            </div>
+        </div>
+        <div class="w-32 h-32">
+            <canvas id="attendanceChart"></canvas>
+        </div>
+    </div>
+
+    <!-- 5. Останні події (Full Width Tile) -->
+    <div class="col-span-1 md:col-span-4 bg-white rounded-3xl custom-shadow p-8">
+        <h3 class="text-gray-500 font-semibold tracking-wide uppercase text-sm mb-6">Останні оцінки</h3>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="text-xs font-bold text-gray-400 border-b border-gray-100 italic uppercase">
+                        <th class="pb-4 pr-4">Дата</th>
+                        <th class="pb-4 pr-4">Предмет</th>
+                        <th class="pb-4 pr-4">Тема заняття</th>
+                        <th class="pb-4 text-right">Бал</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-50">
+                    {% for perf in recent_events %}
+                    <tr class="group hover:bg-gray-50/50 transition-colors">
+                        <td class="py-4 text-sm text-gray-500">{{ perf.lesson.date|date:"d.m" }}</td>
+                        <td class="py-4">
+                            <div class="font-bold text-gray-800">{{ perf.lesson.subject.name }}</div>
+                            <div class="text-xs text-gray-400">{{ perf.lesson.teacher.full_name }}</div>
+                        </td>
+                        <td class="py-4 text-sm text-gray-600 italic">
+                            {{ perf.lesson.topic|default:"—" }}
+                        </td>
+                        <td class="py-4 text-right">
+                            <span
+                                class="inline-flex items-center justify-center w-10 h-10 rounded-xl {% if perf.earned_points >= 10 %}bg-green-50 text-green-600{% elif perf.earned_points >= 7 %}bg-blue-50 text-blue-600{% else %}bg-orange-50 text-orange-600{% endif %} font-black text-lg">
+                                {{ perf.earned_points|floatformat:0 }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="py-10 text-center text-gray-400 font-medium italic">
+                            Записів ще немає
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // 1. Performance Chart (Line)
+    const perfCtx = document.getElementById('performanceChart').getContext('2d');
+
+    // Gradient for the area under the line
+    let gradient = perfCtx.createLinearGradient(0, 0, 0, 300);
+    gradient.addColorStop(0, 'rgba(59, 130, 246, 0.4)');
+    gradient.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+
+    new Chart(perfCtx, {
+        type: 'line',
+        data: {
+            labels: JSON.parse('{{ graph_labels_json|escapejs }}'),
+            datasets: [{
+                label: 'Бал',
+                data: JSON.parse('{{ graph_points_json|escapejs }}'),
+                borderColor: '#2563EB',
+                borderWidth: 4,
+                backgroundColor: gradient,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 0,
+                pointHoverRadius: 6,
+                pointHoverBackgroundColor: '#2563EB',
+                pointHoverBorderColor: '#fff',
+                pointHoverBorderWidth: 3
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false },
+                tooltip: {
+                    backgroundColor: '#1e293b',
+                    padding: 12,
+                    titleFont: { size: 14, weight: 'bold' },
+                    bodyFont: { size: 13 },
+                    displayColors: false,
+                    callbacks: {
+                        label: function (context) { return ` Оцінка: ${context.parsed.y} балів`; }
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    grid: { display: false },
+                    ticks: { color: '#94a3b8', font: { size: 11, weight: '600' } }
+                },
+                y: {
+                    beginAtZero: true,
+                    grid: { color: '#f1f5f9', borderDash: [5, 5] },
+                    ticks: { color: '#94a3b8', font: { size: 11 } }
+                }
+            }
+        }
+    });
+
+    // 2. Attendance Chart (Doughnut)
+    const attendCtx = document.getElementById('attendanceChart').getContext('2d');
+    const attendData = JSON.parse('{{ attendance_json|escapejs }}');
+
+    new Chart(attendCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Присутній', 'Поважна', 'Неповажна'],
+            datasets: [{
+                data: [attendData.present, attendData.respectful, attendData.unrespectful],
+                backgroundColor: ['#3b82f6', '#93c5fd', '#f87171'],
+                hoverOffset: 4,
+                borderWidth: 0,
+                borderRadius: 4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            cutout: '75%',
+            plugins: {
+                legend: { display: false },
+                tooltip: { enabled: true }
+            }
+        }
+    });
+</script>
+{% endblock %}

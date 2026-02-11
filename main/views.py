@@ -57,9 +57,9 @@ def role_required(allowed_roles: Union[str, List[str]]) -> Callable:
                 messages.error(request, "У вас немає прав для доступу до цієї сторінки.")
                 # Редірект на "свою" сторінку, щоб уникнути циклів
                 if request.user.role == 'student':
-                    return redirect('student_grades')
+                    return redirect('student_dashboard')
                 elif request.user.role == 'teacher':
-                    return redirect('teacher_journal')
+                    return redirect('teacher_dashboard')
                 else:
                     return redirect('login')
 
@@ -101,9 +101,9 @@ def login_view(request: HttpRequest) -> HttpResponse:
         if role == 'admin':
             return redirect('admin_panel')
         if role == 'teacher':
-            return redirect('teacher_journal')
+            return redirect('teacher_dashboard')
         if role == 'student':
-            return redirect('student_grades')
+            return redirect('student_dashboard')
 
     return render(request, 'index.html')
 
@@ -124,9 +124,9 @@ def login_process(request):
         if user.role == 'admin':
             return redirect('admin_panel')
         elif user.role == 'teacher':
-            return redirect('teacher_journal')
+            return redirect('teacher_dashboard')
         elif user.role == 'student':
-            return redirect('student_grades')
+            return redirect('student_dashboard')
         else:
             return redirect('login')
     else:
@@ -909,7 +909,8 @@ def api_save_grade(request: HttpRequest) -> JsonResponse:
         lesson_num = data.get('lesson_num')
         subject_id = data.get('subject_id')
         raw_value = data.get('value')
-        comment_text = data.get('comment', '')
+        absence_id = data.get('absence_id')
+        comment_text = data.get('comment')
 
         if not lesson_id and not (student_id and lesson_date_str and lesson_num and subject_id):
             return JsonResponse({'status': 'error', 'message': f'Missing coordinates or lesson_id: s:{student_id} d:{lesson_date_str} n:{lesson_num} sub:{subject_id}'}, status=400)
@@ -998,22 +999,33 @@ def api_save_grade(request: HttpRequest) -> JsonResponse:
              return JsonResponse({'status': 'success', 'message': 'Cleared'})
 
         # Refined Parsing (Compatible with 'H', 'N', and numeric grades)
-        raw_str = str(raw_value).upper().strip()
+        raw_str = str(raw_value).upper().strip() if raw_value is not None else ""
         if raw_str in ['H', 'N', 'Н']: # Cyrillic H
              absence_obj = AbsenceReason.objects.filter(code='Н').first() or AbsenceReason.objects.first()
+        elif absence_id:
+             absence_obj = AbsenceReason.objects.filter(id=absence_id).first()
         elif raw_str.isdigit() or (raw_str.startswith('-') and raw_str[1:].isdigit()):
              grade_value = int(raw_str)
         
         print(f"[DEBUG] Saving Grade: Student={student_id}, Lesson={current_lesson.id}, Value={raw_value}")
         
+        defaults = {}
+        if grade_value is not None:
+            defaults['earned_points'] = grade_value
+            defaults['absence'] = None  # Clear absence if grade is set
+        
+        if 'absence_id' in data or absence_obj:
+            defaults['absence'] = absence_obj
+            if absence_obj:
+                defaults['earned_points'] = None # Clear grade if absent
+        
+        if comment_text is not None:
+            defaults['comment'] = comment_text
+
         perf, created = StudentPerformance.objects.update_or_create(
             lesson=current_lesson,
             student_id=student_id,
-            defaults={
-                'earned_points': grade_value,
-                'absence': absence_obj,
-                'comment': comment_text
-            }
+            defaults=defaults
         )
         print(f"[DEBUG] Performance saved: id={perf.id}, created={created}")
         
@@ -1137,6 +1149,184 @@ def student_attendance_view(request: HttpRequest) -> HttpResponse:
         'active_page': 'student_attendance',
     }
     return render(request, 'student_attendance.html', context)
+
+
+@role_required('teacher')
+def teacher_dashboard_view(request):
+    """
+    Командний центр викладача.
+    Показує: розклад на сьогодні, проблемних студентів, статистику.
+    """
+    teacher = request.user
+    today = date.today()
+    
+    # 1. Розклад на СЬОГОДНІ
+    today_lessons = Lesson.objects.filter(
+        teacher=teacher, 
+        date=today
+    ).select_related('group', 'subject', 'classroom', 'evaluation_type').order_by('start_time')
+
+    # 2. "Радар Ризику" (Студенти з низьким середнім балом у ваших групах)
+    my_groups = TeachingAssignment.objects.filter(teacher=teacher).values_list('group', flat=True)
+    
+    risk_students = []
+    students_in_danger = User.objects.filter(
+        group__in=my_groups,
+        role='student'
+    ).annotate(
+        absences_count=Count('studentperformance', filter=Q(studentperformance__absence__isnull=False))
+    ).filter(absences_count__gte=3).order_by('-absences_count')[:5]
+
+    for s in students_in_danger:
+        risk_students.append({
+            'name': s.full_name,
+            'group': s.group.name,
+            'issue': f"{s.absences_count} пропусків",
+            'severity': 'high' if s.absences_count > 5 else 'medium'
+        })
+
+    # 3. Статистика за тиждень (кількість проведених пар)
+    start_week = today - timedelta(days=today.weekday())
+    end_week = start_week + timedelta(days=6)
+    
+    weekly_load = Lesson.objects.filter(
+        teacher=teacher,
+        date__range=[start_week, end_week]
+    ).count()
+
+    context = {
+        'today_lessons': today_lessons,
+        'risk_students': risk_students,
+        'weekly_load': weekly_load,
+        'active_page': 'teacher_dashboard',
+    }
+    return render(request, 'teacher_dashboard.html', context)
+
+@role_required('teacher')
+def teacher_live_mode_view(request, lesson_id):
+    """
+    Інтерактивний екран для проведення пари.
+    """
+    # 1. Отримуємо урок і перевіряємо права
+    lesson = get_object_or_404(Lesson, id=lesson_id, teacher=request.user)
+    
+    # 2. Отримуємо студентів групи
+    students = User.objects.filter(role='student', group=lesson.group).order_by('full_name')
+    
+    # 3. Отримуємо вже існуючі оцінки
+    performances = StudentPerformance.objects.filter(lesson=lesson).select_related('absence')
+    perf_map = {p.student_id: p for p in performances}
+    
+    # 4. Формуємо список для фронтенду
+    student_list = []
+    for s in students:
+        perf = perf_map.get(s.id)
+        
+        # Визначаємо статус
+        grade_value = None
+        is_absent = False
+        comment = ""
+        
+        if perf:
+            if perf.earned_points is not None:
+                # Видаляємо .00 якщо це ціле число
+                grade_value = int(perf.earned_points) if perf.earned_points % 1 == 0 else perf.earned_points
+            if perf.absence:
+                is_absent = True
+            comment = perf.comment
+            
+        student_list.append({
+            'user': s,
+            'grade': grade_value,
+            'is_absent': is_absent,
+            'comment': comment,
+            'initials': "".join([name[0] for name in s.full_name.split()[:2]])
+        })
+
+    context = {
+        'lesson': lesson,
+        'student_list': student_list,
+        'active_page': 'teacher_dashboard' # Щоб світилося в меню
+    }
+    return render(request, 'teacher_live_mode.html', context)
+
+
+@role_required('student')
+def student_dashboard_view(request: HttpRequest) -> HttpResponse:
+    """Дашборд студента з аналітикою та розкладом."""
+    student = request.user
+    from django.utils import timezone
+    now_aware = timezone.localtime(timezone.now())
+    today = now_aware.date()
+    now_time = now_aware.time()
+    
+    # 1. Загальна статистика (Середній бал)
+    performance_queryset = StudentPerformance.objects.filter(student=student)
+    
+    stats = performance_queryset.filter(
+        earned_points__isnull=False
+    ).aggregate(avg_score=Avg('earned_points'))
+    
+    # 2. Відвідуваність (для кругової діаграми)
+    total_lessons_count = performance_queryset.count()
+    absence_stats = performance_queryset.filter(absence__isnull=False).aggregate(
+        total_absences=Count('id'),
+        respectful=Count('id', filter=Q(absence__is_respectful=True)),
+        unrespectful=Count('id', filter=Q(absence__is_respectful=False))
+    )
+    
+    present_count = total_lessons_count - (absence_stats['total_absences'] or 0)
+    attendance_percent = round((present_count / total_lessons_count * 100), 1) if total_lessons_count > 0 else 0
+    
+    # 3. Дані для графіка (останні 30 оцінок)
+    chart_data = performance_queryset.filter(
+        earned_points__isnull=False
+    ).select_related('lesson', 'lesson__subject').order_by('lesson__date', 'lesson__start_time')[:30]
+    
+    graph_labels = [p.lesson.date.strftime("%d.%m") for p in chart_data]
+    graph_points = [float(p.earned_points) for p in chart_data]
+    
+    # 4. Уроки (Зараз та Наступний)
+    lessons_today = Lesson.objects.filter(group=student.group, date=today).select_related('subject', 'classroom', 'teacher').order_by('start_time')
+    
+    current_lesson = None
+    next_lesson = None
+    
+    for l in lessons_today:
+        if l.start_time <= now_time <= l.end_time:
+            current_lesson = l
+        elif l.start_time > now_time:
+            next_lesson = l
+            break
+            
+    if not next_lesson:
+        # Шукаємо наступний урок у майбутні дні
+        next_lesson = Lesson.objects.filter(
+            group=student.group,
+            date__gt=today
+        ).select_related('subject', 'classroom', 'teacher').order_by('date', 'start_time').first()
+    
+    # 5. Останні події (5 останніх оцінок)
+    recent_events = performance_queryset.filter(
+        earned_points__isnull=False
+    ).select_related('lesson', 'lesson__subject').order_by('-lesson__date', '-lesson__start_time')[:5]
+
+    context = {
+        'avg_score': round(stats['avg_score'] or 0, 1),
+        'attendance_percent': attendance_percent,
+        'attendance_json': json.dumps({
+            'present': present_count,
+            'respectful': absence_stats['respectful'] or 0,
+            'unrespectful': absence_stats['unrespectful'] or 0
+        }),
+        'graph_labels_json': json.dumps(graph_labels),
+        'graph_points_json': json.dumps(graph_points),
+        'current_lesson': current_lesson,
+        'next_lesson': next_lesson,
+        'recent_events': recent_events,
+        'active_page': 'student_dashboard',
+    }
+    return render(request, 'student_dashboard.html', context)
 
 # =========================
 # 5. ЗВІТИ (АДМІН)

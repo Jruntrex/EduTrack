@@ -52,6 +52,8 @@ urlpatterns = [
     # 4. ВИКЛАДАЧ ТА ЖУРНАЛ
     # =========================
     path('teacher/', views.teacher_journal_view, name='teacher_journal'),
+    path('teacher/dashboard/', views.teacher_dashboard_view, name='teacher_dashboard'),
+    path('teacher/live/<int:lesson_id>/', views.teacher_live_mode_view, name='teacher_live_mode'),
     # Use the new API for saving (even if frontend calls it 'save_journal_entries' or we rename it)
     path('api/teacher/save-grade/', views.api_save_grade, name='api_save_grade'),
     path('api/teacher/update-lesson/', views.api_update_lesson, name='api_update_lesson'),
@@ -74,4 +76,5 @@ urlpatterns = [
     path('students/delete/<int:pk>/', views.student_delete, name='student_delete'),
     path('student/grades/', views.student_grades_view, name='student_grades'),
     path('student/attendance/', views.student_attendance_view, name='student_attendance'),
+    path('student/dashboard/', views.student_dashboard_view, name='student_dashboard'),
 ]

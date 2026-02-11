@@ -1,0 +1,304 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+    <div
+        class="flex flex-col md:flex-row justify-between items-center bg-white rounded-3xl shadow-sm border border-gray-100 p-6 mb-8 sticky top-4 z-20 backdrop-blur-md bg-opacity-90">
+
+        <div class="mb-4 md:mb-0 text-center md:text-left">
+            <div class="flex items-center gap-3 mb-1 justify-center md:justify-start">
+                <span
+                    class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-xs font-bold uppercase tracking-wide">
+                    {{ lesson.get_lesson_number_display|default:"Пара" }}
+                </span>
+                <span class="text-gray-400 text-sm">{{ lesson.group.name }}</span>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-900 leading-tight">{{ lesson.subject.name }}</h1>
+            <input type="text" id="lessonTopic"
+                class="mt-1 border-none focus:ring-0 text-gray-500 bg-transparent p-0 w-full md:w-96 placeholder-gray-300 hover:text-gray-700 transition"
+                placeholder="Натисніть, щоб додати тему уроку..." value="{{ lesson.topic }}"
+                onchange="updateTopic(this.value)">
+        </div>
+
+        <div class="flex items-center gap-6">
+
+            <button onclick="spinRoulette()"
+                class="group relative flex items-center justify-center w-14 h-14 bg-gradient-to-br from-purple-500 to-indigo-600 rounded-2xl shadow-lg shadow-indigo-200 hover:scale-105 transition-transform active:scale-95">
+                <span class="text-2xl filter drop-shadow-md">🎲</span>
+                <span
+                    class="absolute -bottom-8 text-xs text-gray-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity">Рандом</span>
+            </button>
+
+            <div class="flex items-center gap-3 bg-gray-900 text-white pl-4 pr-2 py-2 rounded-2xl shadow-xl">
+                <div class="text-3xl font-mono font-bold tracking-wider" id="timerDisplay">45:00</div>
+                <div class="flex flex-col gap-1">
+                    <button onclick="toggleTimer()" id="timerBtn"
+                        class="w-8 h-8 flex items-center justify-center bg-green-500 hover:bg-green-400 rounded-lg text-white transition">
+                        <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z" />
+                        </svg> </button>
+                    <button onclick="resetTimer()"
+                        class="w-8 h-8 flex items-center justify-center bg-gray-700 hover:bg-gray-600 rounded-lg text-gray-300 transition">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                            </path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4" id="studentsGrid">
+        {% for student in student_list %}
+        <div id="student-card-{{ student.user.id }}"
+            class="student-card relative bg-white rounded-3xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-all duration-300 group cursor-pointer"
+            onclick="openGradeModal('{{ student.user.id }}', '{{ student.user.full_name }}')">
+
+            <div id="overlay-{{ student.user.id }}"
+                class="absolute inset-0 bg-gray-50 bg-opacity-90 rounded-3xl flex items-center justify-center z-10 backdrop-blur-sm {% if not student.is_absent %}hidden{% endif %}">
+                <span class="text-gray-400 font-bold text-xl uppercase tracking-widest">Відсутній</span>
+            </div>
+
+            <div class="flex flex-col items-center">
+                <div
+                    class="w-20 h-20 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 mb-3 flex items-center justify-center text-xl font-bold text-gray-400 shadow-inner ring-4 ring-white">
+                    {{ student.initials }}
+                </div>
+
+                <h3 class="font-bold text-gray-800 text-center text-lg leading-tight mb-1 truncate w-full">{{
+                    student.user.full_name }}</h3>
+
+                <div class="mt-2 h-8">
+                    <span id="badge-{{ student.user.id }}"
+                        class="{% if student.grade %}inline-flex{% else %}hidden{% endif %} items-center px-3 py-1 rounded-full text-sm font-bold bg-indigo-100 text-indigo-700">
+                        {{ student.grade }}
+                    </span>
+                </div>
+            </div>
+
+            <div class="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button onclick="event.stopPropagation(); toggleAbsence('{{ student.user.id }}')"
+                    class="w-8 h-8 rounded-full bg-gray-100 hover:bg-red-100 text-gray-400 hover:text-red-500 flex items-center justify-center"
+                    title="Відмітити відсутність">
+                    <span class="font-bold">Н</span>
+                </button>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+</div>
+
+<div id="gradeModal" class="fixed inset-0 z-50 hidden">
+    <div class="absolute inset-0 bg-gray-900 bg-opacity-50 backdrop-blur-sm transition-opacity" onclick="closeModal()">
+    </div>
+
+    <div
+        class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-3xl shadow-2xl p-8 w-full max-w-md scale-100 transition-transform">
+        <div class="text-center mb-6">
+            <h2 id="modalStudentName" class="text-2xl font-bold text-gray-900">Студент</h2>
+            <p class="text-gray-500">Оберіть оцінку за заняття</p>
+        </div>
+
+        <div class="grid grid-cols-4 gap-3 mb-6">
+            {% for i in "123456789"|make_list %}
+            <button onclick="setGrade({{ i }})"
+                class="h-12 rounded-xl bg-gray-50 hover:bg-indigo-50 text-gray-700 hover:text-indigo-600 font-bold border border-gray-100 hover:border-indigo-200 transition-all text-lg">{{
+                i }}</button>
+            {% endfor %}
+            <button onclick="setGrade(10)"
+                class="h-12 rounded-xl bg-gray-50 hover:bg-indigo-50 text-gray-700 hover:text-indigo-600 font-bold border border-gray-100 hover:border-indigo-200 transition-all text-lg">10</button>
+            <button onclick="setGrade(11)"
+                class="h-12 rounded-xl bg-gray-50 hover:bg-indigo-50 text-gray-700 hover:text-indigo-600 font-bold border border-gray-100 hover:border-indigo-200 transition-all text-lg">11</button>
+            <button onclick="setGrade(12)"
+                class="h-12 rounded-xl bg-orange-50 hover:bg-orange-100 text-orange-600 hover:text-orange-700 font-bold border border-orange-100 transition-all text-lg shadow-sm">12</button>
+        </div>
+
+        <textarea id="modalComment"
+            class="w-full bg-gray-50 border-0 rounded-xl p-4 mb-4 text-gray-700 focus:ring-2 focus:ring-indigo-500 placeholder-gray-400 resize-none"
+            rows="3" placeholder="Коментар (опціонально)..."></textarea>
+
+        <div class="flex gap-3">
+            <button onclick="setGrade(null)"
+                class="flex-1 py-3 rounded-xl border border-red-200 text-red-500 hover:bg-red-50 font-medium transition">Очистити</button>
+            <button onclick="closeModal()"
+                class="flex-1 py-3 rounded-xl bg-gray-900 text-white hover:bg-gray-800 font-bold transition shadow-lg shadow-gray-300">Готово</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentStudentId = null;
+    let timerInterval = null;
+    let timeLeft = 45 * 60; // 45 minutes in seconds
+    let isRunning = false;
+
+    // --- GRADING LOGIC ---
+
+    function openGradeModal(id, name) {
+        currentStudentId = id;
+        document.getElementById('modalStudentName').innerText = name;
+        document.getElementById('gradeModal').classList.remove('hidden');
+        // TODO: Можна додати завантаження поточного коментаря через AJAX, якщо треба
+    }
+
+    function closeModal() {
+        document.getElementById('gradeModal').classList.add('hidden');
+        currentStudentId = null;
+    }
+
+    function setGrade(value) {
+        if (!currentStudentId) return;
+
+        const comment = document.getElementById('modalComment').value;
+        saveGrade(currentStudentId, value, comment);
+
+        // Update UI immediately
+        const badge = document.getElementById(`badge-${currentStudentId}`);
+        if (value) {
+            badge.innerText = value;
+            badge.classList.remove('hidden');
+            badge.classList.add('inline-flex');
+        } else {
+            badge.classList.add('hidden');
+        }
+
+        // Якщо натиснули конкретну оцінку - закриваємо модалку для швидкості
+        if (value !== null) closeModal();
+    }
+
+    function toggleAbsence(id) {
+        const overlay = document.getElementById(`overlay-${id}`);
+        const isAbsent = overlay.classList.contains('hidden'); // Якщо приховано, значить зараз присутній
+
+        if (isAbsent) {
+            overlay.classList.remove('hidden');
+            saveGrade(id, 'H', ''); // 'H' - код для Нки
+        } else {
+            overlay.classList.add('hidden');
+            saveGrade(id, null, ''); // Очистити
+        }
+    }
+
+    // AJAX CALL
+    function saveGrade(studentId, value, comment) {
+        fetch("{% url 'api_save_grade' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                lesson_id: '{{ lesson.id }}',
+                student_id: studentId,
+                value: value,
+                comment: comment
+            })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    console.log('Saved');
+                } else {
+                    alert('Error saving grade');
+                }
+            });
+    }
+
+    function updateTopic(topic) {
+        fetch("{% url 'api_update_lesson' %}", {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({
+                lesson_id: '{{ lesson.id }}',
+                topic: topic
+            })
+        });
+    }
+
+    // --- TIMER LOGIC ---
+
+    function updateTimerDisplay() {
+        const minutes = Math.floor(timeLeft / 60);
+        const seconds = timeLeft % 60;
+        document.getElementById('timerDisplay').innerText =
+            `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    function toggleTimer() {
+        const btn = document.getElementById('timerBtn');
+        if (isRunning) {
+            clearInterval(timerInterval);
+            // Change icon to Play
+            btn.innerHTML = '<svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+            btn.classList.replace('bg-yellow-500', 'bg-green-500');
+            btn.classList.replace('hover:bg-yellow-400', 'hover:bg-green-400');
+        } else {
+            timerInterval = setInterval(() => {
+                if (timeLeft > 0) {
+                    timeLeft--;
+                    updateTimerDisplay();
+                } else {
+                    clearInterval(timerInterval);
+                    alert("Час вийшов!");
+                }
+            }, 1000);
+            // Change icon to Pause
+            btn.innerHTML = '<svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>';
+            btn.classList.replace('bg-green-500', 'bg-yellow-500');
+            btn.classList.replace('hover:bg-green-400', 'hover:bg-yellow-400');
+        }
+        isRunning = !isRunning;
+    }
+
+    function resetTimer() {
+        clearInterval(timerInterval);
+        isRunning = false;
+        timeLeft = 45 * 60;
+        updateTimerDisplay();
+        document.getElementById('timerBtn').innerHTML = '<svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+        document.getElementById('timerBtn').classList.replace('bg-yellow-500', 'bg-green-500');
+    }
+
+    // --- ROULETTE LOGIC ---
+
+    function spinRoulette() {
+        const cards = document.querySelectorAll('.student-card');
+        if (cards.length === 0) return;
+
+        let iterations = 0;
+        const maxIterations = 20;
+        const interval = 100; // ms
+
+        const rouletteInterval = setInterval(() => {
+            // Reset styles
+            cards.forEach(c => {
+                c.classList.remove('ring-4', 'ring-indigo-500', 'scale-105');
+            });
+
+            // Pick random
+            const randomIndex = Math.floor(Math.random() * cards.length);
+            const chosen = cards[randomIndex];
+
+            chosen.classList.add('ring-4', 'ring-indigo-500', 'scale-105');
+
+            iterations++;
+            if (iterations >= maxIterations) {
+                clearInterval(rouletteInterval);
+                // Winner effect
+                chosen.classList.add('ring-4', 'ring-green-500', 'scale-110', 'shadow-2xl');
+                chosen.classList.remove('ring-indigo-500');
+                setTimeout(() => {
+                    chosen.classList.remove('ring-green-500', 'scale-110', 'shadow-2xl');
+                }, 3000);
+            }
+        }, interval);
+    }
+</script>
+{% endblock %}

@@ -1,117 +1,154 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<div class="container mx-auto px-4 py-8">
-    <h1 class="text-2xl font-bold mb-6">⏳ Таймлайн занять</h1>
+<div class="max-w-7xl mx-auto">
 
     {% for day in days_data %}
-    <div class="mb-8 {% if day.is_today %}ring-2 ring-blue-500 rounded-xl p-2{% endif %}">
+    <div class="mb-6 {% if day.is_today %}animate-slide-up{% endif %}">
 
-        <div class="flex items-center mb-3">
-            <h2 class="text-xl font-bold w-32 {% if day.is_today %}text-blue-600{% else %}text-gray-700{% endif %}">
-                {{ day.day_name }}
-            </h2>
-            {% if day.is_today %}
-            <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-2.5 py-0.5 rounded ml-2">СЬОГОДНІ</span>
-            {% endif %}
+        <!-- Day Header -->
+        <div class="flex items-center gap-3 mb-4">
+            <div
+                class="glass-panel px-6 py-3 rounded-2xl flex items-center gap-3 {% if day.is_today %}ring-2 ring-primary{% endif %}">
+                <svg class="w-6 h-6 {% if day.is_today %}text-primary{% else %}text-bodyText{% endif %}" fill="none"
+                    stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                <h2 class="text-2xl font-bold {% if day.is_today %}text-primary{% else %}text-dark{% endif %}">
+                    {{ day.day_name }}
+                </h2>
+                {% if day.is_today %}
+                <span
+                    class="bg-primary/10 text-primary text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wide">Сьогодні</span>
+                {% endif %}
+            </div>
         </div>
 
-        <div
-            class="relative w-full bg-gray-100 rounded-lg h-24 border border-gray-200 flex overflow-hidden shadow-inner">
+        <!-- Timeline Container -->
+        <div class="glass-panel rounded-2xl p-4 shadow-glass">
+            <div class="relative w-full bg-white/50 rounded-xl h-32 border border-white/30 flex overflow-hidden">
 
-            {% for item in day.lessons %}
-            <div class="relative flex-1 border-r border-gray-300 group transition-all duration-300
-                    {% if item.status == 'past' %}bg-gray-200 opacity-60{% endif %}
-                    {% if item.status == 'current' %}bg-white ring-inset ring-4 ring-green-400 z-10 scale-[1.02] shadow-lg{% endif %}
-                    {% if not item.assignment %}bg-gray-50/50{% endif %}">
+                {% for item in day.lessons %}
+                <div class="relative flex-1 border-r border-white/40 group transition-all duration-300
+                        {% if item.status == 'past' %}bg-bodyText/10 opacity-50{% endif %}
+                        {% if item.status == 'current' %}bg-gradient-to-br from-accent/20 to-accent/10 ring-inset ring-4 ring-accent z-10 scale-[1.02] shadow-lg{% endif %}
+                        {% if not item.assignment %}bg-white/20{% endif %}
+                        hover:bg-white/60">
 
-                {% if item.assignment %}
-                <div class="p-2 h-full flex flex-col justify-between">
-                    <div>
-                        <div class="flex justify-between items-start">
-                            <span class="text-[10px] font-bold text-gray-500 font-mono">
-                                {{ item.slot.start_time|time:"H:i" }} - {{ item.slot.end_time|time:"H:i" }}
-                            </span>
-                            <span class="bg-gray-800 text-white text-[9px] px-1.5 py-0.5 rounded-full">
-                                {{ item.slot.lesson_number }}
-                            </span>
+                    {% if item.assignment %}
+                    <div class="p-3 h-full flex flex-col justify-between">
+                        <div>
+                            <div class="flex justify-between items-start mb-2">
+                                <span
+                                    class="text-xs font-bold text-bodyText font-mono bg-white/60 px-2 py-1 rounded-lg">
+                                    {{ item.slot.start_time|time:"H:i" }} - {{ item.slot.end_time|time:"H:i" }}
+                                </span>
+                                <span class="bg-dark text-white text-xs px-2 py-1 rounded-full font-bold">
+                                    {{ item.slot.lesson_number }}
+                                </span>
+                            </div>
+                            <div
+                                class="font-bold text-base leading-tight text-dark group-hover:text-primary transition-colors">
+                                {{ item.assignment.subject.name }}
+                            </div>
+                            <div class="text-xs text-bodyText truncate mt-1 flex items-center gap-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                                {{ item.assignment.teacher.full_name }}
+                            </div>
                         </div>
-                        <div
-                            class="font-bold text-sm leading-tight mt-1 text-gray-800 group-hover:text-blue-600 transition-colors">
-                            {{ item.assignment.subject.name }}
+
+                        {% if item.status == 'current' %}
+                        <div class="mt-auto">
+                            <div class="w-full bg-white/60 rounded-full h-2 overflow-hidden shadow-inner">
+                                <div class="bg-gradient-to-r from-accent to-primary h-2 rounded-full transition-all duration-1000 shadow-sm"
+                                    style="width: {{ item.progress }}%"></div>
+                            </div>
+                            <div class="flex justify-between items-center mt-1.5">
+                                <span
+                                    class="text-xs text-accent font-bold uppercase tracking-wide animate-pulse flex items-center gap-1">
+                                    <span class="w-2 h-2 bg-accent rounded-full"></span>
+                                    Йде зараз
+                                </span>
+                                <span class="text-xs text-bodyText font-mono font-bold">{{ item.progress }}%</span>
+                            </div>
                         </div>
-                        <div class="text-[10px] text-gray-600 truncate mt-0.5">
-                            <span class="opacity-70">👤</span> {{ item.assignment.teacher.full_name }}
-                        </div>
+                        {% endif %}
                     </div>
 
-                    {% if item.status == 'current' %}
-                    <div class="mt-auto">
-                        <div class="w-full bg-gray-200 rounded-full h-1.5 overflow-hidden">
-                            <div class="bg-green-500 h-1.5 rounded-full transition-all duration-1000"
-                                style="width: {{ item.progress }}%"></div>
+                    <!-- Tooltip -->
+                    <div
+                        class="absolute invisible group-hover:visible opacity-0 group-hover:opacity-100 bg-dark text-white text-sm rounded-xl p-4 bottom-full left-1/2 -translate-x-1/2 mb-3 w-64 z-50 shadow-glass pointer-events-none transition-all duration-200 backdrop-blur-glass">
+                        <p class="font-bold border-b border-white/20 pb-2 mb-2 text-base">{{
+                            item.assignment.subject.name }}</p>
+                        <div class="space-y-1 text-white/80">
+                            <p class="flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                </svg>
+                                {{ item.assignment.teacher.full_name }}
+                            </p>
+                            <p class="flex items-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                {{ item.slot.start_time|time:"H:i" }} - {{ item.slot.end_time|time:"H:i" }}
+                            </p>
                         </div>
-                        <div class="flex justify-between items-center mt-1">
-                            <span
-                                class="text-[9px] text-green-600 font-bold uppercase tracking-tighter animate-pulse">Йде
-                                зараз</span>
-                            <span class="text-[9px] text-gray-500 font-mono">{{ item.progress }}%</span>
+                        <div
+                            class="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-dark">
                         </div>
+                    </div>
+                    {% else %}
+                    <!-- Empty Slot -->
+                    <div
+                        class="h-full flex flex-col items-center justify-center text-bodyText/40 group-hover:text-bodyText/70 transition-all">
+                        <svg class="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                        </svg>
+                        <span class="text-xs font-mono font-bold">{{ item.slot.start_time|time:"H:i" }}</span>
+                        <span class="text-xs uppercase tracking-widest font-semibold mt-1">Вікно</span>
                     </div>
                     {% endif %}
                 </div>
+                {% endfor %}
 
-                {# Tooltip #}
-                <div
-                    class="absolute invisible group-hover:visible opacity-0 group-hover:opacity-100 bg-gray-900 text-white text-xs rounded p-2 bottom-full left-1/2 -translate-x-1/2 mb-2 w-48 z-50 shadow-xl pointer-events-none transition-all">
-                    <p class="font-bold border-b border-gray-700 pb-1 mb-1">{{ item.assignment.subject.name }}</p>
-                    <p class="opacity-80">Викладач: {{ item.assignment.teacher.full_name }}</p>
-                    <p class="opacity-80">Час: {{ item.slot.start_time|time:"H:i" }} - {{ item.slot.end_time|time:"H:i"
-                        }}</p>
-                    <div
-                        class="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-gray-900">
-                    </div>
-                </div>
-                {% else %}
-                <div
-                    class="h-full flex flex-col items-center justify-center text-gray-400 opacity-40 group-hover:opacity-100 transition-opacity">
-                    <span class="text-[10px] font-mono">{{ item.slot.start_time|time:"H:i" }}</span>
-                    <div class="w-1 h-1 bg-gray-300 rounded-full my-1"></div>
-                    <span class="text-[8px] uppercase tracking-widest">Вікно</span>
-                </div>
-                {% endif %}
             </div>
-            {% endfor %}
-
         </div>
     </div>
     {% endfor %}
 
     {% if not group %}
-    <div
-        class="flex flex-col items-center justify-center py-20 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
-        <div class="text-4xl mb-4">🔍</div>
-        <p class="text-gray-500 text-lg mb-6">Будь ласка, оберіть групу для перегляду розкладу</p>
+    <div class="glass-panel rounded-3xl p-12 shadow-glass text-center">
+        <div class="max-w-md mx-auto">
+            <div class="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg class="w-10 h-10 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+            </div>
+            <h3 class="text-2xl font-bold text-dark mb-3">Оберіть групу</h3>
+            <p class="text-bodyText text-lg mb-8">Будь ласка, оберіть групу для перегляду розкладу занять</p>
 
-        {% if all_groups %}
-        <form method="get" class="w-64">
-            <select name="group_id" onchange="this.form.submit()"
-                class="w-full bg-white border border-gray-300 rounded-lg py-2 px-4 shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all">
-                <option value="">-- Виберіть групу --</option>
-                {% for g in all_groups %}
-                <option value="{{ g.id }}">{{ g.name }}</option>
-                {% endfor %}
-            </select>
-        </form>
-        {% endif %}
+            {% if all_groups %}
+            <form method="get" class="w-full max-w-sm mx-auto">
+                <select name="group_id" onchange="this.form.submit()"
+                    class="w-full glass-panel border-white/30 rounded-xl py-3 px-4 text-dark font-semibold shadow-glass focus:outline-none focus:ring-4 focus:ring-primary/10 transition-all cursor-pointer">
+                    <option value="">-- Виберіть групу --</option>
+                    {% for g in all_groups %}
+                    <option value="{{ g.id }}">{{ g.name }}</option>
+                    {% endfor %}
+                </select>
+            </form>
+            {% endif %}
+        </div>
     </div>
     {% endif %}
 </div>
-
-<style>
-    .pattern-dots {
-        background-image: radial-gradient(#e5e7eb 1px, transparent 1px);
-        background-size: 8px 8px;
-    }
-</style>
 {% endblock %}
