@@ -927,33 +927,10 @@ def api_save_grade(request: HttpRequest) -> JsonResponse:
              return JsonResponse({'status': 'error', 'message': 'Student has no group'}, status=400)
 
         # 3. Resolve Lesson
-        # Get start_time for the lesson number
-        start_time_str = DEFAULT_LESSON_TIMES.get(int(lesson_num), "08:30")
-        start_time = datetime.strptime(start_time_str, "%H:%M").time()
-        
-        # Determine Assignment
-        try:
-            assignment = TeachingAssignment.objects.get(
-                teacher_id=teacher_id,
-                subject_id=int(subject_id),
-                group=group
-            )
-        except TeachingAssignment.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': f'Assignment not found for teacher {teacher_id}, subject {subject_id}, group {group.id}'}, status=403)
-
-        # Get/Create Lesson
-        eval_type = assignment.evaluation_types.first()
-        if not eval_type:
-            eval_type = EvaluationType.objects.create(
-                assignment=assignment, 
-                name="Заняття", 
-                weight_percent=0
-            )
-
         if lesson_id:
              current_lesson = get_object_or_404(Lesson, id=lesson_id)
         else:
-             # Fallback to coordinates with safer time lookup
+             # Get start_time for the lesson number
              from main.constants import DEFAULT_TIME_SLOTS
              start_time_info = DEFAULT_TIME_SLOTS.get(int(lesson_num))
              if start_time_info:
@@ -962,6 +939,25 @@ def api_save_grade(request: HttpRequest) -> JsonResponse:
                   # Last resort fallback to deprecated mapping
                   start_time_str = DEFAULT_LESSON_TIMES.get(int(lesson_num), "08:30")
                   start_time = datetime.strptime(start_time_str, "%H:%M").time()
+
+             # Determine Assignment
+             try:
+                 assignment = TeachingAssignment.objects.get(
+                     teacher_id=teacher_id,
+                     subject_id=int(subject_id),
+                     group=group
+                 )
+             except TeachingAssignment.DoesNotExist:
+                 return JsonResponse({'status': 'error', 'message': f'Assignment not found for teacher {teacher_id}, subject {subject_id}, group {group.id}'}, status=403)
+
+             # Get/Create Lesson
+             eval_type = assignment.evaluation_types.first()
+             if not eval_type:
+                 eval_type = EvaluationType.objects.create(
+                     assignment=assignment, 
+                     name="Заняття", 
+                     weight_percent=0
+                 )
 
              # CRITICAL: Use only unique fields for lookup to avoid IntegrityError
              current_lesson, created = Lesson.objects.get_or_create(
@@ -994,7 +990,7 @@ def api_save_grade(request: HttpRequest) -> JsonResponse:
         grade_value = None
         absence_obj = None
 
-        if raw_value in [None, '', '—']:
+        if raw_value in [None, '', '—'] and not comment_text:
              StudentPerformance.objects.filter(lesson=current_lesson, student_id=student_id).delete()
              return JsonResponse({'status': 'success', 'message': 'Cleared'})
 
@@ -1207,6 +1203,9 @@ def teacher_live_mode_view(request, lesson_id):
     """
     Інтерактивний екран для проведення пари.
     """
+    from main.models import BuildingAccessLog
+    from datetime import date
+
     # 1. Отримуємо урок і перевіряємо права
     lesson = get_object_or_404(Lesson, id=lesson_id, teacher=request.user)
     
@@ -1217,23 +1216,42 @@ def teacher_live_mode_view(request, lesson_id):
     performances = StudentPerformance.objects.filter(lesson=lesson).select_related('absence')
     perf_map = {p.student_id: p for p in performances}
     
-    # 4. Формуємо список для фронтенду
+    # 4. Отримуємо статус присутності по RFID (за сьогодні)
+    today = date.today()
+    access_logs = BuildingAccessLog.objects.filter(
+        timestamp__date=today,
+        student__in=students
+    ).order_by('student', 'timestamp')
+    
+    in_building_map = {}
+    student_logs = {}
+    for log in access_logs:
+        student_logs[log.student_id] = log
+    for s in students:
+        last_log = student_logs.get(s.id)
+        in_building_map[s.id] = True if last_log and last_log.action == 'ENTER' else False
+
+    # 5. Формуємо список для фронтенду
     student_list = []
     for s in students:
         perf = perf_map.get(s.id)
         
         # Визначаємо статус
         grade_value = None
-        is_absent = False
         comment = ""
+        is_in_building = in_building_map.get(s.id, False)
         
+        # Пріоритет: 
+        # 1. Ручна оцінка/відмітка в БД
+        # 2. Якщо немає в БД -> статус по RFID (якщо не в будівлі - відсутній)
         if perf:
             if perf.earned_points is not None:
-                # Видаляємо .00 якщо це ціле число
                 grade_value = int(perf.earned_points) if perf.earned_points % 1 == 0 else perf.earned_points
-            if perf.absence:
-                is_absent = True
-            comment = perf.comment
+            is_absent = True if perf.absence else False
+            comment = perf.comment or ""
+        else:
+            # Дефолтна логіка: якщо не "пікнувся" — відсутній
+            is_absent = not is_in_building
             
         student_list.append({
             'user': s,
@@ -1246,7 +1264,7 @@ def teacher_live_mode_view(request, lesson_id):
     context = {
         'lesson': lesson,
         'student_list': student_list,
-        'active_page': 'teacher_dashboard' # Щоб світилося в меню
+        'active_page': 'teacher_dashboard' 
     }
     return render(request, 'teacher_live_mode.html', context)
 
