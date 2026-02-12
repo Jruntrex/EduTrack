@@ -92,37 +92,44 @@
 </style>
 
 {% with q="" %}
-<div class="glass-panel rounded-3xl p-6 mb-8" role="region" aria-label="Журнал викладача">
+<div class="card-bento">
+    <div class="flex justify-end items-center gap-3 mb-8">
+        <div class="flex items-center gap-2 px-4 py-2 bg-blue-50 rounded-xl border border-blue-100"
+            title="Легенда: Зелений = В коледжі, Червоний = Відсутній">
+            <span class="status-dot online"></span>
+            <span class="text-[10px] font-black text-blue-600 uppercase tracking-widest leading-none">RFID
+                Monitoring</span>
+        </div>
+    </div>
+
     <!-- FILTERS TOOLBAR -->
-    <div
-        class="glass-panel shadow-sm rounded-2xl p-5 mb-6 bg-white/90 border border-gray-100 flex flex-wrap gap-6 items-end justify-between">
-        <form method="GET" action="{% url 'teacher_journal' %}" class="flex flex-wrap gap-4 items-end flex-grow">
+    <div class="bg-gray-50/50 rounded-2xl p-6 mb-8 border border-gray-100">
+        <form method="GET" action="{% url 'teacher_journal' %}"
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
             <!-- Subject Select -->
-            <div class="flex flex-col gap-1 min-w-[200px]">
-                <label class="text-[10px] font-extrabold text-gray-500 uppercase tracking-widest">Предмет</label>
+            <div class="flex flex-col gap-1.5">
+                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Дисципліна</label>
                 <select name="subject" onchange="this.form.submit()"
-                    class="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary text-sm font-medium transition-shadow">
+                    class="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium transition-all">
                     <option value="">Оберіть предмет...</option>
                     {% for s in subjects %}
                     {% with s_id=s.id|stringformat:"s" %}
-                    <option value="{{ s.id }}" {% if request.GET.subject|is_equal:s_id %}selected{% endif %}>
-                        {{ s.name }}
-                    </option>
+                    <option value="{{ s.id }}" {% if request.GET.subject|is_equal:s_id %}selected{% endif %}>{{ s.name
+                        }}</option>
                     {% endwith %}
                     {% endfor %}
                 </select>
             </div>
 
             <!-- Group Select -->
-            <div class="flex flex-col gap-1 min-w-[150px]">
-                <label class="text-[10px] font-extrabold text-gray-500 uppercase tracking-widest">Група</label>
+            <div class="flex flex-col gap-1.5">
+                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Академічна група</label>
                 <select name="group" onchange="this.form.submit()"
-                    class="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary focus:border-primary text-sm font-medium transition-shadow">
+                    class="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium transition-all">
                     <option value="">Оберіть групу...</option>
                     {% for g in groups %}
                     {% with g_id=g.id|stringformat:"s" %}
-                    <option value="{{ g.id }}" {% if request.GET.group|is_equal:g_id %}selected{% endif %}>
-                        {{ g.name }}
+                    <option value="{{ g.id }}" {% if request.GET.group|is_equal:g_id %}selected{% endif %}>{{ g.name }}
                     </option>
                     {% endwith %}
                     {% endfor %}
@@ -130,81 +137,67 @@
             </div>
 
             <!-- Week Navigator -->
-            <div class="flex flex-col gap-1 cursor-pointer group/week" onclick="openWeekPicker()">
-                <label
-                    class="text-[10px] font-extrabold text-gray-500 uppercase tracking-widest cursor-pointer">Тиждень</label>
-                <div
-                    class="flex items-center bg-gray-50 rounded-xl border border-gray-200 p-1 group-hover/week:bg-white group-hover/week:shadow-sm transition-all">
+            <div class="flex flex-col gap-1.5 group/week">
+                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest cursor-pointer"
+                    onclick="openWeekPicker()">Календарний період</label>
+                <div class="flex items-center justify-between bg-white rounded-xl border border-gray-200 p-1 hover:border-blue-300 transition-all cursor-pointer"
+                    onclick="openWeekPicker()">
                     <a href="?subject={{ request.GET.subject }}&group={{ request.GET.group }}&week={{ week_offset|add:'-1' }}"
                         onclick="event.stopPropagation()"
-                        class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-primary transition-all">
+                        class="p-2 rounded-lg hover:bg-gray-50 text-gray-400 hover:text-blue-600 transition-all">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                            <path d="M15 19l-7-7 7-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                         </svg>
                     </a>
-                    <span class="text-xs font-bold text-gray-700 min-w-[80px] text-center px-2">
-                        {% if week_start %}{{ week_start|date:"d.m" }} - {{ week_end|date:"d.m" }}{% else %}Оберіть
+                    <span class="text-xs font-black text-gray-700 uppercase tracking-tighter">
+                        {% if week_start %}{{ week_start|date:"d.m" }} — {{ week_end|date:"d.m" }}{% else %}Оберіть
                         параметри{% endif %}
                     </span>
                     <a href="?subject={{ request.GET.subject }}&group={{ request.GET.group }}&week={{ week_offset|add:'1' }}"
                         onclick="event.stopPropagation()"
-                        class="p-1.5 rounded-lg hover:bg-gray-100 text-gray-500 hover:text-primary transition-all">
+                        class="p-2 rounded-lg hover:bg-gray-50 text-gray-400 hover:text-blue-600 transition-all">
                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                            <path d="M9 5l7 7-7 7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                         </svg>
                     </a>
                 </div>
             </div>
 
-            <!-- Settings Button -->
-            <div class="flex flex-col gap-1">
-                <label class="text-[10px] font-extrabold text-gray-500 uppercase tracking-widest">Налаштування</label>
+            <!-- View Controls -->
+            <div class="flex items-center gap-3">
+                <button type="button" id="attendanceToggleBtn" onclick="toggleAttendanceMode()"
+                    class="flex-grow px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-[10px] font-black uppercase tracking-widest text-gray-400 hover:bg-red-50 hover:text-red-500 hover:border-red-100 transition-all">
+                    Тільки пропуски
+                </button>
                 <a href="{% url 'teacher_settings' %}"
-                    class="flex items-center gap-2 px-4 py-2 bg-gray-50 border border-gray-200 rounded-xl hover:bg-primary hover:text-white hover:border-primary transition-all text-sm font-bold text-gray-700 group">
-                    <svg class="w-4 h-4 group-hover:rotate-90 transition-transform duration-500" fill="none"
-                        stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    class="p-2.5 bg-white border border-gray-200 rounded-xl text-gray-400 hover:text-blue-600 hover:border-blue-200 transition-all shadow-sm">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 ...">
+                        </path>
+                        <path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round" />
                     </svg>
-                    <span>Типи занять</span>
                 </a>
             </div>
-
+            <input type="checkbox" id="attendanceOnly" class="hidden">
             <input type="hidden" name="week" value="{{ week_shift }}">
         </form>
-
-        <!-- View Controls -->
-        <div class="flex items-center gap-3">
-            <div class="flex items-center gap-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200">
-                <input type="checkbox" id="attendanceOnly"
-                    class="w-4 h-4 text-primary rounded border-gray-300 focus:ring-primary">
-                <label for="attendanceOnly"
-                    class="text-xs font-bold text-gray-600 uppercase cursor-pointer select-none">Тільки пропуски</label>
-            </div>
-
-            <div class="flex items-center gap-2 px-3 py-2 bg-blue-50/50 rounded-lg border border-blue-100"
-                title="Легенда: Зелений = В коледжі, Червоний = Відсутній">
-                <span class="status-dot online"></span>
-                <span class="text-xs font-medium text-gray-500">Вдівідуваність (RFID)</span>
-            </div>
-        </div>
     </div>
 
     <!-- MAIN GRID CONTAINER -->
     <div
-        class="relative w-full overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl journal-scroll flex flex-col max-h-[75vh]">
+        class="glass-panel shadow-sm rounded-3xl p-0 overflow-hidden relative w-full journal-scroll flex flex-col max-h-[80vh] border border-gray-100 bg-white">
         <div class="overflow-auto flex-grow journal-scroll">
             <table class="w-full border-collapse text-sm">
-                <thead class="bg-gray-50 text-gray-600 font-bold uppercase text-xs sticky top-0 z-40 shadow-sm">
+                <thead
+                    class="bg-gray-50 text-gray-400 font-black uppercase text-[10px] tracking-widest sticky top-0 z-40 shadow-sm">
                     <tr>
                         <!-- Fixed Columns Header 1 -->
                         <th rowspan="2"
-                            class="sticky left-0 top-0 z-50 bg-gray-50 border-b border-r border-gray-200 p-3 min-w-[50px] text-center">
+                            class="sticky left-0 top-0 z-50 bg-gray-50 border-b border-r border-gray-100 p-4 min-w-[50px] text-center">
                             #</th>
                         <th rowspan="2"
-                            class="sticky left-[50px] top-0 z-50 bg-gray-50 border-b border-r border-gray-200 p-3 min-w-[220px] text-left">
+                            class="sticky left-[50px] top-0 z-50 bg-gray-50 border-b border-r border-gray-100 p-4 min-w-[220px] text-left">
                             Студент</th>
 
                         <!-- Day Headers -->
@@ -248,7 +241,7 @@
                 </thead>
                 <tbody class="divide-y divide-gray-100">
                     {% for student in students %}
-                    <tr class="hover:bg-blue-50/30 transition-colors group h-[50px]">
+                    <tr class="hover:bg-blue-50/50 transition-colors group h-[50px]">
                         <!-- # Column -->
                         <td
                             class="sticky left-0 z-30 bg-white group-hover:bg-blue-50/30 border-r border-gray-200 text-center font-medium text-gray-400">
@@ -266,7 +259,9 @@
                         <!-- Grades Cells -->
                         {% for header in lesson_headers %}
                         {% for lesson in header.lessons %}
-                        {% with entry=journal_data|get_item:student.id|get_item:header.date|get_item:lesson.lesson_num %}
+                        {% with student_data=journal_data|get_item:student.id %}
+                        {% with date_data=student_data|get_item:header.date %}
+                        {% with entry=date_data|get_item:lesson.lesson_num %}
                         <td class="border-r border-gray-100 p-0 relative transition-all cursor-text
                             {% if entry.comment %}has-comment{% endif %}" data-student-id="{{ student.id }}"
                             data-lesson-date="{{ header.date|date:'Y-m-d' }}" data-lesson-num="{{ lesson.lesson_num }}"
@@ -296,6 +291,8 @@
                             <!-- Hidden Comment Data -->
                             <input type="hidden" class="comment-data" value="{{ entry.comment|default:q }}">
                         </td>
+                        {% endwith %}
+                        {% endwith %}
                         {% endwith %}
                         {% endfor %}
                         {% endfor %}
@@ -446,6 +443,25 @@
     });
 
     // Toggle Attendance Mode
+    function toggleAttendanceMode() {
+        const checkbox = document.getElementById('attendanceOnly');
+        const btn = document.getElementById('attendanceToggleBtn');
+        checkbox.checked = !checkbox.checked;
+
+        // Trigger the change event manually
+        const event = new Event('change');
+        checkbox.dispatchEvent(event);
+
+        // Update button style
+        if (checkbox.checked) {
+            btn.classList.add('bg-red-50', 'text-red-500', 'border-red-100');
+            btn.classList.remove('bg-white', 'text-gray-400', 'border-gray-200');
+        } else {
+            btn.classList.remove('bg-red-50', 'text-red-500', 'border-red-100');
+            btn.classList.add('bg-white', 'text-gray-400', 'border-gray-200');
+        }
+    }
+
     attendanceCheckbox.addEventListener('change', function () {
         const inputs = document.querySelectorAll('.grade-input');
         if (this.checked) {

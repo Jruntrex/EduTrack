@@ -5,38 +5,33 @@
 {% block header_title %}Управління Аудиторіями{% endblock %}
 
 {% block content %}
-<div class="glass-panel rounded-3xl p-8 mb-8" role="region" aria-label="Панель управління аудиторіями">
-
-    <div class="flex justify-between items-center mb-8">
-        <h3 class="text-2xl font-bold text-dark">Список аудиторій</h3>
+<div class="card-bento min-h-[600px]">
+    <div class="flex justify-end items-center mb-8">
         <button onclick="toggleForm()"
-            class="btn bg-primary text-white shadow-button hover:bg-blue-600 hover:shadow-button-hover flex items-center gap-2 animate-fade-in">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-            </svg>
+            class="px-6 py-3 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-200 hover:bg-blue-700 transform hover:-translate-y-0.5 transition-all">
             Додати аудиторію
         </button>
     </div>
 
-    <!-- Фільтр пошуку -->
-    <div class="glass-panel shadow-sm rounded-3xl p-6 mb-8 bg-white/80 border border-gray-100">
+    <div class="bg-gray-50/50 rounded-2xl p-6 mb-8 border border-gray-100">
         <form method="GET" action="{% url 'classrooms_list' %}"
-            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
-            <div class="flex flex-col gap-1 lg:col-span-2">
-                <label class="text-xs font-bold text-gray-500 uppercase">Пошук аудиторії</label>
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+            <div class="flex flex-col gap-1.5 md:col-span-2">
+                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Пошук аудиторії</label>
                 <input type="text" name="search" value="{{ request.GET.search }}"
-                    placeholder="Введіть назву або корпус..."
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm">
+                    placeholder="Введіть назву або номер аудиторії..."
+                    class="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium transition-all">
             </div>
-            <div class="flex justify-end gap-3">
-                <a href="{% url 'classrooms_list' %}"
-                    class="px-6 py-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition">
-                    Скинути
-                </a>
+            <div class="flex items-center gap-3 md:col-span-2 lg:col-span-2">
                 <button type="submit"
-                    class="px-8 py-2 rounded-lg bg-primary text-white hover:bg-blue-700 shadow-md transition font-medium">
-                    Знайти
-                </button>
+                    class="flex-grow px-8 py-2.5 bg-gray-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-black transition-all">Знайти</button>
+                <a href="{% url 'classrooms_list' %}"
+                    class="p-2.5 bg-white border border-gray-200 rounded-xl text-gray-400 hover:text-red-500 transition-all shadow-sm">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path d="M6 18L18 6M6 6l12 12" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                    </svg>
+                </a>
             </div>
         </form>
     </div>
@@ -73,42 +68,64 @@
         </form>
     </div>
 
-    <div class="overflow-x-auto rounded-xl border border-tableBorder bg-white shadow-sm mt-8">
-        <table class="w-full border-collapse">
-            <thead>
-                <tr>
-                    <th class="bg-primary text-white p-4 text-left text-xs font-bold uppercase tracking-wider">Назва
-                    </th>
-                    <th class="bg-primary text-white p-4 text-left text-xs font-bold uppercase tracking-wider">Корпус
-                    </th>
-                    <th class="bg-primary text-white p-4 text-center text-xs font-bold uppercase tracking-wider">
-                        Місткість</th>
-                    <th class="bg-primary text-white p-4 text-center text-xs font-bold uppercase tracking-wider w-32">
-                        Дії</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-tableBorder text-bodyText">
-                {% for room in classrooms %}
-                <tr class="hover:bg-primary/5 transition-colors duration-200">
-                    <td class="p-4 font-medium text-dark">{{ room.name }}</td>
-                    <td class="p-4 text-dark">{{ room.building|default:"—" }}</td>
-                    <td class="p-4 text-center text-dark">{{ room.capacity|default:"—" }}</td>
-                    <td class="p-4 text-center">
-                        <form method="POST" action="{% url 'classroom_delete' pk=room.pk %}" style="display:inline;"
-                            onsubmit="return confirm('Ви справді хочете видалити аудиторію {{ room.name|escapejs }}?');">
-                            {% csrf_token %}
-                            <button type="submit"
-                                class="text-error hover:text-red-700 hover:bg-red-50 px-3 py-1 rounded-lg transition-colors duration-200 text-sm font-semibold">Видалити</button>
-                        </form>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="4" class="p-8 text-center text-neutral text-lg">Аудиторій не знайдено.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="glass-panel shadow-sm rounded-3xl p-0 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                        <th class="p-4 text-left text-xs font-bold text-gray-500 uppercase">Аудиторія</th>
+                        <th class="p-4 text-left text-xs font-bold text-gray-500 uppercase">Локація (Корпус)</th>
+                        <th class="p-4 text-center text-xs font-bold text-gray-500 uppercase">Місткість</th>
+                        <th class="p-4 text-right text-xs font-bold text-gray-500 uppercase">Керування</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for room in classrooms %}
+                    <tr class="hover:bg-blue-50/50 transition duration-150 group">
+                        <td class="p-4">
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black text-xs shadow-sm">
+                                    {{ room.name|slice:":2" }}
+                                </div>
+                                <span class="text-sm font-bold text-gray-900">{{ room.name }}</span>
+                            </div>
+                        </td>
+                        <td class="p-4 text-sm text-gray-500">{{ room.building|default:"Головний корпус" }}</td>
+                        <td class="p-4 text-center">
+                            <span
+                                class="inline-flex items-center justify-center px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-xs font-medium">
+                                {{ room.capacity|default:"—" }} місць
+                            </span>
+                        </td>
+                        <td class="p-4 text-right">
+                            <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <form method="POST" action="{% url 'classroom_delete' pk=room.pk %}" class="inline"
+                                    onsubmit="return confirm('Видалити аудиторію {{ room.name|escapejs }}?');">
+                                    {% csrf_token %}
+                                    <button type="submit"
+                                        class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="p-12 text-center text-gray-400">
+                            <div class="text-4xl mb-4 opacity-50">🏛️</div>
+                            <p class="font-bold text-xs uppercase tracking-widest">Аудиторій не знайдено</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 {% endblock %}

@@ -6,8 +6,10 @@
   body {
     @apply font-sans bg-main-gradient text-bodyText leading-relaxed min-h-screen;
   }
-  
-  h1, h2, h3 {
+
+  h1,
+  h2,
+  h3 {
     @apply leading-tight text-dark font-bold;
   }
 }
@@ -16,12 +18,63 @@
   .glass-panel {
     @apply bg-glass backdrop-blur-glass border border-white/30 shadow-glass;
   }
-  
+
   .glass-sidebar {
-    @apply bg-glass backdrop-blur-glass border-r border-white/30 shadow-glass;
+    @apply bg-glass backdrop-blur-xl border-r border-white/30 shadow-glass;
   }
-  
+
   .btn {
     @apply inline-flex items-center justify-center px-7 py-3 border-none rounded-xl font-semibold text-sm uppercase tracking-wide cursor-pointer transition-all duration-300 relative overflow-hidden text-white shadow-button hover:-translate-y-0.5 hover:shadow-button-hover;
+  }
+}
+
+@layer components {
+
+  /* Базова картка (Bento Tile) */
+  .card-bento {
+    @apply bg-white rounded-3xl p-8 relative overflow-hidden flex flex-col justify-between;
+    box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+  }
+
+  /* Акцентна картка (кольорова) */
+  .card-accent {
+    @apply bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-3xl shadow-xl p-8 flex flex-col justify-between;
+  }
+
+  /* Заголовок секції всередині картки */
+  .label-section {
+    @apply text-gray-400 font-bold text-xs uppercase tracking-widest mb-4;
+  }
+
+  /* Величезна цифра (KPI) */
+  .stat-hero {
+    @apply text-6xl md:text-7xl font-black tracking-tighter text-gray-800;
+  }
+
+  /* Таблиця в стилі EduTrack */
+  .table-clean {
+    @apply w-full text-left border-collapse;
+  }
+
+  .table-clean th {
+    @apply pb-4 pr-4 text-xs font-bold text-gray-400 border-b border-gray-100 italic uppercase;
+  }
+
+  .table-clean td {
+    @apply py-4 text-sm text-gray-500 border-b border-gray-50/50;
+  }
+
+  .table-clean tr:last-child td {
+    @apply border-0;
+  }
+
+  .table-clean tr:hover td {
+    @apply bg-gray-50/30 transition-colors;
+  }
+
+  /* Бейджі (оцінки, статус) */
+  .badge-pill {
+    @apply inline-flex items-center justify-center px-3 py-1 rounded-lg text-xs font-bold;
   }
 }

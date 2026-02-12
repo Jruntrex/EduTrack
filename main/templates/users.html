@@ -6,32 +6,28 @@
 {% block header_title %}Управління Користувачами{% endblock %}
 
 {% block content %}
-<div class="glass-panel rounded-3xl p-8 mb-8" role="region" aria-label="Панель управління користувачами">
-    <div class="flex justify-between items-center mb-8">
-        <h3 class="text-2xl font-bold text-dark">Список користувачів</h3>
+<div class="card-bento min-h-[600px]">
+    <div class="flex justify-end items-center mb-8">
         <button onclick="toggleForm()"
-            class="btn bg-primary text-white shadow-button hover:bg-blue-600 hover:shadow-button-hover flex items-center gap-2 animate-fade-in">
-            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-            </svg>
+            class="px-6 py-3 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-200 hover:bg-blue-700 transform hover:-translate-y-0.5 transition-all">
             Додати користувача
         </button>
     </div>
 
-    <div class="glass-panel shadow-sm rounded-3xl p-6 mb-8 bg-white/80 border border-gray-100">
+    <!-- FILTERS TOOLBAR -->
+    <div class="bg-gray-50/50 rounded-2xl p-6 mb-8 border border-gray-100">
         <form method="GET" action="{% url 'users_list' %}"
-            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
-
-            <div class="flex flex-col gap-1">
-                <label class="text-xs font-bold text-gray-500 uppercase">Пошук (Ім'я / Email)</label>
-                <input type="text" name="search" value="{{ request.GET.search }}" placeholder="Введіть текст..."
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent text-sm">
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 items-end">
+            <div class="flex flex-col gap-1.5">
+                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Пошук</label>
+                <input type="text" name="search" value="{{ request.GET.search }}" placeholder="Ім'я або Email..."
+                    class="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium transition-all">
             </div>
 
-            <div class="flex flex-col gap-1">
-                <label class="text-xs font-bold text-gray-500 uppercase">Роль</label>
+            <div class="flex flex-col gap-1.5">
+                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Роль</label>
                 <select name="role"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-sm">
+                    class="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium transition-all">
                     <option value="">Всі ролі</option>
                     <option value="student" {% if request.GET.role|is_equal:'student' %}selected{% endif %}>Студенти
                     </option>
@@ -41,55 +37,44 @@
                 </select>
             </div>
 
-            <div class="flex flex-col gap-1">
-                <label class="text-xs font-bold text-gray-500 uppercase">Група</label>
+            <div class="flex flex-col gap-1.5">
+                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Група</label>
                 <select name="group"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-sm">
+                    class="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium transition-all">
                     <option value="">Всі групи</option>
                     {% for g in groups %}
                     {% with group_id=g.id|stringformat:"s" %}
-                    <option value="{{ g.id }}" {% if request.GET.group|is_equal:group_id %}selected{% endif %}>
-                        {{ g.name }}
-                    </option>
+                    <option value="{{ g.id }}" {% if request.GET.group|is_equal:group_id %}selected{% endif %}>{{ g.name
+                        }}</option>
                     {% endwith %}
                     {% endfor %}
                 </select>
             </div>
 
-            <div class="flex flex-col gap-1">
-                <label class="text-xs font-bold text-gray-500 uppercase">Предмет (для викл.)</label>
+            <div class="flex flex-col gap-1.5">
+                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Дисципліна</label>
                 <select name="subject"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-sm">
+                    class="w-full px-4 py-2 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium transition-all">
                     <option value="">Всі предмети</option>
                     {% for sub in all_subjects %}
                     {% with sub_id=sub.id|stringformat:"s" %}
-                    <option value="{{ sub.id }}" {% if request.GET.subject|is_equal:sub_id %}selected{% endif %}>
-                        {{ sub.name }}
-                    </option>
+                    <option value="{{ sub.id }}" {% if request.GET.subject|is_equal:sub_id %}selected{% endif %}>{{
+                        sub.name }}</option>
                     {% endwith %}
                     {% endfor %}
                 </select>
             </div>
 
-            <div class="flex flex-col gap-1">
-                <label class="text-xs font-bold text-gray-500 uppercase">Дата реєстрації</label>
-                <div class="flex gap-2">
-                    <input type="date" name="date_from" value="{{ request.GET.date_from }}"
-                        class="w-full px-2 py-2 border border-gray-300 rounded-lg text-xs">
-                    <input type="date" name="date_to" value="{{ request.GET.date_to }}"
-                        class="w-full px-2 py-2 border border-gray-300 rounded-lg text-xs">
-                </div>
-            </div>
-
-            <div class="lg:col-span-3 flex justify-end gap-3 mt-2 border-t pt-4">
-                <a href="{% url 'users_list' %}"
-                    class="px-6 py-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition">
-                    Скинути все
-                </a>
+            <div class="flex items-center gap-3">
                 <button type="submit"
-                    class="px-8 py-2 rounded-lg bg-primary text-white hover:bg-blue-700 shadow-md transition">
-                    Застосувати фільтри
-                </button>
+                    class="flex-grow px-6 py-2.5 bg-gray-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-black transition-all">Знайти</button>
+                <a href="{% url 'users_list' %}"
+                    class="p-2.5 bg-white border border-gray-200 rounded-xl text-gray-400 hover:text-red-500 transition-all">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path d="M6 18L18 6M6 6l12 12" stroke-width="2" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                    </svg>
+                </a>
             </div>
         </form>
     </div>
@@ -148,107 +133,115 @@
         </form>
     </div>
 
-    <div class="overflow-x-auto rounded-xl border border-tableBorder bg-white shadow-sm mt-8">
-        <table id="users-table" class="w-full border-collapse">
-            <thead>
-                <tr>
-                    <th class="bg-primary text-white p-4 text-left text-xs font-bold uppercase tracking-wider">ID</th>
-                    <th class="bg-primary text-white p-4 text-left text-xs font-bold uppercase tracking-wider">ПІБ</th>
-                    <th class="bg-primary text-white p-4 text-left text-xs font-bold uppercase tracking-wider">Роль</th>
-                    <th class="bg-primary text-white p-4 text-left text-xs font-bold uppercase tracking-wider">Email
-                    </th>
-                    <th class="bg-primary text-white p-4 text-left text-xs font-bold uppercase tracking-wider">Група /
-                        Предмети</th>
-                    <th class="bg-primary text-white p-4 text-right text-xs font-bold uppercase tracking-wider">Дії</th>
-                </tr>
-            </thead>
-            <tbody class="divide-y divide-tableBorder text-dark">
-                {% for user in users %}
-                <tr
-                    class="{% cycle 'bg-tableBgLight' 'bg-tableBgDark' %} hover:bg-primary/10 transition-colors duration-200">
-                    <td class="p-4 font-medium">{{ user.pk }}</td>
-                    <td class="p-4 font-medium">{{ user.full_name }}</td>
-                    <td class="p-4">
-                        {% if user.role == 'admin' %}
-                        <span
-                            class="px-2 py-1 rounded-md bg-purple-100 text-purple-700 text-xs font-bold uppercase">Адмін</span>
-                        {% elif user.role == 'teacher' %}
-                        <span
-                            class="px-2 py-1 rounded-md bg-blue-100 text-blue-700 text-xs font-bold uppercase">Викладач</span>
-                        {% else %}
-                        <span
-                            class="px-2 py-1 rounded-md bg-green-100 text-green-700 text-xs font-bold uppercase">Студент</span>
-                        {% endif %}
-                    </td>
-                    <td class="p-4">{{ user.email }}</td>
+    <div class="glass-panel shadow-sm rounded-3xl p-0 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                        <th class="p-4 text-left text-xs font-bold text-gray-500 uppercase">Користувач</th>
+                        <th class="p-4 text-left text-xs font-bold text-gray-500 uppercase">Роль</th>
+                        <th class="p-4 text-left text-xs font-bold text-gray-500 uppercase">Контакти</th>
+                        <th class="p-4 text-left text-xs font-bold text-gray-500 uppercase">Призначення</th>
+                        <th class="p-4 text-right text-xs font-bold text-gray-500 uppercase">Керування</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for user in users %}
+                    <tr class="hover:bg-blue-50/50 transition duration-150 group">
+                        <td class="p-4">
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-black text-xs shadow-sm">
+                                    {{ user.full_name|slice:":1" }}
+                                </div>
+                                <span class="text-sm font-bold text-gray-900">{{ user.full_name }}</span>
+                            </div>
+                        </td>
+                        <td class="p-4">
+                            {% if user.role == 'admin' %}
+                            <span class="badge-pill bg-purple-50 text-purple-600">Адмін</span>
+                            {% elif user.role == 'teacher' %}
+                            <span class="badge-pill bg-blue-50 text-blue-600">Викладач</span>
+                            {% else %}
+                            <span class="badge-pill bg-green-50 text-green-600">Студент</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4 text-sm text-gray-500">{{ user.email }}</td>
 
-                    <td class="p-4 text-sm">
-                        {% if user.role == 'teacher' %}
-                        {# Отримуємо всі призначення викладача #}
-                        {% with assignments=user.teachingassignment_set.all %}
-                        {% if assignments %}
-                        <div class="flex flex-wrap gap-1 max-w-[220px]"
-                            title="{% for a in assignments %}{{ a.subject.name }}{% if not forloop.last %}, {% endif %}{% endfor %}">
+                        <td class="p-4 text-sm">
+                            {% if user.role == 'teacher' %}
+                            {# Отримуємо всі призначення викладача #}
+                            {% with assignments=user.teachingassignment_set.all %}
+                            {% if assignments %}
+                            <div class="flex flex-wrap gap-1 max-w-[220px]"
+                                title="{% for a in assignments %}{{ a.subject.name }}{% if not forloop.last %}, {% endif %}{% endfor %}">
 
-                            {% for a in assignments %}
-                            {% if forloop.counter <= 2 %} <span
-                                class="px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[11px] border border-blue-100 whitespace-nowrap">
-                                {{ a.subject.name }}
-                                </span>
-                                {% endif %}
-                                {% endfor %}
+                                {% for a in assignments %}
+                                {% if forloop.counter <= 2 %} <span
+                                    class="px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 text-[11px] border border-blue-100 whitespace-nowrap">
+                                    {{ a.subject.name }}
+                                    </span>
+                                    {% endif %}
+                                    {% endfor %}
 
-                                {% if assignments|length > 2 %}
-                                <span class="text-primary font-bold cursor-help ml-1" title="Показати всі">...</span>
-                                {% endif %}
-                        </div>
-                        {% else %}
-                        <span class="text-gray-400">—</span>
-                        {% endif %}
-                        {% endwith %}
-                        {% elif user.role == 'student' %}
-                        {% if user.group %}
-                        <span class="px-2 py-1 rounded-md bg-gray-100 text-gray-600 text-xs font-medium">
-                            Група: {{ user.group.name }}
-                        </span>
-                        {% else %}
-                        <span class="text-gray-400">Група не вказана</span>
-                        {% endif %}
-                        {% else %}
-                        <span class="text-gray-400">—</span>
-                        {% endif %}
-                    </td>
+                                    {% if assignments|length > 2 %}
+                                    <span class="text-primary font-bold cursor-help ml-1"
+                                        title="Показати всі">...</span>
+                                    {% endif %}
+                            </div>
+                            {% else %}
+                            <span class="text-gray-400">—</span>
+                            {% endif %}
+                            {% endwith %}
+                            {% elif user.role == 'student' %}
+                            {% if user.group %}
+                            <span class="text-sm text-gray-500">
+                                Група: {{ user.group.name }}
+                            </span>
+                            {% else %}
+                            <span class="text-gray-400">Група не вказана</span>
+                            {% endif %}
+                            {% else %}
+                            <span class="text-gray-400">—</span>
+                            {% endif %}
+                        </td>
 
-                    <td class="p-4 text-right">
-                        <div class="flex items-center justify-end gap-2">
-                            <a href="{% url 'user_edit' pk=user.pk %}"
-                                class="p-2 rounded-lg bg-primary text-white hover:bg-blue-600 transition-colors">
-                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-4 h-4">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
-                                </svg>
-                            </a>
-                            <form method="POST" action="{% url 'user_delete' pk=user.pk %}" class="inline">
-                                {% csrf_token %}
-                                <button type="submit"
-                                    onclick="return confirm('Ви впевнені, що хочете видалити користувача {{ user.full_name }}?')"
-                                    class="p-2 rounded-lg bg-error text-white hover:bg-red-600 transition-colors">
-                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-4 h-4">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        <td class="p-4 text-right">
+                            <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <a href="{% url 'user_edit' pk=user.pk %}"
+                                    class="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
+                                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
+                                        <path
+                                            d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                                     </svg>
-                                </button>
-                            </form>
-                        </div>
-                    </td>
-                </tr>
-                {% empty %}
-                <tr>
-                    <td colspan="6" class="p-8 text-center text-neutral text-lg">Користувачів не знайдено.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                                </a>
+                                <form method="POST" action="{% url 'user_delete' pk=user.pk %}" class="inline">
+                                    {% csrf_token %}
+                                    <button type="submit"
+                                        onclick="return confirm('Видалити користувача {{ user.full_name }}?')"
+                                        class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all">
+                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
+                                            <path
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="p-12 text-center text-gray-400">
+                            <div class="text-4xl mb-4 opacity-50">👥</div>
+                            <p class="font-bold text-xs uppercase tracking-widest">Користувачів не знайдено</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
 {% endblock %}

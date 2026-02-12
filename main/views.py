@@ -442,21 +442,18 @@ def set_weekly_schedule_view(request):
         grp_id = str(item.group.id)
         day = str(item.day_of_week)
         
-        # Намагаємося визначити номер пари за часом
-        # У новому конструкторі ми використовуємо номери слотів.
-        # Для сумісності спробуємо знайти найбільш підходящий слот.
-        slot_times = {"08:30": 1, "10:15": 2, "12:15": 3, "14:15": 4, "16:00": 5, "17:45": 6}
-        start_time_str = item.start_time.strftime("%H:%M")
-        lesson_num = slot_times.get(start_time_str, None)
-        
+        # Зберегти всі уроки, незалежно від часу
+        # Використовувати lesson_number з бази даних (він повинен бути встановлений коректно)
+        lesson_num = item.lesson_number
         if lesson_num:
             schedule_map_temp[grp_id][day][str(lesson_num)] = {
                 'subject_id': item.subject.id,
                 'subject_name': item.subject.name,
                 'teacher_id': item.teacher.id,
                 'teacher_name': item.teacher.full_name,
-                'start_time': start_time_str,
-                'classroom': item.classroom or ""
+                'start_time': item.start_time.strftime("%H:%M"),
+                'duration': item.duration_minutes, # Важливо
+                'classroom': item.classroom.name if item.classroom else ""
             }
     
     schedule_map = {}
@@ -496,13 +493,25 @@ def set_weekly_schedule_view(request):
                     'teacher_name': tname
                 })
 
+    lesson_times = {
+        1: ("08:30", "10:05"),
+        2: ("10:15", "11:50"),
+        3: ("12:15", "13:50"),
+        4: ("14:15", "15:50"),
+        5: ("16:00", "17:35"),
+        6: ("17:45", "19:20"),
+        7: ("19:30", "21:05"),
+        8: ("21:15", "22:50"),
+    }
+
     context = {
         'groups': groups,
         'schedule_map': schedule_map,
         'subject_data': subject_data,
         'subject_teachers_map': subject_teachers_map,
-        'days': [(1, 'Пн'), (2, 'Вт'), (3, 'Ср'), (4, 'Чт'), (5, 'Пт')],
-        'lesson_numbers': range(1, 7),
+        'days': [(1, 'Понеділок'), (2, 'Вівторок'), (3, 'Середа'), (4, 'Четвер'), (5, 'П’ятниця'), (6, 'Субота')],
+        'lesson_numbers': range(1, 9),
+        'lesson_times': lesson_times,
         'active_page': 'schedule_builder',
     }
     return render(request, 'main/schedule_builder.html', context)
@@ -540,36 +549,58 @@ def save_schedule_changes(request: HttpRequest) -> JsonResponse:
                         teacher_id = None
                     
                     if subject_id:
+                        # 1. Знаходимо або створюємо TeachingAssignment
+                        # Це критично, бо dropdown на фронтенді може показувати викладачів, 
+                        # які ще не призначені цій конкретній групі.
+                        assignment = None
                         if teacher_id:
-                            assignment = TeachingAssignment.objects.filter(
-                                group=group,
-                                subject_id=subject_id,
-                                teacher_id=teacher_id
-                            ).first()
-                        else:
+                            teacher = User.objects.filter(id=teacher_id).first()
+                            if teacher:
+                                assignment, _ = TeachingAssignment.objects.get_or_create(
+                                    group=group,
+                                    subject_id=subject_id,
+                                    teacher=teacher
+                                )
+                        
+                        # Якщо викладач не вказаний, пробуємо знайти будь-яке призначення для цього предмету і групи
+                        if not assignment:
                             assignment = TeachingAssignment.objects.filter(
                                 group=group,
                                 subject_id=subject_id
                             ).first()
-                        
-                        if assignment:
-                            # Використовуємо дані з фронтенду
-                            start_time_str = "08:30"
-                            classroom = ""
-                            if isinstance(lesson_data, dict):
-                                start_time_str = lesson_data.get('startTime', lesson_data.get('start_time', "08:30"))
-                                classroom = lesson_data.get('classroom', "")
                             
-                            ScheduleTemplate.objects.create(
-                                group=group,
-                                subject_id=subject_id,
-                                teacher_id=teacher_id or assignment.teacher_id,
-                                teaching_assignment=assignment, # <-- НОВЕ ПОЛЕ
-                                day_of_week=day,
-                                start_time=start_time_str,
-                                classroom=classroom,
-                                valid_from=date.today()
-                            )
+                            # Якщо все ще немає, створюємо без викладача (якщо це дозволено моделлю)
+                            # Або створюємо нове призначення без викладача, якщо це можливо.
+                            # Для надійності, якщо викладача немає, ми все одно можемо створити запис розкладу,
+                            # але поле teaching_assignment може вимагати null=True (ми це перевіряли в моделі).
+                        
+                        # Використовуємо дані з фронтенду
+                        start_time_str = "08:30"
+                        classroom_name = ""
+                        duration = 90
+                        if isinstance(lesson_data, dict):
+                            start_time_str = lesson_data.get('startTime', lesson_data.get('start_time', "08:30"))
+                            classroom_name = lesson_data.get('classroom', "").strip()
+                            duration = int(lesson_data.get('duration', 90))
+                        
+                        # Знаходимо або створюємо об'єкт Classroom
+                        classroom_obj = None
+                        if classroom_name:
+                            # Використовуємо get_or_create, щоб не падало на нових аудиторіях
+                            classroom_obj, _ = Classroom.objects.get_or_create(name=classroom_name)
+
+                        ScheduleTemplate.objects.create(
+                            group=group,
+                            subject_id=subject_id,
+                            teacher_id=teacher_id or (assignment.teacher_id if assignment else None),
+                            teaching_assignment=assignment, 
+                            day_of_week=day,
+                            lesson_number=lesson_num, 
+                            start_time=start_time_str,
+                            duration_minutes=duration,
+                            classroom=classroom_obj,
+                            valid_from=date.today()
+                        )
         
         return JsonResponse({
             'status': 'success',
@@ -685,8 +716,13 @@ def api_save_schedule_slot(request: HttpRequest) -> JsonResponse:
 
         # Отримання об'єктів
         subject = get_object_or_404(Subject, id=subject_id)
-        teacher = User.objects.get(id=teacher_id) if teacher_id else None
-        classroom = Classroom.objects.get(id=classroom_id) if classroom_id else None
+        teacher = None
+        if teacher_id:
+            teacher = get_object_or_404(User, id=teacher_id)
+        
+        classroom = None
+        if classroom_id:
+            classroom = get_object_or_404(Classroom, id=classroom_id)
         
         # Знайти існуючий слот (для виключення при валідації)
         existing_slot = ScheduleTemplate.objects.filter(
@@ -722,18 +758,19 @@ def api_save_schedule_slot(request: HttpRequest) -> JsonResponse:
                 group=group
             )
 
-        # SAVE
-        template, created = ScheduleTemplate.objects.update_or_create(
-            group=group, day_of_week=day, lesson_number=lesson_num,
-            defaults={
-                'subject': subject,
-                'teacher': teacher,
-                'teaching_assignment': assignment, # <-- НОВЕ ПОЛЕ
-                'classroom': classroom,
-                'start_time': start_time,
-                'duration_minutes': duration,
-            }
-        )
+        # SAVE - з урахуванням можливості None для teacher
+        with transaction.atomic():
+            template, created = ScheduleTemplate.objects.update_or_create(
+                group=group, day_of_week=day, lesson_number=lesson_num,
+                defaults={
+                    'subject': subject,
+                    'teacher': teacher,
+                    'teaching_assignment': assignment, # <-- НОВЕ ПОЛЕ
+                    'classroom': classroom,
+                    'start_time': start_time,
+                    'duration_minutes': duration,
+                }
+            )
         
         return JsonResponse({
             'status': 'success', 
@@ -746,8 +783,12 @@ def api_save_schedule_slot(request: HttpRequest) -> JsonResponse:
             }
         })
 
+    except json.JSONDecodeError:
+        return JsonResponse({'status': 'error', 'message': 'Невірний JSON формат'}, status=400)
     except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+        import traceback
+        traceback.print_exc()
+        return JsonResponse({'status': 'error', 'message': f'Помилка при збереженні: {str(e)}'}, status=500)
 
 
 @login_required

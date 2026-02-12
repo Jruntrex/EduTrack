@@ -250,9 +250,22 @@ class ScheduleTemplate(models.Model):
         db_table = 'schedule_templates'
         verbose_name = "Шаблон розкладу"
         verbose_name_plural = "Шаблони розкладу"
+        unique_together = ('group', 'day_of_week', 'lesson_number')
 
     def __str__(self) -> str:
         return f"{self.get_day_of_week_display()} {self.start_time} - {self.subject.name} ({self.group.name})"
+    
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        """Переопалювання save для гарантування цілісності та оновлення teaching_assignment."""
+        # Автоматично оновлюємо teaching_assignment на основі subject, teacher, group
+        if self.teacher and self.subject and self.group:
+            self.teaching_assignment, _ = TeachingAssignment.objects.get_or_create(
+                subject=self.subject,
+                teacher=self.teacher,
+                group=self.group
+            )
+        
+        super().save(*args, **kwargs)
 
 class Lesson(models.Model):
     """

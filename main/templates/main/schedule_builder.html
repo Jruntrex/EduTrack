@@ -3,325 +3,161 @@
 
 {% block title %}Конструктор розкладу - EduTrack{% endblock %}
 
-{% block extra_css %}
-<style>
-    :root {
-        --primary: #000;
-        --primary-hover: #333;
-        --bg-gray: #f8fafc;
-        --border-color: #000;
-    }
-
-    .builder-container {
-        display: grid;
-        grid-template-columns: 320px 1fr;
-        gap: 2rem;
-        height: calc(100vh - 160px);
-        margin-top: 1rem;
-    }
-
-    .sidebar-panel {
-        background: white;
-        padding: 2rem;
-        border-radius: 0.5rem;
-        border: 2px solid var(--border-color);
-        display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
-    }
-
-    .main-grid-panel {
-        background: white;
-        padding: 2rem;
-        border-radius: 0.5rem;
-        border: 2px solid var(--border-color);
-        overflow-y: auto;
-    }
-
-    .schedule-grid {
-        display: grid;
-        grid-template-columns: 80px repeat(5, 1fr);
-        border: 2px solid var(--border-color);
-        background-color: var(--border-color);
-        gap: 2px;
-    }
-
-    .grid-header {
-        background: #f1f5f9;
-        padding: 1rem;
-        text-align: center;
-        font-weight: 900;
-        text-transform: uppercase;
-        font-size: 0.75rem;
-    }
-
-    .time-cell-header {
-        background: #e2e8f0;
-        padding: 1rem;
-        text-align: center;
-        font-weight: 900;
-        font-size: 0.75rem;
-    }
-
-    .schedule-cell {
-        background: white;
-        min-height: 110px;
-        padding: 8px;
-        cursor: pointer;
-        transition: all 0.2s;
-        position: relative;
-    }
-
-    .cell-inner {
-        height: 100%;
-        border: 2px dashed #cbd5e1;
-        border-radius: 4px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-        text-align: center;
-        padding: 10px;
-        gap: 5px;
-    }
-
-    .schedule-cell:hover .cell-inner {
-        border-color: var(--primary);
-        background: #f0f7ff;
-    }
-
-    .schedule-cell.filled .cell-inner {
-        background-color: #fff;
-        border: 2px solid var(--border-color);
-        border-style: solid;
-    }
-
-    .subject-name {
-        font-weight: 900;
-        font-size: 0.85rem;
-        line-height: 1.2;
-        color: #000;
-    }
-
-    .teacher-name {
-        font-size: 0.7rem;
-        font-weight: 700;
-        color: #444;
-        margin-top: 4px;
-    }
-
-    .time-info {
-        font-size: 0.65rem;
-        font-weight: 800;
-        color: #64748b;
-        margin-top: 4px;
-    }
-
-    /* Modal Styling - Classic High Contrast */
-    .modal-overlay {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.7);
-        display: none;
-        align-items: center;
-        justify-content: center;
-        z-index: 1000;
-        backdrop-filter: blur(4px);
-    }
-
-    .modal-content {
-        background: white;
-        width: 100%;
-        max-width: 500px;
-        border-radius: 0.5rem;
-        overflow: hidden;
-        border: 3px solid #000;
-        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-    }
-
-    .modal-header {
-        padding: 1.5rem 2rem;
-        border-bottom: 2px solid #000;
-        background: #f8fafc;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .modal-body {
-        padding: 2rem;
-    }
-
-    .form-label {
-        display: block;
-        margin-bottom: 8px;
-        font-size: 0.75rem;
-        font-weight: 900;
-        color: #000;
-        text-transform: uppercase;
-    }
-
-    .classic-input {
-        width: 100%;
-        padding: 0.75rem 1rem;
-        border: 2px solid #000;
-        border-radius: 4px;
-        font-weight: 700;
-        font-family: inherit;
-        font-size: 0.9rem;
-    }
-
-    .btn-classic {
-        padding: 0.75rem 1.5rem;
-        border: 2px solid #000;
-        border-radius: 4px;
-        font-weight: 900;
-        text-transform: uppercase;
-        cursor: pointer;
-        transition: all 0.2s;
-        font-size: 0.85rem;
-    }
-
-    .btn-classic.black {
-        background: #000;
-        color: #fff;
-    }
-
-    .btn-classic.black:hover {
-        background: #333;
-    }
-
-    .btn-classic.outline {
-        background: #fff;
-        color: #000;
-    }
-
-    .btn-classic.outline:hover {
-        background: #f1f5f9;
-    }
-
-    #autoSaveStatus {
-        font-weight: 800;
-        font-size: 0.8rem;
-    }
-
-    #autoSaveStatus.saved {
-        color: #059669;
-    }
-
-    #autoSaveStatus.error {
-        color: #dc2626;
-    }
-</style>
-{% endblock %}
-
-{% block header_title %}КОНСТРУКТОР РОЗКЛАДУ{% endblock %}
+{% block header_title %}Конструктор Розкладу{% endblock %}
 
 {% block content %}
-<div class="animate-fade-in">
-    <div class="builder-container">
+<div class="card-bento min-h-[600px]">
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
         <!-- Sidebar -->
-        <div class="sidebar-panel">
-            <div>
-                <label class="form-label">Оберіть групу</label>
-                <select id="groupSelect" class="classic-input">
-                    <option value="">-- ГРУПА --</option>
-                    {% for g in groups %}
-                    <option value="{{ g.id }}">{{ g.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-
-            <div id="groupInfo"
-                style="padding: 1.5rem; background: #f8fafc; border: 2px solid #000; border-radius: 4px;">
-                <div id="groupInfoText"
-                    style="display: flex; align-items: center; gap: 10px; font-weight: 900; font-size: 1.1rem; color: #000;">
-                    Оберіть групу для початку
+        <div class="lg:col-span-1">
+            <div class="glass-panel shadow-sm rounded-3xl p-6 sticky top-6">
+                <div class="mb-6">
+                    <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Оберіть
+                        групу</label>
+                    <select id="groupSelect"
+                        class="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium transition-all">
+                        <option value="">-- Виберіть групу --</option>
+                        {% for g in groups %}
+                        <option value="{{ g.id }}">{{ g.name }}</option>
+                        {% endfor %}
+                    </select>
                 </div>
-            </div>
 
-            <div id="autoSaveStatus"></div>
+                <div id="groupInfo" class="mb-6 p-4 bg-blue-50 border border-blue-100 rounded-2xl hidden">
+                    <div id="groupInfoText" class="text-sm font-bold text-blue-600">
+                        Оберіть групу для початку
+                    </div>
+                </div>
 
-            <div style="margin-top: auto; display: flex; flex-direction: column; gap: 10px;">
-                <button id="saveBtn" class="btn-classic black">ЗБЕРЕГТИ РОЗКЛАД</button>
-                <button id="clearAllBtn" class="btn-classic outline">ОЧИСТИТИ ВСЕ</button>
+                <div id="autoSaveStatus" class="mb-6 text-sm font-bold"></div>
+
+                <div class="space-y-3">
+                    <button id="saveBtn"
+                        class="w-full px-6 py-3 bg-blue-600 text-white rounded-2xl font-black text-xs uppercase tracking-widest shadow-lg shadow-blue-200 hover:bg-blue-700 transform hover:-translate-y-0.5 transition-all">
+                        Зберегти розклад
+                    </button>
+                    <button id="clearAllBtn"
+                        class="w-full px-6 py-3 bg-white border border-gray-200 text-gray-700 rounded-2xl font-bold text-xs uppercase tracking-widest hover:bg-gray-50 transition-all">
+                        Очистити все
+                    </button>
+                </div>
             </div>
         </div>
 
-        <!-- Main Grid -->
-        <div class="main-grid-panel" id="scheduleContainer" style="display: none;">
-            <div class="schedule-grid">
-                <div class="grid-header" style="background: #000; color: #fff;">ПАРА</div>
+        <!-- Main Content -->
+        <div class="lg:col-span-3">
+            <div id="scheduleContainer" style="display: none;" class="space-y-8">
                 {% for day_id, day_name in days %}
-                <div class="grid-header">{{ day_name }}</div>
-                {% endfor %}
+                <div class="glass-panel shadow-sm rounded-3xl p-6 overflow-hidden">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-xl font-black text-gray-800">{{ day_name }}</h3>
+                    </div>
 
-                {% for num in lesson_numbers %}
-                <div class="time-cell-header">
-                    <div style="font-size: 1.2rem; margin-bottom: 4px;">{{ num }}</div>
-                    {% if num == 1 %}08:30{% elif num == 2 %}10:15{% elif num == 3 %}12:15{% elif num == 4 %}14:15{%
-                    elif num == 5 %}16:00{% elif num == 6 %}17:45{% endif %}
-                </div>
-                {% for day_id, day_name in days %}
-                <div class="schedule-cell" data-day="{{ day_id }}" data-lesson="{{ num }}">
-                    <div class="cell-inner">
-                        <div class="subject-name">-</div>
-                        <div class="teacher-name"></div>
-                        <div class="time-info" style="visibility: hidden;"></div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full min-w-[800px]">
+                            <thead class="bg-gray-50/50 border-b border-gray-100">
+                                <tr>
+                                    <th class="p-3 text-center text-[10px] font-black text-gray-400 uppercase w-10">№
+                                    </th>
+                                    <th class="p-3 text-left text-[10px] font-black text-gray-400 uppercase w-48">Час
+                                        (Початок / Тривалість)</th>
+                                    <th class="p-3 text-left text-[10px] font-black text-gray-400 uppercase">Предмет
+                                    </th>
+                                    <th class="p-3 text-left text-[10px] font-black text-gray-400 uppercase w-40">
+                                        Викладач</th>
+                                    <th class="p-3 text-center text-[10px] font-black text-gray-400 uppercase w-20">Ауд.
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                {% for num in lesson_numbers %}
+                                <tr class="hover:bg-blue-50/30 transition-colors lesson-row" data-day="{{ day_id }}"
+                                    data-lesson="{{ num }}">
+                                    <!-- Number -->
+                                    <td class="p-3 text-center align-top pt-4">
+                                        <div class="font-black text-gray-900">{{ num }}</div>
+                                    </td>
+
+                                    <!-- Time & Duration -->
+                                    <td class="p-3 align-top">
+                                        <div class="flex flex-col gap-2">
+                                            <div class="flex items-center gap-2">
+                                                <input type="time"
+                                                    class="lesson-start-time w-24 px-2 py-1 bg-gray-50 border border-gray-200 rounded-lg text-xs font-bold text-gray-700"
+                                                    value="{% with times=lesson_times|get_item:num %}{{ times.0 }}{% endwith %}">
+                                                <span class="text-gray-400 text-xs">-</span>
+                                                <span
+                                                    class="lesson-end-time text-xs font-bold text-gray-500">--:--</span>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <select
+                                                    class="lesson-duration w-24 px-2 py-1 bg-gray-50 border border-gray-200 rounded-lg text-xs text-gray-600">
+                                                    <option value="45">45 хв</option>
+                                                    <option value="50">50 хв</option>
+                                                    <option value="80">80 хв</option>
+                                                    <option value="90" selected>90 хв</option>
+                                                    <option value="custom">Інше...</option>
+                                                </select>
+                                                <input type="number"
+                                                    class="lesson-duration-custom w-16 px-2 py-1 bg-gray-50 border border-gray-200 rounded-lg text-xs hidden"
+                                                    placeholder="Хв">
+                                            </div>
+                                            <div class="time-error text-[10px] text-red-500 font-bold hidden"></div>
+                                        </div>
+                                    </td>
+
+                                    <!-- Subject Select -->
+                                    <td class="p-3 align-top pt-3">
+                                        <select
+                                            class="lesson-subject w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-medium focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-gray-700">
+                                            <option value="">--</option>
+                                            {% for item in subject_data %}
+                                            <option value="{{ item.id }}" data-teacher-id="{{ item.teacher_id }}"
+                                                data-teacher-name="{{ item.teacher_name }}">
+                                                {{ item.name }}
+                                            </option>
+                                            {% endfor %}
+                                        </select>
+                                    </td>
+
+                                    <!-- Teacher (Auto-filled) -->
+                                    <td class="p-3 align-top pt-3">
+                                        <input type="text" readonly
+                                            class="lesson-teacher w-full px-3 py-2 bg-transparent border-none text-xs text-gray-500 font-medium focus:ring-0 cursor-default"
+                                            placeholder="Автоматично">
+                                        <input type="hidden" class="lesson-teacher-id">
+                                    </td>
+
+                                    <!-- Classroom -->
+                                    <td class="p-3 align-top pt-3">
+                                        <input type="text"
+                                            class="lesson-classroom w-full px-3 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-center"
+                                            placeholder="...">
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
                 {% endfor %}
-                {% endfor %}
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal -->
-<div id="subjectModal" class="modal-overlay">
-    <div class="modal-content">
-        <div class="modal-header">
-            <h3 style="font-weight: 900; margin: 0; text-transform: uppercase; letter-spacing: 1px;">Редагувати пару
-            </h3>
-            <button class="modal-close"
-                style="background: none; border: none; font-size: 1.5rem; cursor: pointer; font-weight: 900;">&times;</button>
-        </div>
-        <div class="modal-body">
-            <div style="margin-bottom: 1.5rem;">
-                <label class="form-label">Предмет та викладач</label>
-                <select id="modalSubjectSelect" class="classic-input">
-                    <option value="">-- ОБЕРІТЬ ПРЕДМЕТ --</option>
-                    {% for item in subject_data %}
-                    <option value="{{ item.id }}" data-teacher-id="{{ item.teacher_id }}"
-                        data-teacher-name="{{ item.teacher_name }}">
-                        {{ item.name }}
-                    </option>
-                    {% endfor %}
-                </select>
             </div>
 
-            <div style="margin-bottom: 1.5rem;">
-                <label class="form-label">Аудиторія</label>
-                <input type="text" id="modalClassroom" class="classic-input" placeholder="н-р: 402, Каф. фіз.">
-            </div>
-
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;">
-                <div>
-                    <label class="form-label">Початок</label>
-                    <input type="time" id="modalStartTime" class="classic-input" value="08:30">
+            <!-- Empty State -->
+            <div id="emptyState"
+                class="flex flex-col items-center justify-center py-20 text-center glass-panel rounded-3xl mt-8"
+                style="display: none;">
+                <div class="w-16 h-16 bg-blue-50 rounded-full flex items-center justify-center mb-4">
+                    <svg class="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
+                        </path>
+                    </svg>
                 </div>
-                <div>
-                    <label class="form-label">Кількість пар підряд</label>
-                    <input type="number" id="modalLessonCount" class="classic-input" value="1" min="1" max="6">
-                </div>
+                <h3 class="text-lg font-bold text-gray-800 mb-2">Розклад не відображається</h3>
+                <p class="text-gray-500 max-w-sm">Будь ласка, оберіть групу зі списку ліворуч, щоб почати редагування
+                    розкладу.</p>
             </div>
-
-            <input type="hidden" id="modalDuration" value="90">
-        </div>
-        <div
-            style="padding: 1.5rem 2rem; border-top: 2px solid #000; background: #f8fafc; display: flex; justify-content: flex-end; gap: 1rem;">
-            <button class="btn-classic outline modal-cancel">СКАСУВАТИ</button>
-            <button class="btn-classic black modal-confirm">ОК</button>
         </div>
     </div>
 </div>
@@ -331,160 +167,372 @@
         const elements = {
             groupSelect: document.getElementById('groupSelect'),
             scheduleContainer: document.getElementById('scheduleContainer'),
-            subjectModal: document.getElementById('subjectModal'),
-            modalSubjectSelect: document.getElementById('modalSubjectSelect'),
-            modalLessonCount: document.getElementById('modalLessonCount'),
-            modalStartTime: document.getElementById('modalStartTime'),
-            modalClassroom: document.getElementById('modalClassroom'),
+            emptyState: document.getElementById('emptyState'),
             saveBtn: document.getElementById('saveBtn'),
+            clearAllBtn: document.getElementById('clearAllBtn'),
             autoSaveStatus: document.getElementById('autoSaveStatus'),
+            groupInfo: document.getElementById('groupInfo'),
             groupInfoText: document.getElementById('groupInfoText')
         };
 
-        const config = {
-            times: { 1: "08:30", 2: "10:15", 3: "12:15", 4: "14:15", 5: "16:00", 6: "17:45" }
-        };
+        // This will hold the FULL schedule data for all groups loaded from server
+        let allScheduleData = {};
+        try {
+            const dataEl = document.getElementById('schedule-data');
+            if (dataEl) {
+                allScheduleData = JSON.parse(dataEl.textContent);
+            }
+        } catch (e) {
+            console.error("Error parsing schedule data", e);
+        }
 
         let state = {
             currentGroup: null,
-            schedule: {},
-            selectedCell: null,
             modified: false
         };
 
+        // --- Event Listeners ---
+
         elements.groupSelect.addEventListener('change', function () {
-            state.currentGroup = this.value;
-            if (state.currentGroup) {
-                loadSchedule(state.currentGroup);
+            const groupId = this.value;
+            state.currentGroup = groupId;
+
+            if (groupId) {
                 elements.scheduleContainer.style.display = 'block';
-                elements.groupInfoText.textContent = `Група: ${this.options[this.selectedIndex].text}`;
+                elements.emptyState.style.display = 'none';
+                elements.groupInfo.classList.remove('hidden');
+                elements.groupInfoText.textContent = `Редагування: ${this.options[this.selectedIndex].text}`;
+
+                loadScheduleForGroup(groupId);
                 state.modified = false;
+                updateStatus('');
+                // Validate all times after loading
+                elements.scheduleContainer.querySelectorAll('.glass-panel').forEach(dayPanel => validateDayTimes(dayPanel));
             } else {
                 elements.scheduleContainer.style.display = 'none';
+                elements.emptyState.style.display = 'flex';
+                elements.groupInfo.classList.add('hidden');
             }
         });
 
-        document.querySelectorAll('.schedule-cell').forEach(cell => {
-            cell.addEventListener('click', function () {
-                state.selectedCell = this;
-                const lesson = this.dataset.lesson;
-                elements.modalStartTime.value = config.times[lesson] || "08:30";
+        // Delegate events
+        elements.scheduleContainer.addEventListener('change', function (e) {
+            const target = e.target;
 
-                const currentData = state.schedule[this.dataset.day]?.[lesson];
-                if (currentData) {
-                    elements.modalSubjectSelect.value = currentData.subject_id || currentData.subjectId || "";
-                    elements.modalClassroom.value = currentData.classroom || "";
-                } else {
-                    elements.modalSubjectSelect.value = "";
-                    elements.modalClassroom.value = "";
+            if (target.classList.contains('lesson-subject')) {
+                handleSubjectChange(target);
+                markModified();
+            } else if (target.classList.contains('lesson-classroom')) {
+                markModified();
+            } else if (target.classList.contains('lesson-start-time') ||
+                target.classList.contains('lesson-duration') ||
+                target.classList.contains('lesson-duration-custom')) {
+
+                if (target.classList.contains('lesson-duration')) {
+                    const row = target.closest('tr');
+                    const customInput = row.querySelector('.lesson-duration-custom');
+                    if (target.value === 'custom') {
+                        customInput.classList.remove('hidden');
+                        customInput.focus();
+                    } else {
+                        customInput.classList.add('hidden');
+                    }
                 }
 
-                elements.subjectModal.style.display = 'flex';
+                updateEndTime(target.closest('tr'));
+                validateDayTimes(target.closest('.glass-panel')); // Validate the whole day
+                markModified();
+            }
+        });
+
+        // Input event for real-time validation feedback (optional)
+        elements.scheduleContainer.addEventListener('input', function (e) {
+            if (e.target.classList.contains('lesson-duration-custom')) {
+                updateEndTime(e.target.closest('tr'));
+                validateDayTimes(e.target.closest('.glass-panel'));
+                markModified();
+            }
+        });
+
+        elements.saveBtn.addEventListener('click', saveSchedule);
+
+        elements.clearAllBtn.addEventListener('click', function () {
+            if (!state.currentGroup) return;
+            if (!confirm('Ви впевнені? Це очистить всі поля на цій сторінці.')) return;
+
+            const inputs = elements.scheduleContainer.querySelectorAll('input, select');
+            inputs.forEach(input => {
+                if (input.classList.contains('lesson-start-time') || input.classList.contains('lesson-duration')) return;
+                input.value = '';
             });
+            elements.scheduleContainer.querySelectorAll('.lesson-subject').forEach(s => s.value = "");
+
+            markModified();
         });
 
-        const closeModal = () => elements.subjectModal.style.display = 'none';
-        document.querySelectorAll('.modal-cancel, .modal-close').forEach(b => b.addEventListener('click', closeModal));
+        // --- Functions ---
 
-        document.querySelector('.modal-confirm').addEventListener('click', function () {
-            if (!state.selectedCell) return;
+        function updateEndTime(row) {
+            const startTimeInput = row.querySelector('.lesson-start-time');
+            const durationSelect = row.querySelector('.lesson-duration');
+            const durationCustom = row.querySelector('.lesson-duration-custom');
+            const endTimeSpan = row.querySelector('.lesson-end-time');
 
-            const day = state.selectedCell.dataset.day;
-            const startLesson = parseInt(state.selectedCell.dataset.lesson);
-            const count = parseInt(elements.modalLessonCount.value) || 1;
-            const subjectId = elements.modalSubjectSelect.value;
-            const option = elements.modalSubjectSelect.options[elements.modalSubjectSelect.selectedIndex];
-
-            if (!subjectId) return;
-
-            const subjectName = option.text.split(' (')[0];
-            const teacherId = option.dataset.teacherId;
-            const teacherName = option.dataset.teacherName || '';
-            const classroom = elements.modalClassroom.value;
-
-            if (!state.schedule[day]) state.schedule[day] = {};
-
-            for (let i = 0; i < count; i++) {
-                const lesson = startLesson + i;
-                if (lesson > 6) break;
-
-                const currentStartTime = config.times[lesson] || elements.modalStartTime.value;
-
-                state.schedule[day][lesson] = {
-                    subjectId: parseInt(subjectId),
-                    teacherId: teacherId ? parseInt(teacherId) : null,
-                    subjectName: subjectName,
-                    teacherName: teacherName,
-                    startTime: currentStartTime,
-                    duration: 90,
-                    classroom: classroom
-                };
-
-                const cell = document.querySelector(`[data-day="${day}"][data-lesson="${lesson}"]`);
-                if (cell) {
-                    cell.classList.add('filled');
-                    cell.querySelector('.subject-name').textContent = subjectName;
-                    cell.querySelector('.teacher-name').textContent = (classroom ? '[' + classroom + '] ' : '') + teacherName;
-                    cell.querySelector('.time-info').textContent = currentStartTime;
-                }
+            if (!startTimeInput.value) {
+                endTimeSpan.textContent = "--:--";
+                return;
             }
 
-            state.modified = true;
-            closeModal();
-            elements.autoSaveStatus.innerHTML = '● Є незбережені зміни';
-            elements.autoSaveStatus.className = 'error';
-        });
+            let duration = parseInt(durationSelect.value);
+            if (isNaN(duration) || durationSelect.value === 'custom') {
+                duration = parseInt(durationCustom.value) || 0;
+            }
 
-        elements.saveBtn.addEventListener('click', function () {
-            if (!state.currentGroup || !state.modified) return;
+            const [hours, minutes] = startTimeInput.value.split(':').map(Number);
+            const date = new Date();
+            date.setHours(hours, minutes + duration);
 
-            elements.autoSaveStatus.textContent = 'Збереження...';
-            elements.autoSaveStatus.className = 'saving';
+            const endHours = String(date.getHours()).padStart(2, '0');
+            const endMinutes = String(date.getMinutes()).padStart(2, '0');
+            endTimeSpan.textContent = `${endHours}:${endMinutes}`;
+
+            // Store calculated end time details on the row for validation
+            row.dataset.endHours = endHours;
+            row.dataset.endMinutes = endMinutes;
+            row.dataset.totalMinutesEnd = hours * 60 + minutes + duration;
+        }
+
+        function validateDayTimes(dayPanel) {
+            const rows = Array.from(dayPanel.querySelectorAll('.lesson-row'));
+            let previousEndMinutes = -1; // time in minutes from midnight
+
+            rows.forEach((row, index) => {
+                const startTimeInput = row.querySelector('.lesson-start-time');
+                const errorDiv = row.querySelector('.time-error');
+                const subjectVal = row.querySelector('.lesson-subject').value;
+
+                // Reset error
+                errorDiv.textContent = '';
+                errorDiv.classList.add('hidden');
+                startTimeInput.classList.remove('border-red-500', 'text-red-500');
+
+                if (!startTimeInput.value) return;
+
+                const [hours, minutes] = startTimeInput.value.split(':').map(Number);
+                const currentStartMinutes = hours * 60 + minutes;
+
+                // Only validate if this row has a subject or we want strict time validation regardless
+                // Let's validate strictly if previous lesson exists
+                if (index > 0 && previousEndMinutes !== -1) {
+                    const diff = currentStartMinutes - previousEndMinutes;
+                    if (diff < 5) {
+                        errorDiv.textContent = `Перерва < 5 хв! (${diff} хв)`;
+                        errorDiv.classList.remove('hidden');
+                        startTimeInput.classList.add('border-red-500', 'text-red-500');
+                    }
+                }
+
+                // Update previous end for next iteration
+                // We need to calculate this row's end time
+                const durationSelect = row.querySelector('.lesson-duration');
+                const durationCustom = row.querySelector('.lesson-duration-custom');
+                let duration = parseInt(durationSelect.value);
+                if (isNaN(duration) || durationSelect.value === 'custom') {
+                    duration = parseInt(durationCustom.value) || 0;
+                }
+
+                // Only carry forward if this lesson actually exists/has duration
+                if (duration > 0) {
+                    previousEndMinutes = currentStartMinutes + duration;
+                } else {
+                    // If no valid duration, treat as if it doesn't exist for validation chain? 
+                    // Or just use start time? safely ignore.
+                }
+            });
+        }
+
+        function handleSubjectChange(selectElement) {
+            const row = selectElement.closest('tr');
+            if (!row) return;
+
+            const teacherInput = row.querySelector('.lesson-teacher');
+            const teacherIdInput = row.querySelector('.lesson-teacher-id');
+            const selectedOption = selectElement.options[selectElement.selectedIndex];
+
+            if (selectedOption.value) {
+                const teacherName = selectedOption.dataset.teacherName || '';
+                const teacherId = selectedOption.dataset.teacherId || '';
+                teacherInput.value = teacherName;
+                teacherIdInput.value = teacherId;
+            } else {
+                teacherInput.value = '';
+                teacherIdInput.value = '';
+            }
+        }
+
+        function loadScheduleForGroup(groupId) {
+            // 1. Reset all fields
+            const allRows = elements.scheduleContainer.querySelectorAll('.lesson-row');
+            allRows.forEach(row => {
+                row.querySelector('.lesson-subject').value = '';
+                row.querySelector('.lesson-teacher').value = '';
+                row.querySelector('.lesson-teacher-id').value = '';
+                row.querySelector('.lesson-classroom').value = '';
+                // Don't reset time completely, revert to default attributes if needed, or keep last state
+                // Actually, let's keep the backend provided default times as "base", but overwrite if data exists
+            });
+
+            // 2. Load data
+            const groupData = allScheduleData[groupId];
+            if (!groupData) {
+                // If no data, ensure default times are calculated
+                allRows.forEach(row => updateEndTime(row));
+                return;
+            };
+
+            Object.keys(groupData).forEach(dayId => {
+                const dayLessons = groupData[dayId];
+                Object.keys(dayLessons).forEach(lessonNum => {
+                    const lessonData = dayLessons[lessonNum];
+                    const row = elements.scheduleContainer.querySelector(`.lesson-row[data-day="${dayId}"][data-lesson="${lessonNum}"]`);
+
+                    if (row) {
+                        // Subject
+                        const subjectSelect = row.querySelector('.lesson-subject');
+                        subjectSelect.value = lessonData.subject_id || '';
+
+                        // Teacher
+                        if (subjectSelect.value) {
+                            const selectedOption = subjectSelect.querySelector(`option[value="${subjectSelect.value}"]`);
+                            if (selectedOption) {
+                                row.querySelector('.lesson-teacher').value = selectedOption.dataset.teacherName || '';
+                                row.querySelector('.lesson-teacher-id').value = selectedOption.dataset.teacherId || '';
+                            }
+                        }
+
+                        // Classroom
+                        row.querySelector('.lesson-classroom').value = lessonData.classroom || '';
+
+                        // Time
+                        if (lessonData.start_time) {
+                            row.querySelector('.lesson-start-time').value = lessonData.start_time;
+                        }
+
+                        // Duration
+                        if (lessonData.duration) {
+                            const duration = lessonData.duration;
+                            const durationSelect = row.querySelector('.lesson-duration');
+                            const customInput = row.querySelector('.lesson-duration-custom');
+
+                            // Check if standard
+                            const option = durationSelect.querySelector(`option[value="${duration}"]`);
+                            if (option) {
+                                durationSelect.value = duration;
+                                customInput.classList.add('hidden');
+                            } else {
+                                durationSelect.value = 'custom';
+                                customInput.value = duration;
+                                customInput.classList.remove('hidden');
+                            }
+                        }
+
+                        updateEndTime(row);
+                    }
+                });
+            });
+
+            // Re-validate visual state
+            elements.scheduleContainer.querySelectorAll('.glass-panel').forEach(dayPanel => validateDayTimes(dayPanel));
+        }
+
+        function saveSchedule() {
+            if (!state.currentGroup) return;
+
+            updateStatus('Збереження...', 'blue');
+            const scheduleToSave = {};
+
+            const rows = elements.scheduleContainer.querySelectorAll('.lesson-row');
+            rows.forEach(row => {
+                const day = row.dataset.day;
+                const lesson = row.dataset.lesson;
+                const subjectId = row.querySelector('.lesson-subject').value;
+
+                if (subjectId) {
+                    if (!scheduleToSave[day]) scheduleToSave[day] = {};
+
+                    const subjectSelect = row.querySelector('.lesson-subject');
+                    const option = subjectSelect.options[subjectSelect.selectedIndex];
+                    const teacherId = row.querySelector('.lesson-teacher-id').value;
+                    const teacherName = row.querySelector('.lesson-teacher').value;
+                    const classroom = row.querySelector('.lesson-classroom').value;
+
+                    // Time Data
+                    const startTime = row.querySelector('.lesson-start-time').value;
+                    const durationSelect = row.querySelector('.lesson-duration');
+                    let duration = parseInt(durationSelect.value);
+                    if (isNaN(duration) || durationSelect.value === 'custom') {
+                        duration = parseInt(row.querySelector('.lesson-duration-custom').value) || 90;
+                    }
+
+                    scheduleToSave[day][lesson] = {
+                        subject_id: parseInt(subjectId),
+                        subject_name: option.text.trim(),
+                        teacher_id: teacherId ? parseInt(teacherId) : null,
+                        teacher_name: teacherName,
+                        start_time: startTime,
+                        duration: duration,
+                        classroom: classroom,
+                    };
+                }
+            });
 
             fetch('{% url "save_schedule" %}', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
-                body: JSON.stringify({ group_id: parseInt(state.currentGroup), schedule: state.schedule })
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    group_id: parseInt(state.currentGroup),
+                    schedule: scheduleToSave
+                })
             })
                 .then(r => r.json())
                 .then(res => {
                     if (res.status === 'success') {
                         state.modified = false;
-                        elements.autoSaveStatus.innerHTML = '✓ Збережено успішно!';
-                        elements.autoSaveStatus.className = 'saved';
+                        updateStatus('✓ Збережено успішно!', 'green');
+                        allScheduleData[state.currentGroup] = scheduleToSave;
+                    } else {
+                        updateStatus('❌ Помилка: ' + res.message, 'red');
                     }
+                })
+                .catch(err => {
+                    console.error(err);
+                    updateStatus('❌ Помилка з’єднання', 'red');
                 });
-        });
-
-        function loadSchedule(groupId) {
-            document.querySelectorAll('.schedule-cell').forEach(c => {
-                c.classList.remove('filled');
-                c.querySelector('.subject-name').textContent = '-';
-                c.querySelector('.teacher-name').textContent = '';
-                c.querySelector('.time-info').textContent = '';
-            });
-
-            const dataEl = document.getElementById('schedule-data');
-            if (!dataEl) return;
-            const rawData = JSON.parse(dataEl.textContent);
-            state.schedule = rawData[groupId] || {};
-
-            Object.keys(state.schedule).forEach(day => {
-                const dayObj = state.schedule[day];
-                Object.keys(dayObj).forEach(lesson => {
-                    const item = dayObj[lesson];
-                    const cell = document.querySelector(`[data-day="${day}"][data-lesson="${lesson}"]`);
-                    if (cell) {
-                        cell.classList.add('filled');
-                        cell.querySelector('.subject-name').textContent = item.subject_name || item.subjectId;
-                        const teacher = item.teacher_name || '';
-                        const classroom = item.classroom || '';
-                        cell.querySelector('.teacher-name').textContent = (classroom ? '[' + classroom + '] ' : '') + teacher;
-                        cell.querySelector('.time-info').textContent = item.start_time || '';
-                    }
-                });
-            });
         }
+
+        function markModified() {
+            state.modified = true;
+            updateStatus('⚠️ Є незбережені зміни', 'amber');
+        }
+
+        function updateStatus(msg, color = 'gray') {
+            const colors = {
+                'green': 'text-green-500',
+                'red': 'text-red-500',
+                'blue': 'text-blue-500',
+                'amber': 'text-amber-500',
+                'gray': 'text-gray-400'
+            };
+            elements.autoSaveStatus.textContent = msg;
+            elements.autoSaveStatus.className = `mb-6 text-sm font-bold ${colors[color] || colors.gray}`;
+        }
+
+        // Initial init: Trigger empty state
+        elements.groupSelect.value = "";
+        elements.groupSelect.dispatchEvent(new Event('change'));
     });
 </script>
 

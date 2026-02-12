@@ -2,143 +2,159 @@
 
 {% block title %}Управління студентами{% endblock %}
 
-{% block header_title %}Управління Студентами{% endblock %}
+{% block header_title %}Студенти{% endblock %}
 
 {% block content %}
-<div class="glass-panel rounded-3xl p-8 mb-8" role="region" aria-label="Панель управління студентами">
-</div>
+<div class="card-bento min-h-[600px]">
+    <div class="flex justify-end items-center mb-8">
+        <button onclick="toggleForm()"
+            class="px-6 py-3 bg-gray-900 text-white font-bold text-xs uppercase tracking-widest rounded-xl hover:bg-blue-600 hover:shadow-xl hover:shadow-blue-200 transition-all">
+            Додати студента
+        </button>
+    </div>
 
-<!-- Фільтри -->
-<div class="glass-panel shadow-sm rounded-3xl p-6 mb-8 bg-white/80 border border-gray-100">
-    <form method="GET" action="{% url 'students_list' %}"
-        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 items-end">
+    <!-- Фільтри -->
+    <div class="bg-gray-50/50 rounded-2xl p-6 mb-8 border border-gray-100">
+        <form method="GET" action="{% url 'students_list' %}"
+            class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-end">
+            <div class="flex flex-col gap-1.5">
+                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Пошук студента</label>
+                <input type="text" name="search" value="{{ request.GET.search }}" placeholder="ПІБ..."
+                    class="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium transition-all">
+            </div>
 
-        <div class="flex flex-col gap-1">
-            <label class="text-xs font-bold text-gray-500 uppercase">Пошук студента</label>
-            <input type="text" name="search" value="{{ request.GET.search }}" placeholder="Введіть ПІБ..."
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-sm">
+            <div class="flex flex-col gap-1.5">
+                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Група</label>
+                <select name="group"
+                    class="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium transition-all">
+                    <option value="">Усі групи</option>
+                    {% for g in groups %}
+                    {% with g_id=g.id|stringformat:"s" %}
+                    <option value="{{ g.id }}" {% if request.GET.group == g_id %}selected{% endif %}>{{ g.name }}
+                    </option>
+                    {% endwith %}
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="lg:col-span-2 flex justify-end gap-3">
+                <a href="{% url 'students_list' %}"
+                    class="px-6 py-2.5 text-xs font-bold text-gray-400 uppercase tracking-widest hover:bg-gray-100 rounded-xl transition">Скинути</a>
+                <button type="submit"
+                    class="px-8 py-2.5 bg-blue-600 text-white font-bold text-xs uppercase tracking-widest rounded-xl shadow-lg shadow-blue-200 hover:bg-blue-700 transition">Знайти</button>
+            </div>
+        </form>
+    </div>
+
+    <div id="addForm" class="hidden bg-gray-50/50 rounded-2xl p-8 mb-8 border border-blue-100 animate-slide-down">
+        <h4 class="text-xl font-black text-gray-900 mb-6 uppercase tracking-tighter">Новий студент</h4>
+        <form method="POST" action="{% url 'student_add' %}" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {% csrf_token %}
+            <div class="space-y-1.5">
+                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">ПІБ Студента</label>
+                <input type="text" name="full_name" placeholder="Назаренко Іван" required
+                    class="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium transition-all">
+            </div>
+
+            <div class="space-y-1.5">
+                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Навчальна група</label>
+                <select name="group_id" required
+                    class="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium transition-all">
+                    <option value="">Оберіть групу...</option>
+                    {% for group in groups %}
+                    <option value="{{ group.id }}">{{ group.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="space-y-1.5">
+                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Email (Login)</label>
+                <input type="email" name="email" placeholder="student@example.com" required
+                    class="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium transition-all">
+            </div>
+
+            <div class="space-y-1.5">
+                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Пароль</label>
+                <input type="password" name="password" placeholder="••••••••" required
+                    class="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium transition-all">
+            </div>
+
+            <div class="md:col-span-2 flex justify-end gap-3 mt-4">
+                <button type="button" onclick="toggleForm()"
+                    class="px-6 py-2.5 text-xs font-bold text-gray-400 uppercase tracking-widest hover:bg-gray-100 rounded-xl transition">Скасувати</button>
+                <button type="submit"
+                    class="px-10 py-2.5 bg-gray-900 text-white font-bold text-xs uppercase tracking-widest rounded-xl hover:bg-blue-600 transition shadow-xl">Зберегти
+                    запис</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="glass-panel shadow-sm rounded-3xl p-0 overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full">
+                <thead class="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                        <th class="p-4 text-left text-xs font-bold text-gray-500 uppercase">Студент</th>
+                        <th class="p-4 text-left text-xs font-bold text-gray-500 uppercase">Група</th>
+                        <th class="p-4 text-left text-xs font-bold text-gray-500 uppercase">Контакти</th>
+                        <th class="p-4 text-right text-xs font-bold text-gray-500 uppercase">Керування</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for student in students %}
+                    <tr class="hover:bg-blue-50/50 transition duration-150 group">
+                        <td class="p-4">
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="w-10 h-10 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center font-black text-xs shadow-sm">
+                                    {{ student.full_name|slice:":1" }}
+                                </div>
+                                <span class="text-sm font-bold text-gray-900">{{ student.full_name }}</span>
+                            </div>
+                        </td>
+                        <td class="p-4 text-sm text-gray-500">
+                            {% if student.group %}
+                            {{ student.group.name }}
+                            {% else %}
+                            <span class="text-gray-300 italic text-xs uppercase font-bold">Не закріплено</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4 text-sm text-gray-500">{{ student.email }}</td>
+                        <td class="p-4 text-right">
+                            <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <form method="POST" action="{% url 'student_delete' pk=student.pk %}"
+                                    onsubmit="return confirm('Видалити студента {{ student.full_name }}?');"
+                                    class="inline">
+                                    {% csrf_token %}
+                                    <button type="submit"
+                                        class="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
+                                        title="Видалити">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path
+                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="p-12 text-center text-gray-400">
+                            <div class="text-4xl mb-4 opacity-50">🔍</div>
+                            <p class="font-bold text-xs uppercase tracking-widest">Студентів не знайдено</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
-
-        <div class="flex flex-col gap-1">
-            <label class="text-xs font-bold text-gray-500 uppercase">Група</label>
-            <select name="group"
-                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary text-sm">
-                <option value="">Усі групи</option>
-                {% for g in groups %}
-                {% with g_id=g.id|stringformat:"s" %}
-                <option value="{{ g.id }}" {% if request.GET.group|is_equal:g_id %}selected{% endif %}>
-                    {{ g.name }}
-                </option>
-                {% endwith %}
-                {% endfor %}
-            </select>
-        </div>
-
-        <div class="flex justify-end gap-3">
-            <a href="{% url 'students_list' %}"
-                class="px-6 py-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition">
-                Скинути
-            </a>
-            <button type="submit"
-                class="px-8 py-2 rounded-lg bg-primary text-white hover:bg-blue-700 shadow-md transition font-medium">
-                Знайти
-            </button>
-        </div>
-    </form>
-</div>
-
-<div id="addForm" class="hidden glass-panel bg-white/50 rounded-2xl p-6 mb-8 animate-slide-down" aria-hidden="true">
-    <h4 class="text-xl font-bold text-dark mb-6">Додати нового студента</h4>
-    <form method="POST" action="{% url 'student_add' %}" class="space-y-4">
-        {% csrf_token %}
-        <div class="space-y-1">
-            <label class="text-sm font-medium text-dark">ПІБ Студента</label>
-            <input type="text" name="full_name" placeholder="Наприклад: Назаренко Іван" required
-                class="w-full px-4 py-3 border border-tableBorder rounded-xl text-dark bg-white focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200">
-        </div>
-
-        <div class="space-y-1">
-            <label class="text-sm font-medium text-dark">Група</label>
-            <select name="group_id" required
-                class="w-full px-4 py-3 border border-tableBorder rounded-xl text-dark bg-white focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200">
-                <option value="">-- Оберіть групу --</option>
-                {% for group in groups %}
-                <option value="{{ group.id }}">{{ group.name }}</option>
-                {% endfor %}
-            </select>
-        </div>
-
-        <div class="space-y-1">
-            <label class="text-sm font-medium text-dark">Email (для входу)</label>
-            <input type="email" name="email" placeholder="student@example.com" required
-                class="w-full px-4 py-3 border border-tableBorder rounded-xl text-dark bg-white focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200">
-        </div>
-
-        <div class="space-y-1">
-            <label class="text-sm font-medium text-dark">Пароль</label>
-            <input type="password" name="password" placeholder="Введіть пароль" required
-                class="w-full px-4 py-3 border border-tableBorder rounded-xl text-dark bg-white focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200">
-        </div>
-
-        <div class="flex justify-end gap-3 mt-6">
-            <button type="submit"
-                class="btn bg-primary text-white shadow-button hover:bg-blue-600 hover:shadow-button-hover py-2 px-6">Зберегти</button>
-            <button type="button" onclick="toggleForm()"
-                class="btn bg-gray-400 text-white shadow-button hover:bg-gray-500 hover:shadow-button-hover py-2 px-6">Скасувати</button>
-        </div>
-    </form>
-</div>
-
-<div class="overflow-x-auto rounded-xl border border-tableBorder bg-white shadow-sm mt-8">
-    <table id="students-table" class="w-full border-collapse">
-        <thead>
-            <tr>
-                <th class="bg-primary text-white p-4 text-left text-xs font-bold uppercase tracking-wider">ID</th>
-                <th class="bg-primary text-white p-4 text-left text-xs font-bold uppercase tracking-wider">ПІБ Студента
-                </th>
-                <th class="bg-primary text-white p-4 text-left text-xs font-bold uppercase tracking-wider">Група</th>
-                <th class="bg-primary text-white p-4 text-left text-xs font-bold uppercase tracking-wider">Email</th>
-                <th class="bg-primary text-white p-4 text-center text-xs font-bold uppercase tracking-wider">Дії</th>
-            </tr>
-        </thead>
-        <tbody class="divide-y divide-tableBorder text-dark">
-            {% for student in students %}
-            <tr
-                class="{% cycle 'bg-tableBgLight' 'bg-tableBgDark' %} hover:bg-primary/10 transition-colors duration-200">
-                <td class="p-4 font-medium">{{ student.id }}</td>
-                <td class="p-4 font-medium">{{ student.full_name }}</td>
-                <td class="p-4">
-                    {% if student.group %}
-                    <span class="px-2 py-1 rounded-md bg-blue-50 text-blue-700 text-xs font-bold">{{ student.group.name
-                        }}</span>
-                    {% else %}
-                    <span class="text-gray-400">—</span>
-                    {% endif %}
-                </td>
-                <td class="p-4">{{ student.email }}</td>
-                <td class="p-4 text-center">
-                    <form method="POST" action="{% url 'student_delete' pk=student.pk %}"
-                        onsubmit="return confirm('Видалити студента {{ student.full_name }}?');" class="inline">
-                        {% csrf_token %}
-                        <button type="submit"
-                            class="text-error hover:text-red-700 font-semibold text-sm px-3 py-1 hover:bg-red-50 rounded">Видалити</button>
-                    </form>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="5" class="p-8 text-center text-neutral text-lg">Студентів не знайдено. Додайте першого!
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
+    </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-{{ block.super }}
 <script>
     function toggleForm() {
         const form = document.getElementById('addForm');
