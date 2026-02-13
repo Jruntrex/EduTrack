@@ -86,7 +86,7 @@
                     class="w-2 h-2 {% if current_lesson %}bg-green-500 animate-pulse{% else %}bg-blue-500{% endif %} rounded-full"></span>
                 {% if current_lesson %}ЗАРАЗ У ЕФІРІ{% else %}Наступна подія{% endif %}
             </div>
-            <div class="text-3xl font-extrabold text-gray-800 mb-2 leading-tight">{{ lesson.subject.name }}</div>
+            <div class="text-3xl font-extrabold text-gray-800 mb-2 leading-tight">{% if lesson and lesson.subject %}{{ lesson.subject.name }}{% else %}—{% endif %}</div>
             <div class="flex items-center gap-4 text-gray-500 mb-6">
                 <div class="flex items-center gap-1.5">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -166,7 +166,7 @@
                     <tr class="group hover:bg-gray-50/50 transition-colors">
                         <td class="py-4 text-sm text-gray-500">{{ perf.lesson.date|date:"d.m" }}</td>
                         <td class="py-4">
-                            <div class="font-bold text-gray-800">{{ perf.lesson.subject.name }}</div>
+                            <div class="font-bold text-gray-800">{% if perf.lesson and perf.lesson.subject %}{{ perf.lesson.subject.name }}{% else %}—{% endif %}</div>
                             <div class="text-xs text-gray-400">{{ perf.lesson.teacher.full_name }}</div>
                         </td>
                         <td class="py-4 text-sm text-gray-600 italic">

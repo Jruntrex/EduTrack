@@ -250,7 +250,7 @@
                         <!-- Name & RFID Status Column -->
                         <td
                             class="sticky left-[50px] z-30 bg-white group-hover:bg-blue-50/30 border-r border-gray-200 px-4 py-2 font-medium text-gray-800 flex items-center justify-between gap-2 h-[50px]">
-                            <span class="truncate max-w-[160px]" title="{{ student.name }}">{{ student.name }}</span>
+                            <span class="truncate max-w-[160px]" title="{% if student.name %}{{ student.name }}{% else %}—{% endif %}">{% if student.name %}{{ student.name }}{% else %}—{% endif %}</span>
                             <!-- RFID Indicator -->
                             <span class="status-dot {% if student.is_in_building %}online{% else %}offline{% endif %}"
                                 title="{% if student.is_in_building %}В коледжі{% else %}Відсутній в будівлі{% endif %}"></span>

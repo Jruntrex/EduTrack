@@ -139,6 +139,25 @@ def logout_view(request: HttpRequest) -> HttpResponse:
     logout(request)
     return redirect('login')
 
+
+def csrf_debug_view(request: HttpRequest) -> JsonResponse:
+    """Debug endpoint: returns the current CSRF token and request cookies.
+
+    Use this temporarily to verify that the CSRF token is generated and that
+    the browser is sending cookies correctly.
+    """
+    try:
+        from django.middleware.csrf import get_token
+    except Exception:
+        return JsonResponse({'error': 'csrf module not available'}, status=500)
+
+    token = get_token(request)
+    return JsonResponse({
+        'csrf_token': token,
+        'cookies': request.COOKIES,
+        'method': request.method,
+    })
+
 # =========================
 # 2. АДМІНІСТРАТОР
 # =========================
@@ -536,6 +555,9 @@ def save_schedule_changes(request: HttpRequest) -> JsonResponse:
                 group=group
             ).delete()
             
+            # Импорт валідаційного сервісу
+            from main.services.schedule_service import validate_schedule_slot
+
             for day_str, lessons in schedule_entries.items():
                 day = int(day_str)
                 for lesson_num_str, lesson_data in lessons.items():
@@ -588,6 +610,33 @@ def save_schedule_changes(request: HttpRequest) -> JsonResponse:
                         if classroom_name:
                             # Використовуємо get_or_create, щоб не падало на нових аудиторіях
                             classroom_obj, _ = Classroom.objects.get_or_create(name=classroom_name)
+
+                        # Перед створенням перевіримо конфлікти (викладач/аудиторія/група)
+                        # Конвертація часу здійснюється Django при створенні, тут використовуємо рядок HH:MM
+                        import datetime as _dt
+                        start_time_obj = _dt.datetime.strptime(start_time_str, "%H:%M").time()
+
+                        # Визначаємо викладача який буде збережений
+                        teacher_obj = None
+                        if teacher_id:
+                            teacher_obj = User.objects.filter(id=teacher_id).first()
+                        elif assignment:
+                            teacher_obj = assignment.teacher
+
+                        is_valid, err = validate_schedule_slot(
+                            group=group,
+                            day=day,
+                            lesson_number=lesson_num,
+                            start_time=start_time_obj,
+                            duration=duration,
+                            subject=Subject.objects.filter(id=subject_id).first(),
+                            teacher=teacher_obj,
+                            classroom=classroom_obj,
+                            exclude_slot_id=None
+                        )
+
+                        if not is_valid:
+                            raise Exception(f"Конфлікт при збереженні: {err}")
 
                         ScheduleTemplate.objects.create(
                             group=group,
@@ -760,11 +809,15 @@ def api_save_schedule_slot(request: HttpRequest) -> JsonResponse:
 
         # SAVE - з урахуванням можливості None для teacher
         with transaction.atomic():
+            # Якщо викладач не вказаний, але є assignment (наприклад збережений раніше),
+            # використаємо його викладача. Інакше залишимо None (модель дозволяє null тепер).
+            teacher_to_save = teacher or (assignment.teacher if assignment else None)
+
             template, created = ScheduleTemplate.objects.update_or_create(
                 group=group, day_of_week=day, lesson_number=lesson_num,
                 defaults={
                     'subject': subject,
-                    'teacher': teacher,
+                    'teacher': teacher_to_save,
                     'teaching_assignment': assignment, # <-- НОВЕ ПОЛЕ
                     'classroom': classroom,
                     'start_time': start_time,

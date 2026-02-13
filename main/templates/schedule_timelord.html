@@ -209,7 +209,7 @@
 
                     {% get_lesson_at lessons day_data.date lesson_num as lesson %}
                     {% if lesson %}
-                    <td class="subject-cell">{{ lesson.subject.name }}</td>
+                    <td class="subject-cell">{% if lesson and lesson.subject %}{{ lesson.subject.name }}{% else %}—{% endif %}</td>
                     <td>
                         {% if lesson.classroom %}
                         <span class="classroom-badge">{{ lesson.classroom.name }}</span>

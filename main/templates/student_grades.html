@@ -81,7 +81,7 @@
             <div class="text-xs text-gray-400">{{ entry.lesson.date|date:"l" }}</div>
           </td>
           <td class="p-4 text-sm text-gray-700">
-            <div class="font-bold">{{ entry.lesson.subject.name }}</div>
+            <div class="font-bold">{% if entry.lesson and entry.lesson.subject %}{{ entry.lesson.subject.name }}{% else %}—{% endif %}</div>
             <div class="text-xs text-gray-500">{{ entry.lesson.teacher.full_name }}</div>
           </td>
           <td class="p-4 text-sm">

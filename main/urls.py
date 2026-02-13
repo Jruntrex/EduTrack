@@ -11,6 +11,8 @@ urlpatterns = [
     path('', views.login_view, name='login'),
     path('login/', views.login_process, name='login_process'),
     path('logout/', views.logout_view, name='logout'),
+    # Debugging routes (remove in production)
+    path('debug-csrf/', views.csrf_debug_view, name='debug_csrf'),
     # =========================
     # 2. АДМІНІСТРУВАННЯ ТА ДАШБОРДИ
     # =========================

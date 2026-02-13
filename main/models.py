@@ -230,6 +230,8 @@ class ScheduleTemplate(models.Model):
         User, 
         on_delete=models.CASCADE, 
         limit_choices_to={'role': 'teacher'},
+        null=True,
+        blank=True,
         verbose_name="Викладач"
     )
     
@@ -253,7 +255,9 @@ class ScheduleTemplate(models.Model):
         unique_together = ('group', 'day_of_week', 'lesson_number')
 
     def __str__(self) -> str:
-        return f"{self.get_day_of_week_display()} {self.start_time} - {self.subject.name} ({self.group.name})"
+        subj = self.subject.name if self.subject else '—'
+        grp = self.group.name if self.group else '—'
+        return f"{self.get_day_of_week_display()} {self.start_time} - {subj} ({grp})"
     
     def save(self, *args: Any, **kwargs: Any) -> None:
         """Переопалювання save для гарантування цілісності та оновлення teaching_assignment."""
