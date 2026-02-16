@@ -617,7 +617,8 @@ def save_schedule_changes(request: HttpRequest) -> JsonResponse:
                         ).first()
                         exclude_id = existing_slot.id if existing_slot else None
 
-                        # ВАЛІДАЦІЯ (поки старі слоти ще в БД!)
+                        # ВАЛІДАЦІЯ: check_current_group=False ігнорує конфлікти з цією ж групою,
+                        # оскільки ми зараз перезаписуємо весь її розклад
                         is_valid, err = validate_schedule_slot(
                             group=group,
                             day=day,
@@ -627,12 +628,16 @@ def save_schedule_changes(request: HttpRequest) -> JsonResponse:
                             subject=Subject.objects.filter(id=subject_id).first(),
                             teacher=teacher_obj,
                             classroom=classroom_obj,
-                            exclude_slot_id=exclude_id
+                            exclude_slot_id=exclude_id,
+                            check_current_group=False
                         )
 
                         if not is_valid:
                             day_name = {1:'Пн', 2:'Вт', 3:'Ср', 4:'Чт', 5:'Пт', 6:'Сб', 7:'Нд'}.get(day, str(day))
-                            raise Exception(f"Конфлікт ({day_name}, пара №{lesson_num}): {err}")
+                            return JsonResponse({
+                                'status': 'error',
+                                'message': f"Конфлікт ({day_name}, пара №{lesson_num}): {err}"
+                            }, status=400)
 
                         # Зберігаємо дані для створення після видалення
                         slots_to_create.append({

@@ -65,13 +65,14 @@ def validate_schedule_slot(
     subject: Subject,
     teacher: Optional[User] = None,
     classroom: Optional[Classroom] = None,
-    exclude_slot_id: Optional[int] = None
+    exclude_slot_id: Optional[int] = None,
+    check_current_group: bool = True
 ) -> Tuple[bool, str]:
     """
     Валідація слоту розкладу на наявність конфліктів.
     
     Перевіряє:
-    1. Чи не перетинається з іншими парами тієї ж групи
+    1. Чи не перетинається з іншими парами тієї ж групи (якщо check_current_group=True)
     2. Чи не зайнятий викладач в цей час
     3. Чи не зайнята аудиторія в цей час
     
@@ -85,58 +86,57 @@ def validate_schedule_slot(
         teacher: Викладач (опціонально)
         classroom: Аудиторія (опціонально)
         exclude_slot_id: ID слоту, який не враховувати (для редагування)
+        check_current_group: Чи перевіряти конфлікти всередині групи (False при повному перезаписі)
     
     Returns:
         Tuple (is_valid, error_message)
         - is_valid: True якщо валідний, False якщо є конфлікт
         - error_message: Опис помилки або пустий рядок
-    
-    Example:
-        >>> is_valid, error = validate_schedule_slot(
-        ...     group=group_kn41,
-        ...     day=1,
-        ...     lesson_number=1,
-        ...     start_time=time(8, 30),
-        ...     duration=80,
-        ...     teacher=teacher_ivanov
-        ... )
-        >>> if not is_valid:
-        ...     print(error)
     """
-    # 1. Перевірка конфліктів з іншими парами тієї ж групи
-    group_conflicts = ScheduleTemplate.objects.filter(
-        group=group,
-        day_of_week=day
-    )
-    
-    if exclude_slot_id:
-        group_conflicts = group_conflicts.exclude(id=exclude_slot_id)
-        print(f"🔍 DEBUG: Виключаємо слот ID={exclude_slot_id} з перевірки для групи {group.name}, день {day}")
-    
-    for conflict in group_conflicts:
-        print(f"🔍 DEBUG: Перевіряємо конфлікт: ID={conflict.id}, пара №{conflict.lesson_number}, {conflict.subject.name}, {conflict.start_time}-{conflict.duration_minutes}хв")
-        if check_time_overlap(
-            start_time, duration,
-            conflict.start_time, conflict.duration_minutes
-        ):
-            print(f"❌ DEBUG: КОНФЛІКТ! Час перетинається!")
-            return (
-                False,
-                f"Конфлікт: Пара №{conflict.lesson_number} "
-                f"({conflict.start_time.strftime('%H:%M')}) перетинається з цим часом"
-            )
+    # 1. Перевірка конфліктів з іншими парами тієї ж групи (тільки якщо потрібно)
+    if check_current_group:
+        group_conflicts = ScheduleTemplate.objects.filter(
+            group=group,
+            day_of_week=day
+        )
+        
+        if exclude_slot_id:
+            group_conflicts = group_conflicts.exclude(id=exclude_slot_id)
+        
+        for conflict in group_conflicts:
+            if check_time_overlap(
+                start_time, duration,
+                conflict.start_time, conflict.duration_minutes
+            ):
+                return (
+                    False,
+                    f"Конфлікт: Пара №{conflict.lesson_number} "
+                    f"({conflict.start_time.strftime('%H:%M')}) перетинається з цим часом"
+                )
     
     # 2. Перевірка зайнятості викладача
     if teacher:
+        print(f"🔍 DEBUG: Перевіряємо викладача {teacher.full_name}, група={group.name} (ID:{group.id}), check_current_group={check_current_group}")
+        
         teacher_conflicts = ScheduleTemplate.objects.filter(
             teacher=teacher,
             day_of_week=day
         )
         
+        print(f"🔍 DEBUG: Знайдено {teacher_conflicts.count()} конфліктів викладача до виключення")
+        
         if exclude_slot_id:
             teacher_conflicts = teacher_conflicts.exclude(id=exclude_slot_id)
+            print(f"🔍 DEBUG: Після exclude(id={exclude_slot_id}): {teacher_conflicts.count()} конфліктів")
+        
+        # Якщо перезаписуємо групу, ігноруємо її старі записи
+        if not check_current_group:
+            print(f"🔍 DEBUG: Виключаємо групу {group.name} (ID:{group.id}) з перевірки")
+            teacher_conflicts = teacher_conflicts.exclude(group_id=group.id)
+            print(f"🔍 DEBUG: Після exclude(group_id={group.id}): {teacher_conflicts.count()} конфліктів")
         
         for conflict in teacher_conflicts:
+            print(f"🔍 DEBUG: Перевіряємо конфлікт: ID={conflict.id}, Група={conflict.group.name} (ID:{conflict.group_id}), {conflict.subject.name}, {conflict.start_time}")
             if check_time_overlap(
                 start_time, duration,
                 conflict.start_time, conflict.duration_minutes
@@ -166,6 +166,10 @@ def validate_schedule_slot(
         
         if exclude_slot_id:
             classroom_conflicts = classroom_conflicts.exclude(id=exclude_slot_id)
+        
+        # Якщо перезаписуємо групу, ігноруємо її старі записи
+        if not check_current_group:
+            classroom_conflicts = classroom_conflicts.exclude(group_id=group.id)
         
         for conflict in classroom_conflicts:
             if check_time_overlap(
