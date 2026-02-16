@@ -111,12 +111,15 @@ def validate_schedule_slot(
     
     if exclude_slot_id:
         group_conflicts = group_conflicts.exclude(id=exclude_slot_id)
+        print(f"🔍 DEBUG: Виключаємо слот ID={exclude_slot_id} з перевірки для групи {group.name}, день {day}")
     
     for conflict in group_conflicts:
+        print(f"🔍 DEBUG: Перевіряємо конфлікт: ID={conflict.id}, пара №{conflict.lesson_number}, {conflict.subject.name}, {conflict.start_time}-{conflict.duration_minutes}хв")
         if check_time_overlap(
             start_time, duration,
             conflict.start_time, conflict.duration_minutes
         ):
+            print(f"❌ DEBUG: КОНФЛІКТ! Час перетинається!")
             return (
                 False,
                 f"Конфлікт: Пара №{conflict.lesson_number} "
@@ -138,10 +141,20 @@ def validate_schedule_slot(
                 start_time, duration,
                 conflict.start_time, conflict.duration_minutes
             ):
+                # Перевірка на "Спільну пару" (Shared Lesson / Joint Class)
+                # Допускаємо перетин, якщо це той самий викладач, предмет, та час початку.
+                # Аудиторія може бути різною (наприклад, онлайн лекція для кількох груп)
+                is_shared_lesson = (
+                    conflict.subject_id == subject.id and
+                    conflict.start_time == start_time
+                )
+                if is_shared_lesson:
+                    continue
+                
                 return (
                     False,
-                    f"Викладач уже зайнятий у групі {conflict.group.name} "
-                    f"о {conflict.start_time.strftime('%H:%M')}"
+                    f"Викладач {teacher.full_name} уже зайнятий у групі {conflict.group.name} "
+                    f"на предметі '{conflict.subject.name}' о {conflict.start_time.strftime('%H:%M')} (ID: {conflict.id})"
                 )
     
     # 3. Перевірка зайнятості аудиторії
@@ -159,10 +172,19 @@ def validate_schedule_slot(
                 start_time, duration,
                 conflict.start_time, conflict.duration_minutes
             ):
+                # Також перевіряємо на спільну пару
+                is_shared_lesson = (
+                    conflict.teacher_id == (teacher.id if teacher else None) and
+                    conflict.subject_id == subject.id and
+                    conflict.start_time == start_time
+                )
+                if is_shared_lesson:
+                    continue
+                
                 return (
                     False,
-                    f"Аудиторія зайнята групою {conflict.group.name} "
-                    f"о {conflict.start_time.strftime('%H:%M')}"
+                    f"Аудиторія {classroom.name} зайнята групою {conflict.group.name} "
+                    f"на предметі '{conflict.subject.name}' о {conflict.start_time.strftime('%H:%M')} (ID: {conflict.id})"
                 )
     
     # Всі перевірки пройдені
@@ -346,3 +368,35 @@ def get_available_classrooms(
             available_classrooms.append(classroom)
     
     return available_classrooms
+
+
+def find_all_schedule_conflicts() -> list[tuple[ScheduleTemplate, ScheduleTemplate]]:
+    """
+    Системна перевірка всіх шаблонів розкладу на наявність перетинів для викладачів.
+    Використовується для діагностики здоров'я бази даних.
+    """
+    all_templates = ScheduleTemplate.objects.all().select_related('teacher', 'group', 'subject')
+    
+    # Групуємо по викладачу та дню
+    by_teacher_day = {}
+    for t in all_templates:
+        if not t.teacher:
+            continue
+        key = (t.teacher.id, t.day_of_week)
+        if key not in by_teacher_day:
+            by_teacher_day[key] = []
+        by_teacher_day[key].append(t)
+    
+    conflicts = []
+    for key, templates in by_teacher_day.items():
+        for i in range(len(templates)):
+            for j in range(i + 1, len(templates)):
+                t1 = templates[i]
+                t2 = templates[j]
+                if check_time_overlap(
+                    t1.start_time, t1.duration_minutes,
+                    t2.start_time, t2.duration_minutes
+                ):
+                    conflicts.append((t1, t2))
+    
+    return conflicts

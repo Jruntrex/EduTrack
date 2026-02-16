@@ -551,13 +551,13 @@ def save_schedule_changes(request: HttpRequest) -> JsonResponse:
         group = get_object_or_404(StudyGroup, id=group_id)
         
         with transaction.atomic():
-            ScheduleTemplate.objects.filter(
-                group=group
-            ).delete()
-            
-            # Импорт валідаційного сервісу
+            # Імпорт валідаційного сервісу
             from main.services.schedule_service import validate_schedule_slot
-
+            
+            # Крок 1: Підготовка та валідація ВСІХ нових слотів (перед видаленням!)
+            # Це дозволяє exclude_slot_id працювати правильно, оскільки старі слоти ще в БД
+            slots_to_create = []
+            
             for day_str, lessons in schedule_entries.items():
                 day = int(day_str)
                 for lesson_num_str, lesson_data in lessons.items():
@@ -571,9 +571,7 @@ def save_schedule_changes(request: HttpRequest) -> JsonResponse:
                         teacher_id = None
                     
                     if subject_id:
-                        # 1. Знаходимо або створюємо TeachingAssignment
-                        # Це критично, бо dropdown на фронтенді може показувати викладачів, 
-                        # які ще не призначені цій конкретній групі.
+                        # Підготовка даних для слоту
                         assignment = None
                         if teacher_id:
                             teacher = User.objects.filter(id=teacher_id).first()
@@ -584,19 +582,12 @@ def save_schedule_changes(request: HttpRequest) -> JsonResponse:
                                     teacher=teacher
                                 )
                         
-                        # Якщо викладач не вказаний, пробуємо знайти будь-яке призначення для цього предмету і групи
                         if not assignment:
                             assignment = TeachingAssignment.objects.filter(
                                 group=group,
                                 subject_id=subject_id
                             ).first()
-                            
-                            # Якщо все ще немає, створюємо без викладача (якщо це дозволено моделлю)
-                            # Або створюємо нове призначення без викладача, якщо це можливо.
-                            # Для надійності, якщо викладача немає, ми все одно можемо створити запис розкладу,
-                            # але поле teaching_assignment може вимагати null=True (ми це перевіряли в моделі).
                         
-                        # Використовуємо дані з фронтенду
                         start_time_str = "08:30"
                         classroom_name = ""
                         duration = 90
@@ -605,24 +596,28 @@ def save_schedule_changes(request: HttpRequest) -> JsonResponse:
                             classroom_name = lesson_data.get('classroom', "").strip()
                             duration = int(lesson_data.get('duration', 90))
                         
-                        # Знаходимо або створюємо об'єкт Classroom
                         classroom_obj = None
                         if classroom_name:
-                            # Використовуємо get_or_create, щоб не падало на нових аудиторіях
                             classroom_obj, _ = Classroom.objects.get_or_create(name=classroom_name)
 
-                        # Перед створенням перевіримо конфлікти (викладач/аудиторія/група)
-                        # Конвертація часу здійснюється Django при створенні, тут використовуємо рядок HH:MM
                         import datetime as _dt
                         start_time_obj = _dt.datetime.strptime(start_time_str, "%H:%M").time()
 
-                        # Визначаємо викладача який буде збережений
                         teacher_obj = None
                         if teacher_id:
                             teacher_obj = User.objects.filter(id=teacher_id).first()
                         elif assignment:
                             teacher_obj = assignment.teacher
 
+                        # Знайти існуючий слот для виключення з перевірки конфліктів
+                        existing_slot = ScheduleTemplate.objects.filter(
+                            group=group,
+                            day_of_week=day,
+                            lesson_number=lesson_num
+                        ).first()
+                        exclude_id = existing_slot.id if existing_slot else None
+
+                        # ВАЛІДАЦІЯ (поки старі слоти ще в БД!)
                         is_valid, err = validate_schedule_slot(
                             group=group,
                             day=day,
@@ -632,24 +627,43 @@ def save_schedule_changes(request: HttpRequest) -> JsonResponse:
                             subject=Subject.objects.filter(id=subject_id).first(),
                             teacher=teacher_obj,
                             classroom=classroom_obj,
-                            exclude_slot_id=None
+                            exclude_slot_id=exclude_id
                         )
 
                         if not is_valid:
-                            raise Exception(f"Конфлікт при збереженні: {err}")
+                            day_name = {1:'Пн', 2:'Вт', 3:'Ср', 4:'Чт', 5:'Пт', 6:'Сб', 7:'Нд'}.get(day, str(day))
+                            raise Exception(f"Конфлікт ({day_name}, пара №{lesson_num}): {err}")
 
-                        ScheduleTemplate.objects.create(
-                            group=group,
-                            subject_id=subject_id,
-                            teacher_id=teacher_id or (assignment.teacher_id if assignment else None),
-                            teaching_assignment=assignment, 
-                            day_of_week=day,
-                            lesson_number=lesson_num, 
-                            start_time=start_time_str,
-                            duration_minutes=duration,
-                            classroom=classroom_obj,
-                            valid_from=date.today()
-                        )
+                        # Зберігаємо дані для створення після видалення
+                        slots_to_create.append({
+                            'group': group,
+                            'subject_id': subject_id,
+                            'teacher_id': teacher_id or (assignment.teacher_id if assignment else None),
+                            'assignment': assignment,
+                            'day_of_week': day,
+                            'lesson_number': lesson_num,
+                            'start_time': start_time_str,
+                            'duration_minutes': duration,
+                            'classroom': classroom_obj,
+                        })
+            
+            # Крок 2: Видалити ВСІ старі слоти (валідація вже пройдена!)
+            ScheduleTemplate.objects.filter(group=group).delete()
+            
+            # Крок 3: Створити нові слоти
+            for slot_data in slots_to_create:
+                ScheduleTemplate.objects.create(
+                    group=slot_data['group'],
+                    subject_id=slot_data['subject_id'],
+                    teacher_id=slot_data['teacher_id'],
+                    teaching_assignment=slot_data['assignment'],
+                    day_of_week=slot_data['day_of_week'],
+                    lesson_number=slot_data['lesson_number'],
+                    start_time=slot_data['start_time'],
+                    duration_minutes=slot_data['duration_minutes'],
+                    classroom=slot_data['classroom'],
+                    valid_from=date.today()
+                )
         
         return JsonResponse({
             'status': 'success',
@@ -795,7 +809,10 @@ def api_save_schedule_slot(request: HttpRequest) -> JsonResponse:
         )
         
         if not is_valid:
-            return JsonResponse({'status': 'error', 'message': error_message}, status=400)
+            return JsonResponse({
+                'status': 'error', 
+                'message': f"Конфлікт: {error_message}"
+            }, status=400)
 
         # 1. Знаходимо або створюємо TeachingAssignment (SSOT)
         # У майбутньому це буде обов'язковим, зараз - забезпечуємо міграцію нових даних

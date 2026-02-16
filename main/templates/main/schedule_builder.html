@@ -258,7 +258,7 @@
 
         elements.clearAllBtn.addEventListener('click', function () {
             if (!state.currentGroup) return;
-            if (!confirm('Ви впевнені? Це очистить всі поля на цій сторінці.')) return;
+            if (!confirm('Ви впевнені? Це видалить весь розклад для цієї групи.')) return;
 
             const inputs = elements.scheduleContainer.querySelectorAll('input, select');
             inputs.forEach(input => {
@@ -267,7 +267,10 @@
             });
             elements.scheduleContainer.querySelectorAll('.lesson-subject').forEach(s => s.value = "");
 
-            markModified();
+            // Автоматично зберігаємо порожній розклад
+            setTimeout(() => {
+                saveSchedule();
+            }, 100);
         });
 
         // --- Functions ---
