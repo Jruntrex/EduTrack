@@ -79,4 +79,5 @@ urlpatterns = [
     path('student/grades/', views.student_grades_view, name='student_grades'),
     path('student/attendance/', views.student_attendance_view, name='student_attendance'),
     path('student/dashboard/', views.student_dashboard_view, name='student_dashboard'),
+    path('profile/', views.profile_view, name='profile'),
 ]

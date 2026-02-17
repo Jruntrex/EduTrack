@@ -181,3 +181,17 @@ class ScheduleSlotForm(forms.Form):
     classroom_id = forms.IntegerField(required=False)
     start_time = forms.TimeField(input_formats=['%H:%M'])
     duration = forms.IntegerField(min_value=1, initial=80)
+class ProfileForm(forms.ModelForm):
+    """Форма для самостійного редагування профілю користувачем."""
+    class Meta:
+        model = User
+        fields = ['full_name', 'phone', 'address', 'date_of_birth', 'profile_image']
+        widgets = {
+            'date_of_birth': forms.DateInput(attrs={'type': 'date'}),
+            'address': forms.Textarea(attrs={'rows': 3}),
+        }
+
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        # Email не можна змінювати самостійно (зазвичай це логін)
+        # Якщо треба змінити - звертайтесь до адміна

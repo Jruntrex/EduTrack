@@ -14,7 +14,7 @@ from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST, require_http_methods
 
-from .forms import ClassroomForm, StudyGroupForm, SubjectForm, UserAdminForm
+from .forms import ClassroomForm, StudyGroupForm, SubjectForm, UserAdminForm, ProfileForm
 from .models import (
     AbsenceReason,
     EvaluationType,
@@ -2116,3 +2116,29 @@ def api_manage_evaluation_types(request: HttpRequest) -> JsonResponse:
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
 
+
+# =========================
+# 6. ПРОФІЛЬ ТА НАЛАШТУВАННЯ
+# =========================
+
+@login_required
+def profile_view(request: HttpRequest) -> HttpResponse:
+    """Сторінка профілю користувача та налаштувань."""
+    user = request.user
+    if request.method == 'POST':
+        form = ProfileForm(request.POST, request.FILES, instance=user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Профіль успішно оновлено!")
+            return redirect('profile')
+        else:
+            messages.error(request, "Помилка при оновленні профілю.")
+    else:
+        form = ProfileForm(instance=user)
+
+    context = {
+        'user': user,
+        'form': form,
+        'active_page': 'profile',
+    }
+    return render(request, 'profile.html', context)
