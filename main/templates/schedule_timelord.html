@@ -207,15 +207,15 @@
                     <td class="lesson-num">{{ lesson_num }}</td>
                     <td class="lesson-time">{% lesson_hours lesson_num %}</td>
 
-                    {% get_lesson_at lessons day_data.date lesson_num as lesson %}
-                    {% if lesson %}
-                    <td class="subject-cell">{% if lesson and lesson.subject %}{{ lesson.subject.name }}{% else %}—{% endif %}</td>
+                    {% get_schedule_template_at schedule_templates day_data.day_of_week lesson_num as template %}
+                    {% if template %}
+                    <td class="subject-cell">{{ template.subject.name }}</td>
                     <td>
-                        {% if lesson.classroom %}
-                        <span class="classroom-badge">{{ lesson.classroom.name }}</span>
+                        {% if template.classroom %}
+                        <span class="classroom-badge">{{ template.classroom.name }}</span>
                         {% endif %}
                     </td>
-                    <td class="teacher-name">{{ lesson.teacher.full_name|format_teacher_short }}</td>
+                    <td class="teacher-name">{{ template.teacher.full_name|format_teacher_short }}</td>
                     {% else %}
                     <td></td>
                     <td></td>

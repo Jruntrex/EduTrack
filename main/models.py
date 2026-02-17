@@ -11,6 +11,21 @@ from django.core.exceptions import ValidationError
 class StudyGroup(models.Model):
     """Група студентів (напр. КН-41)"""
     name = models.CharField(max_length=50, unique=True, verbose_name="Назва групи")
+    
+    # Додаткові поля
+    year_of_entry = models.PositiveIntegerField(null=True, blank=True, verbose_name="Рік вступу")
+    graduation_year = models.PositiveIntegerField(null=True, blank=True, verbose_name="Рік випуску")
+    specialty = models.CharField(max_length=200, blank=True, verbose_name="Спеціальність")
+    course = models.PositiveSmallIntegerField(
+        null=True, blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(6)],
+        verbose_name="Курс"
+    )
+    
+    # Технічні поля
+    is_active = models.BooleanField(default=True, verbose_name="Активна")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата створення")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата оновлення")
 
     class Meta:
         db_table = 'study_groups'
@@ -57,11 +72,20 @@ class User(AbstractBaseUser, PermissionsMixin):
         blank=True,
         related_name='students',
     )
+    
+    # Додаткова інформація
+    phone = models.CharField(max_length=20, blank=True, verbose_name="Телефон")
+    date_of_birth = models.DateField(null=True, blank=True, verbose_name="Дата народження")
+    address = models.TextField(blank=True, verbose_name="Адреса")
+    profile_image = models.ImageField(upload_to='profiles/', null=True, blank=True, verbose_name="Фото профілю")
+    student_id = models.CharField(max_length=50, blank=True, verbose_name="№ студентського квитка")
+    notes = models.TextField(blank=True, verbose_name="Примітки")
 
     # Технічні поля Django
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False) # Чи має доступ до адмінки
     created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата оновлення")
 
     objects = CustomUserManager()
 
@@ -81,7 +105,24 @@ class Subject(models.Model):
     Довідник предметів.
     """
     name = models.CharField(max_length=100, unique=True, verbose_name="Назва предмету")
+    code = models.CharField(max_length=20, blank=True, verbose_name="Код предмету")
     description = models.TextField(blank=True, verbose_name="Опис")
+    
+    # Навчальна інформація
+    credits = models.PositiveSmallIntegerField(null=True, blank=True, verbose_name="Кредити ECTS")
+    hours_total = models.PositiveIntegerField(null=True, blank=True, verbose_name="Всього годин")
+    hours_lectures = models.PositiveIntegerField(null=True, blank=True, verbose_name="Годин лекцій")
+    hours_practicals = models.PositiveIntegerField(null=True, blank=True, verbose_name="Годин практичних")
+    semester = models.PositiveSmallIntegerField(
+        null=True, blank=True,
+        validators=[MinValueValidator(1), MaxValueValidator(8)],
+        verbose_name="Семестр"
+    )
+    
+    # Технічні поля
+    is_active = models.BooleanField(default=True, verbose_name="Активний")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата створення")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата оновлення")
 
     class Meta:
         db_table = 'subjects'
@@ -93,9 +134,24 @@ class Subject(models.Model):
 
 class Classroom(models.Model):
     """Аудиторія (напр. 305-А)"""
+    CLASSROOM_TYPE_CHOICES = [
+        ('lecture', 'Лекційна'),
+        ('computer', 'Комп\'ютерна'),
+        ('lab', 'Лабораторна'),
+        ('other', 'Інша'),
+    ]
+    
     name = models.CharField(max_length=50, unique=True, verbose_name="Назва/Номер")
     building = models.CharField(max_length=100, blank=True, verbose_name="Корпус")
+    floor = models.PositiveSmallIntegerField(null=True, blank=True, verbose_name="Поверх")
     capacity = models.PositiveIntegerField(null=True, blank=True, verbose_name="Місткість")
+    type = models.CharField(max_length=20, choices=CLASSROOM_TYPE_CHOICES, default='other', verbose_name="Тип")
+    equipment = models.TextField(blank=True, verbose_name="Обладнання")
+    
+    # Технічні поля
+    is_active = models.BooleanField(default=True, verbose_name="Активна")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата створення")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата оновлення")
 
     class Meta:
         db_table = 'classrooms'
@@ -108,6 +164,13 @@ class Classroom(models.Model):
 class GradingScale(models.Model):
     """Шкала оцінювання (напр. 100-бальна, ЄКТС)"""
     name = models.CharField(max_length=50, unique=True, verbose_name="Назва шкали")
+    description = models.TextField(blank=True, verbose_name="Опис")
+    is_default = models.BooleanField(default=False, verbose_name="За замовчуванням")
+    
+    # Технічні поля
+    is_active = models.BooleanField(default=True, verbose_name="Активна")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата створення")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата оновлення")
 
     class Meta:
         db_table = 'grading_scales'
@@ -122,6 +185,13 @@ class GradeRule(models.Model):
     scale = models.ForeignKey(GradingScale, on_delete=models.CASCADE, related_name='rules')
     label = models.CharField(max_length=50, verbose_name="Оцінка (словом/буквою)")
     min_points = models.DecimalField(max_digits=5, decimal_places=2, verbose_name="Мінімальний бал")
+    max_points = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name="Максимальний бал")
+    color = models.CharField(max_length=7, blank=True, verbose_name="Колір (hex)")
+    description = models.TextField(blank=True, verbose_name="Опис критеріїв")
+    
+    # Технічні поля
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата створення")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата оновлення")
 
     class Meta:
         db_table = 'grade_rules'
@@ -148,6 +218,22 @@ class TeachingAssignment(models.Model):
         verbose_name="Викладач",
     )
     group = models.ForeignKey(StudyGroup, on_delete=models.CASCADE, verbose_name="Група")
+    
+    # Навчальний період
+    academic_year = models.CharField(max_length=9, blank=True, verbose_name="Навчальний рік")
+    semester = models.PositiveSmallIntegerField(
+        null=True, blank=True,
+        choices=[(1, '1 семестр'), (2, '2 семестр')],
+        verbose_name="Семестр"
+    )
+    start_date = models.DateField(null=True, blank=True, verbose_name="Дата початку")
+    end_date = models.DateField(null=True, blank=True, verbose_name="Дата завершення")
+    notes = models.TextField(blank=True, verbose_name="Примітки")
+    
+    # Технічні поля
+    is_active = models.BooleanField(default=True, verbose_name="Активне")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата створення")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата оновлення")
 
     class Meta:
         db_table = 'teaching_assignments'
@@ -170,9 +256,17 @@ class EvaluationType(models.Model):
         validators=[MinValueValidator(0), MaxValueValidator(100)],
         verbose_name="Вплив на оцінку (%)"
     )
+    description = models.TextField(blank=True, verbose_name="Опис")
+    order = models.PositiveSmallIntegerField(default=0, verbose_name="Порядок відображення")
+    
+    # Технічні поля
+    is_active = models.BooleanField(default=True, verbose_name="Активний")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата створення")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата оновлення")
 
     class Meta:
         db_table = 'evaluation_types'
+        ordering = ['order']
         verbose_name = "Тип оцінювання"
         verbose_name_plural = "Типи оцінювання"
 
@@ -182,8 +276,14 @@ class EvaluationType(models.Model):
 class TimeSlot(models.Model):
     """Часові слоти для пар (Дзвінки)"""
     lesson_number = models.PositiveSmallIntegerField(unique=True, verbose_name="Номер пари")
+    name = models.CharField(max_length=50, blank=True, verbose_name="Назва")
     start_time = models.TimeField(verbose_name="Початок")
     end_time = models.TimeField(verbose_name="Кінець")
+    
+    # Технічні поля
+    is_active = models.BooleanField(default=True, verbose_name="Активний")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата створення")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата оновлення")
 
     class Meta:
         db_table = 'time_slots'
@@ -247,6 +347,19 @@ class ScheduleTemplate(models.Model):
     
     valid_from = models.DateField(auto_now_add=True, verbose_name="Діє з")
     valid_to = models.DateField(null=True, blank=True, verbose_name="Діє до")
+    
+    # Додаткові поля
+    week_type = models.CharField(
+        max_length=20, blank=True,
+        choices=[('numerator', 'Чисельник'), ('denominator', 'Знаменник')],
+        verbose_name="Тип тижня"
+    )
+    notes = models.TextField(blank=True, verbose_name="Примітки")
+    
+    # Технічні поля
+    is_active = models.BooleanField(default=True, verbose_name="Активний")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата створення")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата оновлення")
 
     class Meta:
         db_table = 'schedule_templates'
@@ -300,6 +413,19 @@ class Lesson(models.Model):
         blank=True, 
         verbose_name="Джерело (шаблон)"
     )
+    
+    # Додаткові поля
+    homework = models.TextField(blank=True, verbose_name="Домашнє завдання")
+    materials = models.TextField(blank=True, verbose_name="Матеріали (посилання)")
+    notes = models.TextField(blank=True, verbose_name="Примітки викладача")
+    
+    # Статус
+    is_cancelled = models.BooleanField(default=False, verbose_name="Скасований")
+    cancellation_reason = models.TextField(blank=True, verbose_name="Причина скасування")
+    
+    # Технічні поля
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата створення")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата оновлення")
 
     class Meta:
         db_table = 'lessons'
@@ -329,9 +455,17 @@ class AbsenceReason(models.Model):
     code = models.CharField(max_length=5, unique=True) # Н, Б, В
     description = models.CharField(max_length=100)
     is_respectful = models.BooleanField(default=False, verbose_name="Поважна причина")
+    color = models.CharField(max_length=7, blank=True, verbose_name="Колір (hex)")
+    order = models.PositiveSmallIntegerField(default=0, verbose_name="Порядок відображення")
+    
+    # Технічні поля
+    is_active = models.BooleanField(default=True, verbose_name="Активний")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата створення")
+    updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата оновлення")
 
     class Meta:
         db_table = 'absence_reasons'
+        ordering = ['order']
         verbose_name = "Причина пропуску"
         verbose_name_plural = "Причини пропусків"
 
@@ -354,6 +488,20 @@ class StudentPerformance(models.Model):
     absence = models.ForeignKey(AbsenceReason, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Пропуск")
     
     comment = models.TextField(blank=True, verbose_name="Коментар")
+    
+    # Додаткові поля
+    graded_by = models.ForeignKey(
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='graded_performances',
+        limit_choices_to={'role__in': ['teacher', 'admin']},
+        verbose_name="Оцінено ким"
+    )
+    graded_at = models.DateTimeField(null=True, blank=True, verbose_name="Час виставлення оцінки")
+    is_bonus = models.BooleanField(default=False, verbose_name="Бонусні бали")
+    version = models.PositiveIntegerField(default=1, verbose_name="Версія запису")
+    
+    # Технічні поля
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата створення")
     updated_at = models.DateTimeField(auto_now=True)
 
 
@@ -385,6 +533,12 @@ class BuildingAccessLog(models.Model):
     student = models.ForeignKey(User, on_delete=models.CASCADE, limit_choices_to={'role': 'student'}, verbose_name="Студент")
     timestamp = models.DateTimeField(auto_now_add=True, verbose_name="Час події")
     action = models.CharField(max_length=10, choices=ACTION_CHOICES, verbose_name="Дія")
+    
+    # Додаткові поля
+    location = models.CharField(max_length=100, blank=True, verbose_name="Місце (вхід)")
+    device_id = models.CharField(max_length=50, blank=True, verbose_name="ID турнікету")
+    is_valid = models.BooleanField(default=True, verbose_name="Валідний доступ")
+    notes = models.TextField(blank=True, verbose_name="Примітки")
 
     class Meta:
         db_table = 'building_access_logs'

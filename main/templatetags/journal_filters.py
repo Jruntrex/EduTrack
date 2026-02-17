@@ -33,6 +33,20 @@ def get_lesson_at(lessons, date_obj, lesson_num):
     return None
 
 @register.simple_tag
+def get_schedule_template_at(templates, day_of_week, lesson_num):
+    """Шукає шаблон розкладу для конкретного дня тижня та номеру пари."""
+    if not templates: 
+        return None
+    
+    lesson_num_int = int(lesson_num)
+    day_int = int(day_of_week)
+    
+    for t in templates:
+        if t.day_of_week == day_int and t.lesson_number == lesson_num_int:
+            return t
+    return None
+
+@register.simple_tag
 def lesson_hours(num):
     """Повертає часовий інтервал для номеру пари."""
     times = {

@@ -1,18 +1,16 @@
 import csv
 import json
 from collections import defaultdict
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, time, timedelta
 from typing import List, Dict, Any, Optional, Union, Callable, Tuple
-from django.http import HttpRequest, HttpResponse, JsonResponse
 
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth.hashers import make_password  # Залишаємо для ручного створення, якщо потрібно
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError, transaction
 from django.db.models import Avg, Count, F, Max, Min, Prefetch, Q, Sum
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpRequest, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST, require_http_methods
 
@@ -32,7 +30,6 @@ from .models import (
     GradingScale,
     GradeRule,
 )
-from datetime import time
 
 # =========================
 # UTILITY & DECORATORS
@@ -886,13 +883,12 @@ def schedule_view(request):
     start_of_week = monday + timedelta(weeks=week_shift)
     end_of_week = start_of_week + timedelta(days=6)
     
-    lessons = []
+    # Замість Lesson використовуємо ScheduleTemplate
+    schedule_templates = []
     if group:
-        lessons = Lesson.objects.filter(
-            group=group,
-            date__gte=start_of_week,
-            date__lte=end_of_week
-        ).select_related('subject', 'teacher', 'evaluation_type')
+        schedule_templates = ScheduleTemplate.objects.filter(
+            group=group
+        ).select_related('subject', 'teacher', 'classroom').order_by('day_of_week', 'lesson_number')
 
     # Дні тижня для заголовка
     week_days = []
@@ -902,11 +898,12 @@ def schedule_view(request):
         week_days.append({
             'date': d,
             'day_name': day_names[i],
+            'day_of_week': i + 1,  # 1=Пн, 2=Вт, ..., 7=Нд
             'is_today': d == today
         })
 
     context = {
-        'lessons': lessons,
+        'schedule_templates': schedule_templates,  # Замість 'lessons'
         'week_days': week_days,
         'group': group,
         'all_groups': StudyGroup.objects.all().order_by('name') if user.role != 'student' else None,
@@ -917,6 +914,7 @@ def schedule_view(request):
     }
     
     return render(request, 'schedule_timelord.html', context)
+
 
 
 # =========================
@@ -1477,11 +1475,28 @@ def report_absences_view(request):
     date_from = request.GET.get('date_from', '')
     date_to = request.GET.get('date_to', '')
     limit = int(request.GET.get('limit', 0) or 0)
+    
+    # Нові фільтри
+    course = request.GET.get('course', '')
+    specialty = request.GET.get('specialty', '')
+    is_active = request.GET.get('is_active', '')
 
     students = User.objects.filter(role='student')
     
     if group_id:
         students = students.filter(group_id=group_id)
+    
+    # Фільтр по курсу (через групу)
+    if course:
+        students = students.filter(group__course=course)
+    
+    # Фільтр по спеціальності
+    if specialty:
+        students = students.filter(group__specialty__icontains=specialty)
+    
+    # Фільтр по статусу активності
+    if is_active:
+        students = students.filter(is_active=(is_active == 'true'))
 
     perf_filter = Q(studentperformance__absence__isnull=False)
     
@@ -1512,6 +1527,10 @@ def report_absences_view(request):
     groups = StudyGroup.objects.all()
     all_subjects = Subject.objects.all()
     
+    # Отримуємо унікальні спеціальності та курси
+    specialties = StudyGroup.objects.exclude(specialty='').values_list('specialty', flat=True).distinct()
+    courses = StudyGroup.objects.exclude(course__isnull=True).values_list('course', flat=True).distinct().order_by('course')
+    
     context = {
         'report_data': report_data,
         'report_title': 'Звіт: Пропуски студентів',
@@ -1520,6 +1539,8 @@ def report_absences_view(request):
         'report_reset_url_name': 'report_absences',
         'groups': groups,
         'all_subjects': all_subjects,
+        'specialties': specialties,
+        'courses': courses,
         'active_page': 'reports'
     }
     return render(request, 'report_absences.html', context)
@@ -1530,6 +1551,11 @@ def report_rating_view(request):
     subject_id = request.GET.get('subject', '')
     date_from = request.GET.get('date_from', '')
     date_to = request.GET.get('date_to', '')
+    
+    # Нові фільтри
+    course = request.GET.get('course', '')
+    specialty = request.GET.get('specialty', '')
+    is_active = request.GET.get('is_active', '')
     
     MIN_VOTES = 5
     
@@ -1563,6 +1589,14 @@ def report_rating_view(request):
     students_query = User.objects.filter(role='student')
     if group_id:
         students_query = students_query.filter(group_id=group_id)
+    
+    # Нові фільтри
+    if course:
+        students_query = students_query.filter(group__course=course)
+    if specialty:
+        students_query = students_query.filter(group__specialty__icontains=specialty)
+    if is_active:
+        students_query = students_query.filter(is_active=(is_active == 'true'))
 
     students_data = students_query.annotate(
         v=Count('studentperformance', filter=perf_user_filter),
@@ -1613,6 +1647,10 @@ def report_rating_view(request):
     groups = StudyGroup.objects.all()
     all_subjects = Subject.objects.all()
     
+    # Отримуємо унікальні спеціальності та курси
+    specialties = StudyGroup.objects.exclude(specialty='').values_list('specialty', flat=True).distinct()
+    courses = StudyGroup.objects.exclude(course__isnull=True).values_list('course', flat=True).distinct().order_by('course')
+    
     context = {
         'report_data': rating_list,
         'report_title': 'Звіт: Рейтинг студентів',
@@ -1621,6 +1659,8 @@ def report_rating_view(request):
         'report_reset_url_name': 'report_rating',
         'groups': groups,
         'all_subjects': all_subjects,
+        'specialties': specialties,
+        'courses': courses,
         'active_page': 'reports'
     }
     return render(request, 'report_absences.html', context)

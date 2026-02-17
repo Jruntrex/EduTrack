@@ -75,7 +75,13 @@
                     <tr>
                         <th class="p-4 text-left text-xs font-bold text-gray-500 uppercase">Аудиторія</th>
                         <th class="p-4 text-left text-xs font-bold text-gray-500 uppercase">Локація (Корпус)</th>
+                        <th class="p-4 text-center text-xs font-bold text-gray-500 uppercase hidden md:table-cell">
+                            Поверх</th>
+                        <th class="p-4 text-center text-xs font-bold text-gray-500 uppercase hidden lg:table-cell">Тип
+                        </th>
                         <th class="p-4 text-center text-xs font-bold text-gray-500 uppercase">Місткість</th>
+                        <th class="p-4 text-center text-xs font-bold text-gray-500 uppercase hidden lg:table-cell">
+                            Статус</th>
                         <th class="p-4 text-right text-xs font-bold text-gray-500 uppercase">Керування</th>
                     </tr>
                 </thead>
@@ -88,15 +94,54 @@
                                     class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-black text-xs shadow-sm">
                                     {{ room.name|slice:":2" }}
                                 </div>
-                                <span class="text-sm font-bold text-gray-900">{{ room.name }}</span>
+                                <div>
+                                    <span class="text-sm font-bold text-gray-900">{{ room.name }}</span>
+                                    {% if room.equipment %}
+                                    <p class="text-[10px] text-gray-400 mt-0.5 truncate max-w-xs">{{ room.equipment }}
+                                    </p>
+                                    {% endif %}
+                                </div>
                             </div>
                         </td>
                         <td class="p-4 text-sm text-gray-500">{{ room.building|default:"Головний корпус" }}</td>
+                        <td class="p-4 text-center text-sm text-gray-600 hidden md:table-cell">
+                            {% if room.floor %}
+                            {{ room.floor }} пов.
+                            {% else %}
+                            <span class="text-gray-300 text-xs">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4 text-center hidden lg:table-cell">
+                            {% if room.room_type %}
+                            <span
+                                class="inline-flex px-2 py-1 rounded-lg bg-indigo-100 text-indigo-700 text-xs font-bold">
+                                {{ room.room_type }}
+                            </span>
+                            {% else %}
+                            <span class="text-gray-300 text-xs">—</span>
+                            {% endif %}
+                        </td>
                         <td class="p-4 text-center">
+                            {% if room.capacity %}
                             <span
                                 class="inline-flex items-center justify-center px-3 py-1 rounded-full bg-gray-100 text-gray-700 text-xs font-medium">
-                                {{ room.capacity|default:"—" }} місць
+                                {{ room.capacity }} місць
                             </span>
+                            {% else %}
+                            <span class="text-gray-300 text-xs">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4 text-center hidden lg:table-cell">
+                            {% if room.is_active %}
+                            <span
+                                class="inline-flex px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold">
+                                Доступна
+                            </span>
+                            {% else %}
+                            <span class="inline-flex px-2 py-1 rounded-full bg-red-100 text-red-700 text-xs font-bold">
+                                Закрита
+                            </span>
+                            {% endif %}
                         </td>
                         <td class="p-4 text-right">
                             <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -117,7 +162,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="4" class="p-12 text-center text-gray-400">
+                        <td colspan="7" class="p-12 text-center text-gray-400">
                             <div class="text-4xl mb-4 opacity-50">🏛️</div>
                             <p class="font-bold text-xs uppercase tracking-widest">Аудиторій не знайдено</p>
                         </td>

@@ -69,16 +69,24 @@
             <table class="w-full">
                 <thead class="bg-gray-50 border-b border-gray-200">
                     <tr>
-                        <th class="p-4 text-center text-xs font-bold text-gray-500 uppercase w-20">ID</th>
                         <th class="p-4 text-left text-xs font-bold text-gray-500 uppercase">Назва предмета</th>
+                        <th class="p-4 text-center text-xs font-bold text-gray-500 uppercase hidden md:table-cell">Код
+                        </th>
+                        <th class="p-4 text-center text-xs font-bold text-gray-500 uppercase hidden lg:table-cell">
+                            Кредити</th>
+                        <th class="p-4 text-center text-xs font-bold text-gray-500 uppercase hidden xl:table-cell">
+                            Семестр</th>
+                        <th class="p-4 text-center text-xs font-bold text-gray-500 uppercase hidden xl:table-cell">
+                            Години</th>
                         <th class="p-4 text-center text-xs font-bold text-gray-500 uppercase">Викладачів</th>
+                        <th class="p-4 text-center text-xs font-bold text-gray-500 uppercase hidden lg:table-cell">
+                            Статус</th>
                         <th class="p-4 text-right text-xs font-bold text-gray-500 uppercase">Керування</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
                     {% for subject in subjects %}
                     <tr class="hover:bg-blue-50/50 transition duration-150 group">
-                        <td class="p-4 text-center font-bold text-gray-300">#{{ subject.pk }}</td>
                         <td class="p-4">
                             <div class="flex items-center gap-3">
                                 <div
@@ -94,11 +102,55 @@
                                 </div>
                             </div>
                         </td>
+                        <td class="p-4 text-center text-sm text-gray-600 font-mono hidden md:table-cell">
+                            {% if subject.code %}
+                            {{ subject.code }}
+                            {% else %}
+                            <span class="text-gray-300 text-xs">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4 text-center hidden lg:table-cell">
+                            {% if subject.credits %}
+                            <span
+                                class="inline-flex px-2 py-1 rounded-lg bg-orange-100 text-orange-700 text-xs font-bold">
+                                {{ subject.credits }} ECTS
+                            </span>
+                            {% else %}
+                            <span class="text-gray-300 text-xs">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4 text-center text-sm text-gray-600 hidden xl:table-cell">
+                            {% if subject.semester %}
+                            {{ subject.semester }} сем.
+                            {% else %}
+                            <span class="text-gray-300 text-xs">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="p-4 text-center text-sm text-gray-500 hidden xl:table-cell">
+                            {% if subject.hours_total %}
+                            {{ subject.hours_total }} год.
+                            {% else %}
+                            <span class="text-gray-300 text-xs">—</span>
+                            {% endif %}
+                        </td>
                         <td class="p-4 text-center">
                             <span
                                 class="inline-flex items-center justify-center min-w-[30px] h-[30px] rounded-full bg-white border border-gray-100 shadow-sm text-blue-600 font-black text-xs">
                                 {{ subject.teachers_count|default:0 }}
                             </span>
+                        </td>
+                        <td class="p-4 text-center hidden lg:table-cell">
+                            {% if subject.is_active %}
+                            <span
+                                class="inline-flex px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold">
+                                Активний
+                            </span>
+                            {% else %}
+                            <span
+                                class="inline-flex px-2 py-1 rounded-full bg-gray-100 text-gray-500 text-xs font-bold">
+                                Архів
+                            </span>
+                            {% endif %}
                         </td>
                         <td class="p-4 text-right">
                             <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -120,7 +172,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="4" class="p-12 text-center text-gray-400">
+                        <td colspan="8" class="p-12 text-center text-gray-400">
                             <div class="text-4xl mb-4 opacity-50">📚</div>
                             <p class="font-bold text-xs uppercase tracking-widest">Предметів не знайдено</p>
                         </td>

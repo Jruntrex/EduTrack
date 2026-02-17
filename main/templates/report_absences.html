@@ -21,7 +21,7 @@
     </div>
 
     <form method="GET" action="{% url report_reset_url_name %}"
-        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end border-t pt-6">
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end border-t pt-6">
 
         <div class="flex flex-col gap-1">
             <label class="text-xs font-bold text-gray-500 uppercase">Група</label>
@@ -34,6 +34,34 @@
                     {{ g.name }}
                 </option>
                 {% endwith %}
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="flex flex-col gap-1">
+            <label class="text-xs font-bold text-gray-500 uppercase">Курс</label>
+            <select name="course"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary">
+                <option value="">Усі курси</option>
+                {% for c in courses %}
+                {% with c_str=c|stringformat:"s" %}
+                <option value="{{ c }}" {% if request.GET.course|is_equal:c_str %}selected{% endif %}>
+                    {{ c }} курс
+                </option>
+                {% endwith %}
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="flex flex-col gap-1">
+            <label class="text-xs font-bold text-gray-500 uppercase">Спеціальність</label>
+            <select name="specialty"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary">
+                <option value="">Усі спеціальності</option>
+                {% for spec in specialties %}
+                <option value="{{ spec }}" {% if request.GET.specialty == spec %}selected{% endif %}>
+                    {{ spec }}
+                </option>
                 {% endfor %}
             </select>
         </div>
@@ -54,6 +82,16 @@
         </div>
 
         <div class="flex flex-col gap-1">
+            <label class="text-xs font-bold text-gray-500 uppercase">Статус</label>
+            <select name="is_active"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary">
+                <option value="">Усі студенти</option>
+                <option value="true" {% if request.GET.is_active == 'true' %}selected{% endif %}>Активні</option>
+                <option value="false" {% if request.GET.is_active == 'false' %}selected{% endif %}>Неактивні</option>
+            </select>
+        </div>
+
+        <div class="flex flex-col gap-1 lg:col-span-2">
             <label class="text-xs font-bold text-gray-500 uppercase">Період</label>
             <div class="flex gap-2">
                 <input type="date" name="date_from" value="{{ request.GET.date_from }}" {{
@@ -66,7 +104,7 @@
         </div>
 
         {% if is_absences_report and not is_weekly_report %}
-        <div class="flex flex-col gap-1">
+        <div class="flex flex-col gap-1 lg:col-span-2">
             <label class="text-xs font-bold text-gray-500 uppercase">Обмеження</label>
             <select name="limit"
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary">
@@ -76,18 +114,21 @@
             </select>
         </div>
         {% else %}
-        <div></div>
+        <div class="lg:col-span-2"></div>
         {% endif %}
 
-        <div class="lg:col-span-4 flex justify-end gap-3 mt-2 border-t pt-4">
+        <div class="flex items-end justify-end">
+            <button type="submit"
+                class="px-8 py-2 rounded-lg bg-primary text-white hover:bg-blue-700 shadow-md transition w-full">
+                Застосувати фільтри
+            </button>
+        </div>
+
+        <div class="lg:col-span-5 flex justify-start mt-2 border-t pt-4">
             <a href="{% url report_reset_url_name %}"
                 class="px-6 py-2 rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition">
                 Скинути все
             </a>
-            <button type="submit"
-                class="px-8 py-2 rounded-lg bg-primary text-white hover:bg-blue-700 shadow-md transition">
-                Застосувати фільтри
-            </button>
         </div>
     </form>
 </div>
