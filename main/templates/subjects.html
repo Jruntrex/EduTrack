@@ -69,6 +69,7 @@
             <table class="w-full">
                 <thead class="bg-gray-50 border-b border-gray-200">
                     <tr>
+                        <th class="p-4 text-left text-xs font-bold text-gray-500 uppercase hidden xl:table-cell">ID</th>
                         <th class="p-4 text-left text-xs font-bold text-gray-500 uppercase">Назва предмета</th>
                         <th class="p-4 text-center text-xs font-bold text-gray-500 uppercase hidden md:table-cell">Код
                         </th>
@@ -81,12 +82,15 @@
                         <th class="p-4 text-center text-xs font-bold text-gray-500 uppercase">Викладачів</th>
                         <th class="p-4 text-center text-xs font-bold text-gray-500 uppercase hidden lg:table-cell">
                             Статус</th>
+                        <th class="p-4 text-center text-xs font-bold text-gray-500 uppercase hidden xl:table-cell">
+                            Створено</th>
                         <th class="p-4 text-right text-xs font-bold text-gray-500 uppercase">Керування</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
                     {% for subject in subjects %}
                     <tr class="hover:bg-blue-50/50 transition duration-150 group">
+                        <td class="p-4 text-xs font-mono text-gray-400 hidden xl:table-cell">#{{ subject.id }}</td>
                         <td class="p-4">
                             <div class="flex items-center gap-3">
                                 <div
@@ -152,6 +156,14 @@
                             </span>
                             {% endif %}
                         </td>
+                        <td class="p-4 text-center text-xs text-gray-400 hidden xl:table-cell">
+                            {% if subject.created_at %}
+                            <span class="block font-medium text-gray-600">{{ subject.created_at|date:"d.m.Y" }}</span>
+                            <span class="text-gray-400">{{ subject.created_at|date:"H:i" }}</span>
+                            {% else %}
+                            <span class="text-gray-300">—</span>
+                            {% endif %}
+                        </td>
                         <td class="p-4 text-right">
                             <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <form method="POST" action="{% url 'subject_delete' pk=subject.pk %}"
@@ -172,7 +184,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="8" class="p-12 text-center text-gray-400">
+                        <td colspan="10" class="p-12 text-center text-gray-400">
                             <div class="text-4xl mb-4 opacity-50">📚</div>
                             <p class="font-bold text-xs uppercase tracking-widest">Предметів не знайдено</p>
                         </td>

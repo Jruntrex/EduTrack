@@ -138,16 +138,23 @@
             <table class="w-full">
                 <thead class="bg-gray-50 border-b border-gray-200">
                     <tr>
+                        <th class="p-4 text-left text-xs font-bold text-gray-500 uppercase hidden xl:table-cell">ID</th>
                         <th class="p-4 text-left text-xs font-bold text-gray-500 uppercase">Користувач</th>
                         <th class="p-4 text-left text-xs font-bold text-gray-500 uppercase">Роль</th>
                         <th class="p-4 text-left text-xs font-bold text-gray-500 uppercase">Контакти</th>
-                        <th class="p-4 text-left text-xs font-bold text-gray-500 uppercase">Призначення</th>
+                        <th class="p-4 text-left text-xs font-bold text-gray-500 uppercase hidden lg:table-cell">
+                            Призначення</th>
+                        <th class="p-4 text-center text-xs font-bold text-gray-500 uppercase hidden lg:table-cell">
+                            Статус</th>
+                        <th class="p-4 text-center text-xs font-bold text-gray-500 uppercase hidden xl:table-cell">
+                            Реєстрація</th>
                         <th class="p-4 text-right text-xs font-bold text-gray-500 uppercase">Керування</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
                     {% for user in users %}
                     <tr class="hover:bg-blue-50/50 transition duration-150 group">
+                        <td class="p-4 text-xs font-mono text-gray-400 hidden xl:table-cell">#{{ user.id }}</td>
                         <td class="p-4">
                             <div class="flex items-center gap-3">
                                 <div
@@ -168,7 +175,7 @@
                         </td>
                         <td class="p-4 text-sm text-gray-500">{{ user.email }}</td>
 
-                        <td class="p-4 text-sm">
+                        <td class="p-4 text-sm hidden lg:table-cell">
                             {% if user.role == 'teacher' %}
                             {# Отримуємо всі призначення викладача #}
                             {% with assignments=user.teachingassignment_set.all %}
@@ -206,6 +213,25 @@
                             {% endif %}
                         </td>
 
+                        <td class="p-4 text-center hidden lg:table-cell">
+                            {% if user.is_active %}
+                            <span
+                                class="inline-flex px-2 py-1 rounded-full bg-green-100 text-green-700 text-xs font-bold">Активний</span>
+                            {% else %}
+                            <span
+                                class="inline-flex px-2 py-1 rounded-full bg-red-100 text-red-700 text-xs font-bold">Заблокований</span>
+                            {% endif %}
+                        </td>
+
+                        <td class="p-4 text-center text-xs text-gray-400 hidden xl:table-cell">
+                            {% if user.created_at %}
+                            <span class="block font-medium text-gray-600">{{ user.created_at|date:"d.m.Y" }}</span>
+                            <span class="text-gray-400">{{ user.created_at|date:"H:i" }}</span>
+                            {% else %}
+                            <span class="text-gray-300">—</span>
+                            {% endif %}
+                        </td>
+
                         <td class="p-4 text-right">
                             <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                 <a href="{% url 'user_edit' pk=user.pk %}"
@@ -233,7 +259,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="5" class="p-12 text-center text-gray-400">
+                        <td colspan="8" class="p-12 text-center text-gray-400">
                             <div class="text-4xl mb-4 opacity-50">👥</div>
                             <p class="font-bold text-xs uppercase tracking-widest">Користувачів не знайдено</p>
                         </td>

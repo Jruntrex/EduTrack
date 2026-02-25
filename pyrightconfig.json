@@ -1,0 +1,14 @@
+{
+    "include": [
+        "."
+    ],
+    "exclude": [
+        "node_modules",
+        ".git"
+    ],
+    "venvPath": ".",
+    "pythonVersion": "3.11",
+    "typeCheckingMode": "off",
+    "reportMissingImports": false,
+    "reportMissingModuleSource": false
+}
