@@ -28,8 +28,7 @@
             <div class="bg-gray-50/50 p-6 border-b border-gray-100 flex items-center justify-between">
                 <div>
                     <h2 class="text-xl font-bold text-gray-800">{{ item.assignment.subject.name }}</h2>
-                    <p class="text-sm text-gray-500">Група: <span class="font-medium text-gray-700">{{
-                            item.assignment.group.name }}</span></p>
+                    <p class="text-sm text-gray-500">Група: <span class="font-medium text-gray-700">{{ item.assignment.group.name }}</span></p>
                 </div>
                 <button onclick="showCreateModal({{ item.assignment.id }}, '{{ item.assignment.subject.name }}')"
                     class="px-4 py-2 bg-primary text-white rounded-xl hover:bg-blue-600 transition-all text-sm font-medium flex items-center">

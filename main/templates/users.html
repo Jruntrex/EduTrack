@@ -44,8 +44,7 @@
                     <option value="">Всі групи</option>
                     {% for g in groups %}
                     {% with group_id=g.id|stringformat:"s" %}
-                    <option value="{{ g.id }}" {% if request.GET.group|is_equal:group_id %}selected{% endif %}>{{ g.name
-                        }}</option>
+                    <option value="{{ g.id }}" {% if request.GET.group|is_equal:group_id %}selected{% endif %}>{{ g.name }}</option>
                     {% endwith %}
                     {% endfor %}
                 </select>
@@ -58,8 +57,7 @@
                     <option value="">Всі предмети</option>
                     {% for sub in all_subjects %}
                     {% with sub_id=sub.id|stringformat:"s" %}
-                    <option value="{{ sub.id }}" {% if request.GET.subject|is_equal:sub_id %}selected{% endif %}>{{
-                        sub.name }}</option>
+                    <option value="{{ sub.id }}" {% if request.GET.subject|is_equal:sub_id %}selected{% endif %}>{{ sub.name }}</option>
                     {% endwith %}
                     {% endfor %}
                 </select>

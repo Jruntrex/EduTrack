@@ -520,6 +520,56 @@ class StudentPerformance(models.Model):
         if self.student.group != self.lesson.group:
             raise ValidationError("Студент не належить до групи, для якої проводиться урок.")
 
+# ==========================================
+# 5. СТРІЧКА НОВИН
+# ==========================================
+
+class Post(models.Model):
+    """Допис у стрічці новин (викладач або адмін)."""
+    POST_TYPE_CHOICES = [
+        ('general', 'Загальні новини'),
+        ('group', 'Новини групи'),
+    ]
+
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='posts', verbose_name="Автор")
+    post_type = models.CharField(max_length=10, choices=POST_TYPE_CHOICES, default='group', verbose_name="Тип")
+    group = models.ForeignKey(
+        StudyGroup, on_delete=models.CASCADE,
+        null=True, blank=True,
+        related_name='posts', verbose_name="Група"
+    )
+    title = models.CharField(max_length=200, blank=True, verbose_name="Заголовок")
+    content = models.TextField(verbose_name="Текст")
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'news_posts'
+        ordering = ['-created_at']
+        verbose_name = 'Допис'
+        verbose_name_plural = 'Дописи'
+
+    def __str__(self) -> str:
+        return f"{self.author.full_name}: {self.content[:50]}"
+
+
+class Comment(models.Model):
+    """Відповідь студента (або будь-кого) під дописом."""
+    post = models.ForeignKey(Post, on_delete=models.CASCADE, related_name='comments', verbose_name="Допис")
+    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='news_comments', verbose_name="Автор")
+    content = models.TextField(verbose_name="Текст")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'news_comments'
+        ordering = ['created_at']
+        verbose_name = 'Коментар'
+        verbose_name_plural = 'Коментарі'
+
+    def __str__(self) -> str:
+        return f"{self.author.full_name}: {self.content[:50]}"
+
+
 class BuildingAccessLog(models.Model):
     """
     Лог доступу до будівлі (Турнікет).

@@ -31,25 +31,26 @@
 
                 {% for item in day.lessons %}
                 <div class="relative flex-1 border-r border-white/40 group transition-all duration-300
-                        {% if item.status == 'past' %}bg-bodyText/10 opacity-50{% endif %}
-                        {% if item.status == 'current' %}bg-gradient-to-br from-accent/20 to-accent/10 ring-inset ring-4 ring-accent z-10 scale-[1.02] shadow-lg{% endif %}
+                        {% if item.assignment.is_cancelled %}bg-red-50/60{% elif item.status == 'past' %}bg-bodyText/10 opacity-50{% endif %}
+                        {% if item.status == 'current' and not item.assignment.is_cancelled %}bg-gradient-to-br from-accent/20 to-accent/10 ring-inset ring-4 ring-accent z-10 scale-[1.02] shadow-lg{% endif %}
                         {% if not item.assignment %}bg-white/20{% endif %}
                         hover:bg-white/60">
 
                     {% if item.assignment %}
-                    <div class="p-3 h-full flex flex-col justify-between">
+                    <div class="p-3 h-full flex flex-col justify-between {% if item.assignment.is_cancelled %}opacity-60{% endif %}">
                         <div>
                             <div class="flex justify-between items-start mb-2">
                                 <span
                                     class="text-xs font-bold text-bodyText font-mono bg-white/60 px-2 py-1 rounded-lg">
                                     {{ item.slot.start_time|time:"H:i" }} - {{ item.slot.end_time|time:"H:i" }}
                                 </span>
-                                <span class="bg-dark text-white text-xs px-2 py-1 rounded-full font-bold">
-                                    {{ item.slot.lesson_number }}
-                                </span>
+                                <div class="flex items-center gap-1">
+                                    {% if item.assignment.homework %}<span class="text-blue-400 text-xs" title="Є домашнє завдання">📎</span>{% endif %}
+                                    {% if item.assignment.is_cancelled %}<span class="bg-red-500 text-white text-[10px] px-1.5 py-0.5 rounded-full font-bold">Скасовано</span>{% else %}<span class="bg-dark text-white text-xs px-2 py-1 rounded-full font-bold">{{ item.slot.lesson_number }}</span>{% endif %}
+                                </div>
                             </div>
                             <div
-                                class="font-bold text-base leading-tight text-dark group-hover:text-primary transition-colors">
+                                class="font-bold text-base leading-tight {% if item.assignment.is_cancelled %}line-through text-red-400{% else %}text-dark group-hover:text-primary{% endif %} transition-colors">
                                 {{ item.assignment.subject.name }}
                             </div>
                             <div class="text-xs text-bodyText truncate mt-1 flex items-center gap-1">
@@ -61,7 +62,7 @@
                             </div>
                         </div>
 
-                        {% if item.status == 'current' %}
+                        {% if item.status == 'current' and not item.assignment.is_cancelled %}
                         <div class="mt-auto">
                             <div class="w-full bg-white/60 rounded-full h-2 overflow-hidden shadow-inner">
                                 <div class="bg-gradient-to-r from-accent to-primary h-2 rounded-full transition-all duration-1000 shadow-sm"
@@ -82,8 +83,7 @@
                     <!-- Tooltip -->
                     <div
                         class="absolute invisible group-hover:visible opacity-0 group-hover:opacity-100 bg-dark text-white text-sm rounded-xl p-4 bottom-full left-1/2 -translate-x-1/2 mb-3 w-64 z-50 shadow-glass pointer-events-none transition-all duration-200 backdrop-blur-glass">
-                        <p class="font-bold border-b border-white/20 pb-2 mb-2 text-base">{{
-                            item.assignment.subject.name }}</p>
+                        <p class="font-bold border-b border-white/20 pb-2 mb-2 text-base">{{ item.assignment.subject.name }}</p>
                         <div class="space-y-1 text-white/80">
                             <p class="flex items-center gap-2">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -99,6 +99,24 @@
                                 </svg>
                                 {{ item.slot.start_time|time:"H:i" }} - {{ item.slot.end_time|time:"H:i" }}
                             </p>
+                            {% if item.assignment.is_cancelled %}
+                            <p class="flex items-center gap-2 text-red-400 font-bold">
+                                <span>✕</span>
+                                Скасовано{% if item.assignment.cancellation_reason %}: {{ item.assignment.cancellation_reason }}{% endif %}
+                            </p>
+                            {% endif %}
+                            {% if item.assignment.homework %}
+                            <p class="flex items-start gap-2 pt-1 border-t border-white/20">
+                                <span>📎</span>
+                                <span>{{ item.assignment.homework }}</span>
+                            </p>
+                            {% endif %}
+                            {% if item.assignment.materials %}
+                            <p class="flex items-center gap-2 text-blue-300">
+                                <span>🔗</span>
+                                <span class="truncate">{{ item.assignment.materials }}</span>
+                            </p>
+                            {% endif %}
                         </div>
                         <div
                             class="absolute top-full left-1/2 -translate-x-1/2 border-8 border-transparent border-t-dark">

@@ -49,8 +49,7 @@
 
             <div class="space-y-1.5">
                 <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Опис (опціонально)</label>
-                {% if form.description.errors %}<div class="text-red-500 text-[10px] font-bold mb-1">{{
-                    form.description.errors }}</div>{% endif %}
+                {% if form.description.errors %}<div class="text-red-500 text-[10px] font-bold mb-1">{{ form.description.errors }}</div>{% endif %}
                 <textarea name="{{ form.description.name }}" id="{{ form.description.id_for_label }}" rows="2"
                     class="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 text-sm font-medium transition-all">{{ form.description.value|default:'' }}</textarea>
             </div>
@@ -100,8 +99,7 @@
                                 <div>
                                     <span class="font-bold text-gray-900">{{ subject.name }}</span>
                                     {% if subject.description %}
-                                    <p class="text-[10px] text-gray-400 mt-0.5 truncate max-w-xs">{{ subject.description
-                                        }}</p>
+                                    <p class="text-[10px] text-gray-400 mt-0.5 truncate max-w-xs">{{ subject.description }}</p>
                                     {% endif %}
                                 </div>
                             </div>

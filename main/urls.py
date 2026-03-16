@@ -80,4 +80,12 @@ urlpatterns = [
     path('student/attendance/', views.student_attendance_view, name='student_attendance'),
     path('student/dashboard/', views.student_dashboard_view, name='student_dashboard'),
     path('profile/', views.profile_view, name='profile'),
+    # =========================
+    # 6. СТРІЧКА НОВИН
+    # =========================
+    path('news/', views.news_feed_view, name='news_feed'),
+    path('api/news/post/create/', views.api_news_create_post, name='api_news_create_post'),
+    path('api/news/post/delete/<int:pk>/', views.api_news_delete_post, name='api_news_delete_post'),
+    path('api/news/comment/create/', views.api_news_create_comment, name='api_news_create_comment'),
+    path('api/news/comment/delete/<int:pk>/', views.api_news_delete_comment, name='api_news_delete_comment'),
 ]

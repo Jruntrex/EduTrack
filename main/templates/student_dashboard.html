@@ -106,6 +106,21 @@
                 </div>
             </div>
         </div>
+        {% if lesson.is_cancelled %}
+        <div class="mb-4 px-4 py-2 bg-red-50 border border-red-100 rounded-xl text-xs text-red-500 font-bold flex items-center gap-2">
+            <span>✕</span>
+            <span>Заняття скасовано{% if lesson.cancellation_reason %}: {{ lesson.cancellation_reason }}{% endif %}</span>
+        </div>
+        {% endif %}
+        {% if lesson.homework %}
+        <div class="mb-4 px-4 py-2.5 bg-blue-50 border border-blue-100 rounded-xl text-xs text-blue-600 flex items-start gap-2">
+            <span class="text-base leading-none mt-0.5">📎</span>
+            <div>
+                <div class="font-black uppercase tracking-widest text-[10px] mb-0.5">Домашнє завдання</div>
+                <div class="font-medium">{{ lesson.homework }}</div>
+            </div>
+        </div>
+        {% endif %}
         <div class="flex items-center gap-3">
             <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-400 font-bold">
                 {{ lesson.teacher.full_name|slice:":1" }}

@@ -33,6 +33,8 @@ from .models import (
     Classroom,
     GradingScale,
     GradeRule,
+    Post,
+    Comment,
 )
 
 # =========================
@@ -1932,31 +1934,54 @@ def student_delete(request, pk):
 @require_POST
 @role_required('teacher')
 def api_update_lesson(request: HttpRequest) -> JsonResponse:
-    """API для оновлення теми та типу уроку."""
+    """API для оновлення деталей уроку."""
     try:
         data = json.loads(request.body)
         lesson_id = data.get('lesson_id')
         topic = data.get('topic')
         type_id = data.get('type_id')
-        
+        homework = data.get('homework')
+        materials = data.get('materials')
+        is_cancelled = data.get('is_cancelled')
+        cancellation_reason = data.get('cancellation_reason')
+
         lesson = get_object_or_404(Lesson, id=lesson_id, teacher=request.user)
-        
+
         if topic is not None:
             lesson.topic = topic
-            
+
         if type_id:
             etype = get_object_or_404(EvaluationType, id=type_id, assignment__teacher=request.user)
             lesson.evaluation_type = etype
-            
+
+        if homework is not None:
+            lesson.homework = homework
+
+        if materials is not None:
+            lesson.materials = materials
+
+        if is_cancelled is not None:
+            lesson.is_cancelled = bool(is_cancelled)
+            if lesson.is_cancelled and cancellation_reason is not None:
+                lesson.cancellation_reason = cancellation_reason
+            elif not lesson.is_cancelled:
+                lesson.cancellation_reason = ''
+
         lesson.save()
-        
+
+        logger.info(f"Викладач {request.user} оновив урок #{lesson_id}")
+
         return JsonResponse({
             'status': 'success',
             'topic': lesson.topic,
             'type_name': lesson.evaluation_type.name if lesson.evaluation_type else '—',
-            'max_points': float(lesson.evaluation_type.weight_percent) if lesson.evaluation_type else 12
+            'max_points': float(lesson.evaluation_type.weight_percent) if lesson.evaluation_type else 12,
+            'homework': lesson.homework or '',
+            'materials': lesson.materials or '',
+            'is_cancelled': lesson.is_cancelled,
+            'cancellation_reason': lesson.cancellation_reason or '',
         })
-        
+
     except Exception as e:
         import traceback
         print(traceback.format_exc())
@@ -2057,3 +2082,154 @@ def profile_view(request: HttpRequest) -> HttpResponse:
         'active_page': 'profile',
     }
     return render(request, 'profile.html', context)
+
+
+# =========================
+# СТРІЧКА НОВИН
+# =========================
+
+@login_required
+def news_feed_view(request: HttpRequest) -> HttpResponse:
+    user = request.user
+
+    # Визначаємо групи, доступні користувачеві
+    if user.role == 'admin':
+        group_ids = list(StudyGroup.objects.values_list('id', flat=True))
+        teacher_groups = StudyGroup.objects.all().order_by('name')
+    elif user.role == 'teacher':
+        group_ids = list(
+            TeachingAssignment.objects.filter(teacher=user, is_active=True)
+            .values_list('group_id', flat=True).distinct()
+        )
+        teacher_groups = StudyGroup.objects.filter(id__in=group_ids).order_by('name')
+    else:  # student
+        group_ids = [user.group_id] if user.group_id else []
+        teacher_groups = None
+
+    # Загальні пости + пости для дозволених груп
+    posts = Post.objects.filter(
+        Q(post_type='general') | Q(group_id__in=group_ids)
+    ).select_related('author', 'group').prefetch_related(
+        Prefetch('comments', queryset=Comment.objects.select_related('author').order_by('created_at'))
+    ).order_by('-created_at')
+
+    # Фільтрація за вкладкою
+    tab = request.GET.get('tab', 'all')
+    if tab == 'general':
+        posts = posts.filter(post_type='general')
+    elif tab == 'group' and user.role == 'student':
+        posts = posts.filter(post_type='group', group_id=user.group_id)
+    elif tab.startswith('group_') and user.role in ('teacher', 'admin'):
+        try:
+            gid = int(tab.split('_', 1)[1])
+            posts = posts.filter(post_type='group', group_id=gid)
+        except (ValueError, IndexError):
+            pass
+
+    context = {
+        'posts': posts,
+        'teacher_groups': teacher_groups,
+        'group_ids': group_ids,
+        'active_tab': tab,
+        'active_page': 'news',
+        'student_group': user.group if user.role == 'student' else None,
+    }
+    return render(request, 'news_feed.html', context)
+
+
+@login_required
+@require_POST
+def api_news_create_post(request: HttpRequest) -> JsonResponse:
+    if request.user.role not in ('teacher', 'admin'):
+        return JsonResponse({'error': 'Немає прав'}, status=403)
+
+    post_type = request.POST.get('post_type', 'general')
+    group_id = request.POST.get('group_id') or None
+    title = request.POST.get('title', '').strip()
+    content = request.POST.get('content', '').strip()
+
+    if not content:
+        return JsonResponse({'error': "Текст допису не може бути порожнім."}, status=400)
+
+    if post_type == 'group':
+        if not group_id:
+            return JsonResponse({'error': "Оберіть групу."}, status=400)
+        # Перевіряємо доступ викладача до цієї групи
+        if request.user.role == 'teacher':
+            has_access = TeachingAssignment.objects.filter(
+                teacher=request.user, group_id=group_id, is_active=True
+            ).exists()
+            if not has_access:
+                return JsonResponse({'error': "Немає доступу до цієї групи."}, status=403)
+        group = get_object_or_404(StudyGroup, id=group_id)
+    else:
+        group = None
+
+    post = Post.objects.create(
+        author=request.user,
+        post_type=post_type,
+        group=group,
+        title=title,
+        content=content,
+    )
+
+    return JsonResponse({
+        'id': post.id,
+        'author': post.author.full_name,
+        'post_type': post.post_type,
+        'group_name': post.group.name if post.group else None,
+        'title': post.title,
+        'content': post.content,
+        'created_at': post.created_at.strftime('%d.%m.%Y %H:%M'),
+    })
+
+
+@login_required
+@require_POST
+def api_news_create_comment(request: HttpRequest) -> JsonResponse:
+    post_id = request.POST.get('post_id')
+    content = request.POST.get('content', '').strip()
+
+    if not content:
+        return JsonResponse({'error': "Коментар не може бути порожнім."}, status=400)
+
+    post = get_object_or_404(Post, id=post_id)
+
+    # Студент може коментувати лише пости, до яких має доступ
+    if request.user.role == 'student':
+        if post.post_type == 'group' and post.group_id != request.user.group_id:
+            return JsonResponse({'error': "Немає доступу."}, status=403)
+
+    comment = Comment.objects.create(
+        post=post,
+        author=request.user,
+        content=content,
+    )
+
+    return JsonResponse({
+        'id': comment.id,
+        'author': comment.author.full_name,
+        'author_role': comment.author.role,
+        'content': comment.content,
+        'created_at': comment.created_at.strftime('%d.%m.%Y %H:%M'),
+    })
+
+
+@login_required
+@require_POST
+def api_news_delete_post(request: HttpRequest, pk: int) -> JsonResponse:
+    post = get_object_or_404(Post, id=pk)
+    if request.user != post.author and request.user.role != 'admin':
+        return JsonResponse({'error': "Немає прав"}, status=403)
+    post.delete()
+    return JsonResponse({'ok': True})
+
+
+@login_required
+@require_POST
+def api_news_delete_comment(request: HttpRequest, pk: int) -> JsonResponse:
+    comment = get_object_or_404(Comment, id=pk)
+    if request.user != comment.author and request.user.role != 'admin':
+        return JsonResponse({'error': "Немає прав"}, status=403)
+    comment.delete()
+    return JsonResponse({'ok': True})

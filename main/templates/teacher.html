@@ -114,8 +114,7 @@
                     <option value="">Оберіть предмет...</option>
                     {% for s in subjects %}
                     {% with s_id=s.id|stringformat:"s" %}
-                    <option value="{{ s.id }}" {% if request.GET.subject|is_equal:s_id %}selected{% endif %}>{{ s.name
-                        }}</option>
+                    <option value="{{ s.id }}" {% if request.GET.subject|is_equal:s_id %}selected{% endif %}>{{ s.name }}</option>
                     {% endwith %}
                     {% endfor %}
                 </select>
@@ -220,20 +219,25 @@
                         <!-- Lesson Headers -->
                         {% for header in lesson_headers %}
                         {% for lesson in header.lessons %}
-                        <th class="border-b border-r border-gray-200 p-2 min-w-[70px] bg-white group hover:bg-blue-50 transition-colors relative cursor-pointer"
-                            onclick="openLessonModal('{{ lesson.id }}', '{{ lesson.topic|default:q|escapejs }}', '{{ lesson.evaluation_type.id|default:q }}')"
-                            title="Натисніть для редагування деталей уроку">
+                        <th class="border-b border-r border-gray-200 p-2 min-w-[70px] {% if lesson.is_cancelled %}bg-red-50 opacity-60{% else %}bg-white{% endif %} group hover:bg-blue-50 transition-colors relative cursor-pointer"
+                            data-lesson-id="{{ lesson.id }}"
+                            onclick="openLessonModal('{{ lesson.id }}', '{{ lesson.topic|default:q|escapejs }}', '{{ lesson.evaluation_type.id|default:q }}', '{{ lesson.homework|default:q|escapejs }}', '{{ lesson.materials|default:q|escapejs }}', {% if lesson.is_cancelled %}true{% else %}false{% endif %}, '{{ lesson.cancellation_reason|default:q|escapejs }}')"
+                            title="{% if lesson.is_cancelled %}Скасовано: {{ lesson.cancellation_reason|default:'без причини' }}{% else %}Натисніть для редагування деталей уроку{% endif %}">
                             <div class="flex flex-col items-center gap-1">
                                 <span class="text-[10px] font-black text-gray-400">{{ lesson.lesson_num }}</span>
-                                <div class="text-[10px] font-bold text-gray-600 leading-tight"
+                                <div class="lesson-topic-text text-[10px] font-bold {% if lesson.is_cancelled %}text-red-400 line-through{% else %}text-gray-600{% endif %} leading-tight"
                                     title="{{ lesson.topic|default:'Без теми' }} / {{ lesson.max_points|floatformat:0 }}">
                                     {{ lesson.topic|default:"—" }} / {{ lesson.max_points|floatformat:0 }}
                                 </div>
+                                <div class="flex items-center gap-0.5">
+                                    {% if lesson.homework %}<span class="hw-icon text-blue-400 text-[10px]" title="Є домашнє завдання">📎</span>{% endif %}
+                                    {% if lesson.is_cancelled %}<span class="text-red-400 text-[10px]" title="Скасовано">✕</span>{% endif %}
+                                </div>
                             </div>
-                            <!-- Max Points Tooltip -->
+                            <!-- Tooltip -->
                             <div
                                 class="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg whitespace-nowrap z-50">
-                                {{ lesson.topic|default:"Без теми" }}
+                                {% if lesson.is_cancelled %}Скасовано{% else %}{{ lesson.topic|default:"Без теми" }}{% endif %}
                             </div>
                         </th>
                         {% endfor %}
@@ -337,7 +341,8 @@
 
         <input type="hidden" id="modalLessonId">
 
-        <div class="space-y-5">
+        <div class="space-y-4 max-h-[70vh] overflow-y-auto pr-1">
+            <!-- Тема -->
             <div class="flex flex-col gap-1.5">
                 <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Тема заняття</label>
                 <input type="text" id="modalLessonTopic"
@@ -345,6 +350,7 @@
                     placeholder="Введіть тему уроку...">
             </div>
 
+            <!-- Тип оцінювання -->
             <div class="flex flex-col gap-1.5">
                 <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Тип оцінювання</label>
                 <select id="modalLessonType"
@@ -358,9 +364,45 @@
                         href="{% url 'teacher_settings' %}"
                         class="text-primary hover:underline font-bold">налаштуваннях</a></p>
             </div>
+
+            <!-- Домашнє завдання -->
+            <div class="flex flex-col gap-1.5">
+                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Домашнє завдання</label>
+                <textarea id="modalLessonHomework" rows="3"
+                    class="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-gray-700 font-medium resize-none"
+                    placeholder="Опишіть домашнє завдання..."></textarea>
+            </div>
+
+            <!-- Матеріали -->
+            <div class="flex flex-col gap-1.5">
+                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Матеріали / Посилання</label>
+                <input type="text" id="modalLessonMaterials"
+                    class="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-gray-700 font-medium"
+                    placeholder="https://... або посилання на файл">
+            </div>
+
+            <!-- Скасування заняття -->
+            <div class="flex flex-col gap-2 p-4 bg-red-50 border border-red-100 rounded-2xl">
+                <div class="flex items-center justify-between">
+                    <label class="text-[10px] font-black text-red-400 uppercase tracking-widest">Скасувати заняття</label>
+                    <button type="button" id="cancelledToggleBtn" onclick="toggleCancelledState()"
+                        class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none">
+                        <span id="cancelledToggleTrack"
+                            class="absolute inset-0 rounded-full bg-gray-200 transition-colors"></span>
+                        <span id="cancelledToggleThumb"
+                            class="relative z-10 inline-block h-4 w-4 translate-x-1 rounded-full bg-white shadow transition-transform"></span>
+                    </button>
+                </div>
+                <div id="cancellationReasonBlock" class="hidden mt-1">
+                    <label class="text-[10px] font-black text-red-400 uppercase tracking-widest">Причина скасування</label>
+                    <input type="text" id="modalCancellationReason"
+                        class="mt-1 w-full px-4 py-2.5 bg-white border border-red-200 rounded-xl focus:ring-4 focus:ring-red-100 focus:border-red-400 outline-none transition-all text-gray-700 font-medium"
+                        placeholder="Вкажіть причину...">
+                </div>
+            </div>
         </div>
 
-        <div class="mt-8 flex gap-3">
+        <div class="mt-6 flex gap-3">
             <button onclick="closeLessonModal()"
                 class="flex-1 px-6 py-4 text-sm font-bold text-gray-500 hover:bg-gray-100 rounded-2xl transition-colors">Скасувати</button>
             <button onclick="saveLessonDetails()"
@@ -585,14 +627,49 @@
     // === MODAL FUNCTIONS ===
 
     // Lesson Modal
-    function openLessonModal(id, topic, typeId) {
+    let isCancelledState = false;
+
+    function toggleCancelledState() {
+        isCancelledState = !isCancelledState;
+        const track = document.getElementById('cancelledToggleTrack');
+        const thumb = document.getElementById('cancelledToggleThumb');
+        const reasonBlock = document.getElementById('cancellationReasonBlock');
+        if (isCancelledState) {
+            track.classList.replace('bg-gray-200', 'bg-red-400');
+            thumb.classList.replace('translate-x-1', 'translate-x-6');
+            reasonBlock.classList.remove('hidden');
+        } else {
+            track.classList.replace('bg-red-400', 'bg-gray-200');
+            thumb.classList.replace('translate-x-6', 'translate-x-1');
+            reasonBlock.classList.add('hidden');
+        }
+    }
+
+    function openLessonModal(id, topic, typeId, homework, materials, isCancelled, cancellationReason) {
         document.getElementById('modalLessonId').value = id;
         document.getElementById('modalLessonTopic').value = topic;
         document.getElementById('modalLessonType').value = typeId || "";
+        document.getElementById('modalLessonHomework').value = homework || "";
+        document.getElementById('modalLessonMaterials').value = materials || "";
+        document.getElementById('modalCancellationReason').value = cancellationReason || "";
+
+        // Reset toggle first, then apply state
+        const track = document.getElementById('cancelledToggleTrack');
+        const thumb = document.getElementById('cancelledToggleThumb');
+        const reasonBlock = document.getElementById('cancellationReasonBlock');
+        isCancelledState = !!isCancelled;
+        if (isCancelledState) {
+            track.className = 'absolute inset-0 rounded-full bg-red-400 transition-colors';
+            thumb.className = 'relative z-10 inline-block h-4 w-4 translate-x-6 rounded-full bg-white shadow transition-transform';
+            reasonBlock.classList.remove('hidden');
+        } else {
+            track.className = 'absolute inset-0 rounded-full bg-gray-200 transition-colors';
+            thumb.className = 'relative z-10 inline-block h-4 w-4 translate-x-1 rounded-full bg-white shadow transition-transform';
+            reasonBlock.classList.add('hidden');
+        }
 
         const modal = document.getElementById('lessonModal');
         const content = document.getElementById('lessonModalContent');
-
         modal.classList.remove('hidden');
         setTimeout(() => {
             content.classList.remove('scale-95', 'opacity-0');
@@ -602,7 +679,6 @@
     function closeLessonModal() {
         const modal = document.getElementById('lessonModal');
         const content = document.getElementById('lessonModalContent');
-
         content.classList.add('scale-95', 'opacity-0');
         setTimeout(() => {
             modal.classList.add('hidden');
@@ -613,6 +689,9 @@
         const id = document.getElementById('modalLessonId').value;
         const topic = document.getElementById('modalLessonTopic').value;
         const typeId = document.getElementById('modalLessonType').value;
+        const homework = document.getElementById('modalLessonHomework').value;
+        const materials = document.getElementById('modalLessonMaterials').value;
+        const cancellationReason = document.getElementById('modalCancellationReason').value;
 
         showStatus('saving');
 
@@ -625,14 +704,20 @@
             body: JSON.stringify({
                 lesson_id: id,
                 topic: topic,
-                type_id: typeId
+                type_id: typeId,
+                homework: homework,
+                materials: materials,
+                is_cancelled: isCancelledState,
+                cancellation_reason: cancellationReason
             })
         })
             .then(res => res.json())
             .then(data => {
                 if (data.status === 'success') {
                     showStatus('saved');
-                    location.reload();
+                    closeLessonModal();
+                    // Update lesson header cell immediately
+                    updateLessonHeader(id, data);
                 } else {
                     alert('Помилка збереження: ' + data.message);
                     showStatus('error');
@@ -642,6 +727,39 @@
                 console.error(err);
                 showStatus('error');
             });
+    }
+
+    function updateLessonHeader(lessonId, data) {
+        // Find the th that corresponds to this lesson
+        const th = document.querySelector(`th[data-lesson-id="${lessonId}"]`);
+        if (!th) { location.reload(); return; }
+
+        // Update topic text
+        const topicEl = th.querySelector('.lesson-topic-text');
+        if (topicEl) topicEl.textContent = (data.topic || '—') + ' / ' + Math.round(data.max_points);
+
+        // Homework icon
+        let hwIcon = th.querySelector('.hw-icon');
+        if (data.homework) {
+            if (!hwIcon) {
+                hwIcon = document.createElement('span');
+                hwIcon.className = 'hw-icon text-blue-400 text-[10px]' ;
+                hwIcon.title = 'Є домашнє завдання';
+                hwIcon.textContent = '📎';
+                th.querySelector('.flex').appendChild(hwIcon);
+            }
+        } else if (hwIcon) {
+            hwIcon.remove();
+        }
+
+        // Cancelled styling
+        if (data.is_cancelled) {
+            th.classList.add('bg-red-50', 'opacity-60');
+            th.title = 'Заняття скасовано: ' + (data.cancellation_reason || '');
+        } else {
+            th.classList.remove('bg-red-50', 'opacity-60');
+            th.title = 'Натисніть для редагування деталей уроку';
+        }
     }
 
     function openCommentModal(cell) {

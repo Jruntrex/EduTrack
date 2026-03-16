@@ -80,8 +80,7 @@
                             <td class="px-8 py-6">
                                 {% if slot.template %}
                                 <div class="text-sm font-bold text-dark">{{ slot.template.start_time|time:"H:i" }}</div>
-                                <div class="text-[10px] font-bold text-gray-400 uppercase mt-1">{{
-                                    slot.template.duration_minutes }} хв</div>
+                                <div class="text-[10px] font-bold text-gray-400 uppercase mt-1">{{ slot.template.duration_minutes }} хв</div>
                                 {% else %}
                                 <div class="text-sm font-bold text-gray-200">—</div>
                                 {% endif %}

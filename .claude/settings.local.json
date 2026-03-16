@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(find /c/Users/user/My_Works/EduTrack/VERSION.2/EduTrack -not -path */.* -not -path */__pycache__/*)"
+      "Bash(find /c/Users/user/My_Works/EduTrack/VERSION.2/EduTrack -not -path */.* -not -path */__pycache__/*)",
+      "Bash(python manage.py migrate)",
+      "Bash(python manage.py check)"
     ]
   }
 }
