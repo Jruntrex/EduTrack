@@ -3,7 +3,13 @@
     "allow": [
       "Bash(find /c/Users/user/My_Works/EduTrack/VERSION.2/EduTrack -not -path */.* -not -path */__pycache__/*)",
       "Bash(python manage.py migrate)",
-      "Bash(python manage.py check)"
+      "Bash(python manage.py check)",
+      "Bash(find c:/Users/user/My_Works/EduTrack/VERSION.2/EduTrack/main -type f \\\\\\(-name *.js -o -name *.jsx -o -name *.ts -o -name *.tsx \\\\\\))",
+      "Bash(grep -r \"dark_mode\\\\|dark_theme\\\\|theme\" /c/Users/user/My_Works/EduTrack/VERSION.2/EduTrack/main/ --include=*.py --include=*.html --include=*.js)",
+      "Bash(python manage.py makemigrations)",
+      "Bash(npx tailwindcss:*)",
+      "Bash(find c:UsersuserMy_WorksEduTrackVERSION.2EduTrack -type f -name *notification*)",
+      "Bash(python manage.py makemigrations main --name=add_notifications)"
     ]
   }
 }

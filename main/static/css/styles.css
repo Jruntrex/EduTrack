@@ -1535,3 +1535,275 @@ th {
     color: var(--neutral);
     border: 1px solid rgba(169, 169, 169, 0.3);
 }
+
+/* ========================================= */
+/* НІЧНИЙ РЕЖИМ (EduDark)                    */
+/* ========================================= */
+html.dark {
+    --bgMain: linear-gradient(135deg, #0f172a 0%, #1a1035 100%);
+    --bgGlass: rgba(15, 23, 42, 0.85);
+    --bgGlassHover: rgba(30, 41, 59, 0.95);
+    --dark: #f1f5f9;
+    --bodyText: #94a3b8;
+    --neutral: #64748b;
+    --tableBorder: rgba(255, 255, 255, 0.08);
+    --tableBgLight: rgba(255, 255, 255, 0.03);
+    --tableBgDark: rgba(91, 132, 255, 0.08);
+    --shadow-glass: 0 8px 32px 0 rgba(0, 0, 0, 0.4);
+}
+
+html.dark body {
+    background: var(--bgMain);
+    color: var(--bodyText);
+}
+
+/* Фон сторінки */
+html.dark .bg-main-gradient {
+    background-image: linear-gradient(135deg, #0f172a 0%, #1a1035 100%) !important;
+}
+
+/* Скляні елементи */
+html.dark .glass-panel {
+    background-color: rgba(15, 23, 42, 0.85) !important;
+    border-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+html.dark .glass-sidebar {
+    background-color: rgba(10, 15, 30, 0.95) !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Загальні фони Tailwind */
+html.dark .bg-white {
+    background-color: #1e293b !important;
+}
+
+html.dark .bg-gray-50 {
+    background-color: #1e293b !important;
+}
+
+html.dark .bg-gray-100 {
+    background-color: #334155 !important;
+}
+
+html.dark .bg-gray-200 {
+    background-color: #334155 !important;
+}
+
+html.dark .bg-blue-50 {
+    background-color: rgba(59, 130, 246, 0.1) !important;
+}
+
+html.dark .bg-green-50 {
+    background-color: rgba(34, 197, 94, 0.1) !important;
+}
+
+html.dark .bg-red-50 {
+    background-color: rgba(239, 68, 68, 0.1) !important;
+}
+
+html.dark .bg-yellow-50 {
+    background-color: rgba(234, 179, 8, 0.1) !important;
+}
+
+/* Текст Tailwind */
+html.dark .text-gray-900 {
+    color: #f1f5f9 !important;
+}
+
+html.dark .text-gray-800 {
+    color: #e2e8f0 !important;
+}
+
+html.dark .text-gray-700 {
+    color: #cbd5e1 !important;
+}
+
+html.dark .text-gray-600 {
+    color: #94a3b8 !important;
+}
+
+html.dark .text-gray-500 {
+    color: #64748b !important;
+}
+
+html.dark .text-gray-400 {
+    color: #475569 !important;
+}
+
+html.dark .text-dark {
+    color: #f1f5f9 !important;
+}
+
+/* Межі Tailwind */
+html.dark .border-gray-100 {
+    border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+html.dark .border-gray-200 {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html.dark .divide-gray-100 > * + * {
+    border-color: rgba(255, 255, 255, 0.06) !important;
+}
+
+/* Роздільник у хедері */
+html.dark .bg-gray-200.h-8.w-px {
+    background-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Картки та панелі */
+html.dark .card-bento,
+html.dark [class*="rounded-"][class*="border"],
+html.dark .rounded-3xl,
+html.dark .rounded-2xl,
+html.dark .rounded-xl {
+    --tw-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+/* Інпути та форми */
+html.dark input,
+html.dark textarea,
+html.dark select {
+    background-color: #1e293b !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+    color: #e2e8f0 !important;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+    color: #475569 !important;
+}
+
+html.dark input:focus,
+html.dark textarea:focus,
+html.dark select:focus {
+    border-color: var(--primary) !important;
+    outline-color: var(--primary) !important;
+}
+
+/* Таблиці */
+html.dark table {
+    background-color: transparent !important;
+}
+
+html.dark thead th,
+html.dark .table-clean thead th {
+    background-color: rgba(15, 23, 42, 0.8) !important;
+    color: #94a3b8 !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+html.dark tbody tr {
+    border-color: rgba(255, 255, 255, 0.04) !important;
+}
+
+html.dark tbody tr:hover {
+    background-color: rgba(91, 132, 255, 0.08) !important;
+}
+
+html.dark td {
+    color: #cbd5e1 !important;
+}
+
+/* Спадне меню */
+html.dark #user-dropdown {
+    background-color: #1e293b !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html.dark #user-dropdown .border-gray-50,
+html.dark #user-dropdown .bg-gray-50\/50 {
+    background-color: rgba(15, 23, 42, 0.8) !important;
+    border-color: rgba(255, 255, 255, 0.05) !important;
+}
+
+html.dark #user-dropdown p.text-gray-400 {
+    color: #475569 !important;
+}
+
+/* Навігаційні посилання у сайдбарі */
+html.dark nav a:not(.text-blue-600):not([class*="from-primary"]) {
+    color: #94a3b8 !important;
+}
+
+html.dark nav a:hover {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: #f1f5f9 !important;
+}
+
+/* Вихід */
+html.dark .hover\:bg-red-50:hover {
+    background-color: rgba(239, 68, 68, 0.1) !important;
+}
+
+/* Кнопки навігації (назад/вперед) */
+html.dark button.bg-white\/60 {
+    background-color: rgba(30, 41, 59, 0.6) !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+    color: #94a3b8 !important;
+}
+
+html.dark button.bg-white\/60:hover {
+    background-color: rgba(30, 41, 59, 0.95) !important;
+}
+
+/* Заголовок сторінки */
+html.dark h1, html.dark h2, html.dark h3 {
+    color: #f1f5f9;
+}
+
+/* Сповіщення */
+html.dark .bg-green-50.text-green-600 {
+    background-color: rgba(34, 197, 94, 0.1) !important;
+    border-color: rgba(34, 197, 94, 0.2) !important;
+}
+
+html.dark .bg-blue-50.text-blue-600 {
+    background-color: rgba(59, 130, 246, 0.1) !important;
+    border-color: rgba(59, 130, 246, 0.2) !important;
+}
+
+html.dark .bg-red-50.text-red-600 {
+    background-color: rgba(239, 68, 68, 0.1) !important;
+    border-color: rgba(239, 68, 68, 0.2) !important;
+}
+
+/* Скролбар */
+html.dark ::-webkit-scrollbar-track {
+    background: #0f172a;
+}
+
+html.dark ::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 4px;
+}
+
+html.dark ::-webkit-scrollbar-thumb:hover {
+    background: #475569;
+}
+
+/* Нотифікації — dark mode */
+html.dark #notif-dropdown {
+    background: rgba(15, 23, 42, 0.96) !important;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.07) inset !important;
+}
+
+html.dark #notif-dropdown > div:first-child {
+    border-color: rgba(255,255,255,0.07) !important;
+}
+
+html.dark #notif-dropdown span[style*="font-weight:700"] {
+    color: #f1f5f9 !important;
+}
+
+html.dark #notif-btn {
+    background: rgba(255,255,255,0.06) !important;
+    color: #94a3b8 !important;
+}
+
+html.dark #notif-btn:hover {
+    background: rgba(91,132,255,0.15) !important;
+    color: #5B84FF !important;
+}

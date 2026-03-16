@@ -35,6 +35,7 @@ from .models import (
     GradeRule,
     Post,
     Comment,
+    Notification,
 )
 
 # =========================
@@ -2084,6 +2085,18 @@ def profile_view(request: HttpRequest) -> HttpResponse:
     return render(request, 'profile.html', context)
 
 
+@login_required
+@require_POST
+def api_set_theme(request: HttpRequest) -> JsonResponse:
+    """Зберігає вибрану тему інтерфейсу для користувача."""
+    theme = request.POST.get('theme', 'light')
+    if theme in ('light', 'dark'):
+        request.user.theme = theme
+        request.user.save(update_fields=['theme'])
+        return JsonResponse({'status': 'ok', 'theme': theme})
+    return JsonResponse({'status': 'error', 'message': 'Invalid theme'}, status=400)
+
+
 # =========================
 # СТРІЧКА НОВИН
 # =========================
@@ -2173,6 +2186,35 @@ def api_news_create_post(request: HttpRequest) -> JsonResponse:
         content=content,
     )
 
+    # --- Сповіщення про нову публікацію ---
+    role_label = "Адміністратор" if request.user.role == 'admin' else "Викладач"
+    author_label = f"{request.user.full_name} ({role_label})"
+    notif_title = post.title or content[:60]
+    if post_type == 'general':
+        recipients = list(
+            User.objects.filter(role__in=['student', 'teacher']).exclude(id=request.user.id)
+        )
+    else:
+        student_recips = list(User.objects.filter(role='student', group=group))
+        teacher_recips = list(
+            User.objects.filter(
+                role='teacher',
+                teachingassignment__group=group,
+                teachingassignment__is_active=True,
+            ).exclude(id=request.user.id).distinct()
+        )
+        recipients = student_recips + teacher_recips
+    Notification.objects.bulk_create([
+        Notification(
+            recipient=u,
+            notif_type='news',
+            title=f"Нова публікація від {author_label}",
+            message=notif_title,
+            post=post,
+        )
+        for u in recipients
+    ])
+
     return JsonResponse({
         'id': post.id,
         'author': post.author.full_name,
@@ -2206,6 +2248,19 @@ def api_news_create_comment(request: HttpRequest) -> JsonResponse:
         content=content,
     )
 
+    # --- Сповіщення автору допису про новий коментар ---
+    if post.author != request.user:
+        _role_labels = {'admin': 'Адміністратор', 'teacher': 'Викладач', 'student': 'Студент'}
+        _role_label = _role_labels.get(request.user.role, '')
+        post_label = post.title or post.content[:40]
+        Notification.objects.create(
+            recipient=post.author,
+            notif_type='comment',
+            title=f"{request.user.full_name} ({_role_label}) прокоментував(ла) вашу публікацію",
+            message=f'"{post_label}": {content[:80]}',
+            post=post,
+        )
+
     return JsonResponse({
         'id': comment.id,
         'author': comment.author.full_name,
@@ -2232,4 +2287,57 @@ def api_news_delete_comment(request: HttpRequest, pk: int) -> JsonResponse:
     if request.user != comment.author and request.user.role != 'admin':
         return JsonResponse({'error': "Немає прав"}, status=403)
     comment.delete()
+    return JsonResponse({'ok': True})
+
+
+# =========================
+# СПОВІЩЕННЯ
+# =========================
+
+@login_required
+def api_notifications_list(request: HttpRequest) -> JsonResponse:
+    """Повертає останні 30 сповіщень поточного користувача."""
+    notifications = (
+        Notification.objects
+        .filter(recipient=request.user)
+        .order_by('-created_at')[:30]
+    )
+    unread_count = Notification.objects.filter(recipient=request.user, is_read=False).count()
+
+    TYPE_ICONS = {
+        'news':    '📢',
+        'comment': '💬',
+        'grade':   '📊',
+        'absence': '⚠️',
+    }
+
+    data = [
+        {
+            'id':         n.id,
+            'type':       n.notif_type,
+            'icon':       TYPE_ICONS.get(n.notif_type, '🔔'),
+            'title':      n.title,
+            'message':    n.message,
+            'is_read':    n.is_read,
+            'created_at': n.created_at.strftime('%d.%m.%Y %H:%M'),
+            'post_id':    n.post_id,
+        }
+        for n in notifications
+    ]
+    return JsonResponse({'notifications': data, 'unread_count': unread_count})
+
+
+@login_required
+@require_POST
+def api_notifications_mark_read(request: HttpRequest, pk: int) -> JsonResponse:
+    """Позначає одне сповіщення як прочитане."""
+    Notification.objects.filter(id=pk, recipient=request.user).update(is_read=True)
+    return JsonResponse({'ok': True})
+
+
+@login_required
+@require_POST
+def api_notifications_mark_all_read(request: HttpRequest) -> JsonResponse:
+    """Позначає всі сповіщення поточного користувача як прочитані."""
+    Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
     return JsonResponse({'ok': True})

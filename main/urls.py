@@ -80,6 +80,7 @@ urlpatterns = [
     path('student/attendance/', views.student_attendance_view, name='student_attendance'),
     path('student/dashboard/', views.student_dashboard_view, name='student_dashboard'),
     path('profile/', views.profile_view, name='profile'),
+    path('api/set-theme/', views.api_set_theme, name='api_set_theme'),
     # =========================
     # 6. СТРІЧКА НОВИН
     # =========================
@@ -88,4 +89,10 @@ urlpatterns = [
     path('api/news/post/delete/<int:pk>/', views.api_news_delete_post, name='api_news_delete_post'),
     path('api/news/comment/create/', views.api_news_create_comment, name='api_news_create_comment'),
     path('api/news/comment/delete/<int:pk>/', views.api_news_delete_comment, name='api_news_delete_comment'),
+    # =========================
+    # 7. СПОВІЩЕННЯ
+    # =========================
+    path('api/notifications/', views.api_notifications_list, name='api_notifications_list'),
+    path('api/notifications/mark-read/<int:pk>/', views.api_notifications_mark_read, name='api_notifications_mark_read'),
+    path('api/notifications/mark-all-read/', views.api_notifications_mark_all_read, name='api_notifications_mark_all_read'),
 ]

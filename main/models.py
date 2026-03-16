@@ -81,6 +81,10 @@ class User(AbstractBaseUser, PermissionsMixin):
     student_id = models.CharField(max_length=50, blank=True, verbose_name="№ студентського квитка")
     notes = models.TextField(blank=True, verbose_name="Примітки")
 
+    # Налаштування інтерфейсу
+    THEME_CHOICES = [('light', 'Світла'), ('dark', 'Темна')]
+    theme = models.CharField(max_length=5, choices=THEME_CHOICES, default='light', verbose_name="Тема інтерфейсу")
+
     # Технічні поля Django
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False) # Чи має доступ до адмінки
@@ -568,6 +572,37 @@ class Comment(models.Model):
 
     def __str__(self) -> str:
         return f"{self.author.full_name}: {self.content[:50]}"
+
+
+class Notification(models.Model):
+    """Сповіщення для користувачів."""
+    NOTIF_TYPES = [
+        ('news',    'Новини'),
+        ('comment', 'Коментар'),
+        ('grade',   'Оцінка'),
+        ('absence', 'Пропуск'),
+    ]
+
+    recipient  = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notifications', verbose_name="Отримувач")
+    notif_type = models.CharField(max_length=20, choices=NOTIF_TYPES, verbose_name="Тип")
+    title      = models.CharField(max_length=255, verbose_name="Заголовок")
+    message    = models.TextField(blank=True, verbose_name="Текст")
+    is_read    = models.BooleanField(default=False, verbose_name="Прочитано")
+    created_at = models.DateTimeField(auto_now_add=True)
+    post       = models.ForeignKey(
+        'Post', on_delete=models.CASCADE,
+        null=True, blank=True,
+        related_name='notifications', verbose_name="Допис"
+    )
+
+    class Meta:
+        db_table = 'notifications'
+        ordering = ['-created_at']
+        verbose_name = 'Сповіщення'
+        verbose_name_plural = 'Сповіщення'
+
+    def __str__(self) -> str:
+        return f"[{self.notif_type}] {self.recipient.full_name}: {self.title}"
 
 
 class BuildingAccessLog(models.Model):

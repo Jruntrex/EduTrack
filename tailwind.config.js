@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: 'class',
   content: [
     './main/templates/**/*.html',
     './main/static/js/**/*.js',
@@ -7,26 +8,25 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        primary: '#5B84FF',
-        secondary: '#FF6B6B',
+        // Нова семантична система
+        primary: 'rgb(var(--color-primary) / <alpha-value>)',
+        success: 'rgb(var(--color-success) / <alpha-value>)',
+        error: 'rgb(var(--color-error) / <alpha-value>)',
+        background: 'rgb(var(--bg-main) / <alpha-value>)',
+        surface: 'rgb(var(--bg-surface) / <alpha-value>)',
+        mainText: 'rgb(var(--text-main) / <alpha-value>)',
+        mutedText: 'rgb(var(--text-muted) / <alpha-value>)',
+        border: 'rgb(var(--border-color) / <alpha-value>)',
+        // Аліаси для шаблонів (адаптуються до теми через CSS-змінні)
+        dark: 'rgb(var(--text-main) / <alpha-value>)',
+        bodyText: 'rgb(var(--text-muted) / <alpha-value>)',
+        // Статичні акцентні кольори (однакові в обох темах)
         accent: '#4CAF50',
-        error: '#E74C3C',
-        dark: '#2F3640',
-        bodyText: '#5E6C84',
+        secondary: '#FF6B6B',
         neutral: '#A9A9A9',
-        tableBorder: 'rgba(0, 0, 0, 0.1)',
-        tableBgLight: 'rgba(255, 255, 255, 0.5)',
-        tableBgDark: 'rgba(91, 132, 255, 0.05)',
-      },
-      backgroundImage: {
-        'main-gradient': 'linear-gradient(135deg, #D9E0EE 0%, #F3E8EE 100%)',
-      },
-      backgroundColor: {
-        'glass': 'rgba(255, 255, 255, 0.7)',
-        'glass-hover': 'rgba(255, 255, 255, 0.9)',
       },
       boxShadow: {
-        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.1)',
+        'glass': '0 8px 32px 0 rgba(0, 0, 0, 0.05)',
         'button': '0 4px 15px rgba(91, 132, 255, 0.3)',
         'button-hover': '0 6px 20px rgba(91, 132, 255, 0.4)',
       },

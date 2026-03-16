@@ -474,4 +474,26 @@ def save_grade(
     )
     logger.debug("Performance saved: id=%s, created=%s", perf.id, created)
 
+    # --- Сповіщення студента ---
+    try:
+        from main.models import Notification
+        subject_name = current_lesson.subject.name if current_lesson.subject_id else "Предмет"
+        lesson_date  = current_lesson.date.strftime('%d.%m.%Y') if current_lesson.date else ''
+        if grade_value is not None:
+            Notification.objects.create(
+                recipient_id=student_id,
+                notif_type='grade',
+                title=f"Нова оцінка з {subject_name}",
+                message=f"{lesson_date}: {grade_value} балів",
+            )
+        elif absence_obj is not None:
+            Notification.objects.create(
+                recipient_id=student_id,
+                notif_type='absence',
+                title=f"Відмічено пропуск з {subject_name}",
+                message=f"{lesson_date}: {absence_obj.name} ({absence_obj.code})",
+            )
+    except Exception:
+        logger.exception("save_grade: не вдалося створити сповіщення")
+
     return {'status': 'success', 'message': 'Saved'}
