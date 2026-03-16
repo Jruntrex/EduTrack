@@ -101,8 +101,13 @@
                 </select>
             </div>
             <div class="space-y-1">
-                <input type="password" name="password" placeholder="Пароль" required
+                <input type="password" name="password" id="newUserPassword" placeholder="Пароль" required
                     class="w-full px-4 py-3 border border-tableBorder rounded-xl text-dark bg-white focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200">
+            </div>
+            <div class="space-y-1">
+                <input type="password" name="password_confirm" id="newUserPasswordConfirm" placeholder="Підтвердіть пароль" required
+                    class="w-full px-4 py-3 border border-tableBorder rounded-xl text-dark bg-white focus:outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all duration-200">
+                <p id="passwordMismatch" class="hidden text-xs text-red-500 px-1 mt-1">Паролі не співпадають</p>
             </div>
             <div class="space-y-1 group-field" style="display: none;">
                 <select name="group"
@@ -233,7 +238,7 @@
                         </td>
 
                         <td class="p-4 text-right">
-                            <div class="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div class="flex justify-end gap-2">
                                 <a href="{% url 'user_edit' pk=user.pk %}"
                                     class="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all">
                                     <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" class="w-5 h-5">
@@ -278,6 +283,30 @@
     function toggleForm() {
         document.getElementById('addForm').classList.toggle('hidden');
     }
+
+    // Валідація співпадіння паролів
+    document.querySelector('#addForm form').addEventListener('submit', function(e) {
+        const pw = document.getElementById('newUserPassword').value;
+        const pwc = document.getElementById('newUserPasswordConfirm').value;
+        const msg = document.getElementById('passwordMismatch');
+        if (pw !== pwc) {
+            e.preventDefault();
+            msg.classList.remove('hidden');
+            document.getElementById('newUserPasswordConfirm').focus();
+        } else {
+            msg.classList.add('hidden');
+        }
+    });
+
+    document.getElementById('newUserPasswordConfirm')?.addEventListener('input', function() {
+        const pw = document.getElementById('newUserPassword').value;
+        const msg = document.getElementById('passwordMismatch');
+        if (this.value && this.value !== pw) {
+            msg.classList.remove('hidden');
+        } else {
+            msg.classList.add('hidden');
+        }
+    });
 
     function updateFormFields() {
         const role = document.querySelector('.role-select').value;

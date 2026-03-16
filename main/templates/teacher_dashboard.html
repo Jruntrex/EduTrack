@@ -82,12 +82,16 @@
         </div>
 
         <div class="mt-8">
+            {% widthratio weekly_load 18 100 as load_percent %}
             <div class="flex justify-between items-end mb-2">
                 <span class="text-xs font-bold text-gray-400 uppercase">Прогрес виконання</span>
-                <span class="text-xs font-bold text-blue-600">75%</span>
+                <span class="text-xs font-bold {% if load_percent > 100 %}text-red-500{% else %}text-blue-600{% endif %}">
+                    {% if load_percent > 100 %}100{% else %}{{ load_percent }}{% endif %}%
+                </span>
             </div>
             <div class="w-full bg-gray-100 rounded-full h-3">
-                <div class="bg-blue-600 h-3 rounded-full shadow-lg shadow-blue-200" style="width: 75%"></div>
+                <div class="{% if load_percent > 100 %}bg-red-500{% else %}bg-blue-600{% endif %} h-3 rounded-full shadow-lg shadow-blue-200"
+                    style="width: {% if load_percent > 100 %}100{% else %}{{ load_percent }}{% endif %}%"></div>
             </div>
         </div>
     </div>
@@ -209,14 +213,6 @@
             </div>
             {% endfor %}
         </div>
-        {% if risk_students %}
-        <div class="mt-6 pt-6 border-t border-gray-50">
-            <button
-                class="w-full py-3 text-xs font-black text-gray-400 uppercase tracking-widest hover:text-red-500 hover:bg-red-50 rounded-xl transition-all">
-                Нагадати всім
-            </button>
-        </div>
-        {% endif %}
     </div>
 
     <!-- 7. Quick Actions (Grid) -->
@@ -264,7 +260,8 @@
             <p class="text-xs text-gray-400 mt-1">Типи оцінювання</p>
         </a>
 
-        <div class="bg-white rounded-3xl custom-shadow p-6 opacity-60 grayscale cursor-not-allowed">
+        <div class="bg-white rounded-3xl custom-shadow p-6 opacity-50 grayscale cursor-not-allowed relative group"
+            title="Функція аналітики знаходиться в розробці та буде доступна незабаром">
             <div class="w-12 h-12 bg-gray-50 text-gray-400 rounded-2xl flex items-center justify-center mb-4">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path
@@ -273,7 +270,8 @@
                 </svg>
             </div>
             <h3 class="text-lg font-bold text-gray-900">Аналітика</h3>
-            <p class="text-xs text-gray-400 mt-1">Скоро буде</p>
+            <p class="text-xs text-gray-400 mt-1">В розробці</p>
+            <span class="absolute top-3 right-3 px-2 py-0.5 bg-gray-100 text-gray-400 text-[9px] font-black uppercase tracking-widest rounded-full">Незабаром</span>
         </div>
     </div>
 
@@ -303,7 +301,14 @@
 </div>
 
 <script>
-    const genericNames = ["Викликайте за списком!", "Той, хто сховався", "Староста групи", "Студент біля вікна", "Студент з телефоном"];
+    // Реальний список студентів з поточних занять (today_lessons)
+    const studentNames = [
+        {% for lesson in today_lessons %}
+            {% for student in lesson.group.user_set.all %}
+                "{{ student.full_name|escapejs }}",
+            {% endfor %}
+        {% endfor %}
+    ].filter((v, i, a) => a.indexOf(v) === i); // унікальні
 
     function pickRandom() {
         const resultDiv = document.getElementById('randomResult');
@@ -311,8 +316,11 @@
         resultDiv.classList.add('animate-pulse');
 
         setTimeout(() => {
-            const randomName = genericNames[Math.floor(Math.random() * genericNames.length)];
-            resultDiv.innerText = `> ${randomName}`; // Terminal style prefix
+            const names = studentNames.length > 0
+                ? studentNames
+                : ["Список студентів порожній"];
+            const randomName = names[Math.floor(Math.random() * names.length)];
+            resultDiv.innerText = `> ${randomName}`;
             resultDiv.classList.remove('animate-pulse');
         }, 600);
     }

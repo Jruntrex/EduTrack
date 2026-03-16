@@ -7,35 +7,40 @@
 {% block content %}
 <div class="glass-panel rounded-3xl p-8 mb-8" role="region" aria-label="Панель адміна">
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-        <div class="glass-panel rounded-2xl p-6 border-l-[6px] border-l-primary hover:-translate-y-1 transition-transform duration-300 shadow-glass animate-fade-in opacity-0"
+        <a href="{% url 'users_list' %}" class="glass-panel rounded-2xl p-6 border-l-[6px] border-l-primary hover:-translate-y-1 transition-transform duration-300 shadow-glass animate-fade-in opacity-0 group"
             style="animation-fill-mode: forwards;">
-            <div class="text-xs uppercase tracking-wider text-bodyText mb-2 font-medium">Користувачі</div>
+            <div class="text-xs uppercase tracking-wider text-bodyText mb-2 font-medium group-hover:text-primary transition-colors">Користувачі</div>
             <div class="text-4xl font-bold text-dark mb-1">{{ total_users|default:0 }}</div>
-        </div>
+            <div class="text-[10px] text-bodyText/60 mt-2 group-hover:text-primary transition-colors">Переглянути →</div>
+        </a>
 
-        <div class="glass-panel rounded-2xl p-6 border-l-[6px] border-l-accent hover:-translate-y-1 transition-transform duration-300 shadow-glass animate-fade-in opacity-0 delay-100"
+        <a href="{% url 'students_list' %}" class="glass-panel rounded-2xl p-6 border-l-[6px] border-l-accent hover:-translate-y-1 transition-transform duration-300 shadow-glass animate-fade-in opacity-0 delay-100 group"
             style="animation-fill-mode: forwards; animation-delay: 100ms;">
-            <div class="text-xs uppercase tracking-wider text-bodyText mb-2 font-medium">Студенти</div>
+            <div class="text-xs uppercase tracking-wider text-bodyText mb-2 font-medium group-hover:text-accent transition-colors">Студенти</div>
             <div class="text-4xl font-bold text-dark mb-1">{{ student_count|default:0 }}</div>
-        </div>
+            <div class="text-[10px] text-bodyText/60 mt-2 group-hover:text-accent transition-colors">Переглянути →</div>
+        </a>
 
-        <div class="glass-panel rounded-2xl p-6 border-l-[6px] border-l-secondary hover:-translate-y-1 transition-transform duration-300 shadow-glass animate-fade-in opacity-0 delay-200"
+        <a href="{% url 'groups_list' %}" class="glass-panel rounded-2xl p-6 border-l-[6px] border-l-secondary hover:-translate-y-1 transition-transform duration-300 shadow-glass animate-fade-in opacity-0 delay-200 group"
             style="animation-fill-mode: forwards; animation-delay: 200ms;">
-            <div class="text-xs uppercase tracking-wider text-bodyText mb-2 font-medium">Групи</div>
+            <div class="text-xs uppercase tracking-wider text-bodyText mb-2 font-medium group-hover:text-secondary transition-colors">Групи</div>
             <div class="text-4xl font-bold text-dark mb-1">{{ group_count|default:0 }}</div>
-        </div>
+            <div class="text-[10px] text-bodyText/60 mt-2 group-hover:text-secondary transition-colors">Переглянути →</div>
+        </a>
 
-        <div class="glass-panel rounded-2xl p-6 border-l-[6px] border-l-neutral hover:-translate-y-1 transition-transform duration-300 shadow-glass animate-fade-in opacity-0 delay-300"
+        <a href="{% url 'subjects_list' %}" class="glass-panel rounded-2xl p-6 border-l-[6px] border-l-neutral hover:-translate-y-1 transition-transform duration-300 shadow-glass animate-fade-in opacity-0 delay-300 group"
             style="animation-fill-mode: forwards; animation-delay: 300ms;">
-            <div class="text-xs uppercase tracking-wider text-bodyText mb-2 font-medium">Предмети</div>
+            <div class="text-xs uppercase tracking-wider text-bodyText mb-2 font-medium group-hover:text-neutral transition-colors">Предмети</div>
             <div class="text-4xl font-bold text-dark mb-1">{{ subject_count|default:0 }}</div>
-        </div>
+            <div class="text-[10px] text-bodyText/60 mt-2 group-hover:text-neutral transition-colors">Переглянути →</div>
+        </a>
 
-        <div class="glass-panel rounded-2xl p-6 border-l-[6px] border-l-primary hover:-translate-y-1 transition-transform duration-300 shadow-glass animate-fade-in opacity-0 delay-[400ms]"
+        <a href="{% url 'classrooms_list' %}" class="glass-panel rounded-2xl p-6 border-l-[6px] border-l-primary hover:-translate-y-1 transition-transform duration-300 shadow-glass animate-fade-in opacity-0 delay-[400ms] group"
             style="animation-fill-mode: forwards; animation-delay: 400ms;">
-            <div class="text-xs uppercase tracking-wider text-bodyText mb-2 font-medium">Аудиторії</div>
+            <div class="text-xs uppercase tracking-wider text-bodyText mb-2 font-medium group-hover:text-primary transition-colors">Аудиторії</div>
             <div class="text-4xl font-bold text-dark mb-1">{{ classroom_count|default:0 }}</div>
-        </div>
+            <div class="text-[10px] text-bodyText/60 mt-2 group-hover:text-primary transition-colors">Переглянути →</div>
+        </a>
     </div>
 
     <h3 class="text-2xl font-bold text-dark mb-6">Швидкі дії</h3>
