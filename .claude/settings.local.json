@@ -10,7 +10,10 @@
       "Bash(npx tailwindcss:*)",
       "Bash(find c:UsersuserMy_WorksEduTrackVERSION.2EduTrack -type f -name *notification*)",
       "Bash(python manage.py makemigrations main --name=add_notifications)",
-      "Bash(npm run:*)"
+      "Bash(npm run:*)",
+      "Bash(grep -r \"ECTS\\\\|grading\\\\|scale\\\\|оцінк\" /c/Users/user/My_Works/EduTrack/VERSION.2/EduTrack/main/*.py)",
+      "Bash(python -c \":*)",
+      "Bash(find /c/Users/user/My_Works/EduTrack/VERSION.2/EduTrack -type f \\\\\\(-name *.py -o -name *.html -o -name *.js -o -name *.json -o -name *.md -o -name *.css -o -name *.txt -o -name *.yml -o -name *.yaml -o -name *.env* \\\\\\))"
     ]
   }
 }

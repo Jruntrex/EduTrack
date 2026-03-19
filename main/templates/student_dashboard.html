@@ -108,14 +108,24 @@
             </div>
         </div>
         {% endif %}
-        <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-border rounded-full flex items-center justify-center text-mutedText font-bold">
-                {{ lesson.teacher.full_name|slice:":1" }}
+        <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-border rounded-full flex items-center justify-center text-mutedText font-bold">
+                    {{ lesson.teacher.full_name|slice:":1" }}
+                </div>
+                <div class="text-sm">
+                    <div class="text-mainText font-bold">{{ lesson.teacher.full_name }}</div>
+                    <div class="text-mutedText text-xs">Викладач</div>
+                </div>
             </div>
-            <div class="text-sm">
-                <div class="text-mainText font-bold">{{ lesson.teacher.full_name }}</div>
-                <div class="text-mutedText text-xs">Викладач</div>
-            </div>
+            <a href="/lesson/{{ lesson.id }}/"
+                class="flex items-center gap-1.5 px-3 py-2 bg-primary/10 text-primary rounded-xl text-xs font-bold hover:bg-primary/20 transition-colors">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+                Урок
+            </a>
         </div>
         {% else %}
         <div class="flex flex-col items-center justify-center h-full text-center text-mutedText">
@@ -131,10 +141,13 @@
 
     <!-- 4. Відвідуваність (Stats Tile) -->
     <div class="col-span-1 md:col-span-2 card-bento flex items-center justify-between">
-        <div>
+        <div class="w-32 h-32 shrink-0">
+            <canvas id="attendanceChart"></canvas>
+        </div>
+        <div class="text-right">
             <h3 class="text-mutedText font-bold text-xs uppercase tracking-widest mb-1">Відвідуваність</h3>
             <div class="text-5xl font-black text-mainText">{{ attendance_percent }}%</div>
-            <div class="mt-4 flex gap-4">
+            <div class="mt-4 flex gap-4 justify-end">
                 <div class="flex items-center gap-1.5">
                     <span class="w-2 h-2 bg-primary rounded-full"></span>
                     <span class="text-xs font-bold text-mutedText">Присутній</span>
@@ -144,9 +157,6 @@
                     <span class="text-xs font-bold text-mutedText">Пропуски</span>
                 </div>
             </div>
-        </div>
-        <div class="w-32 h-32">
-            <canvas id="attendanceChart"></canvas>
         </div>
     </div>
 
@@ -176,7 +186,7 @@
                         </td>
                         <td class="py-4 text-right">
                             <span
-                                class="inline-flex items-center justify-center w-10 h-10 rounded-xl {% if perf.earned_points >= 10 %}bg-green-500/10 text-green-600 dark:text-green-400{% elif perf.earned_points >= 7 %}bg-primary/10 text-primary{% else %}bg-orange-500/10 text-orange-600 dark:text-orange-400{% endif %} font-black text-lg">
+                                class="inline-flex items-center justify-center w-10 h-10 rounded-xl {% if perf.earned_points >= 10 %}bg-green-500/10 text-green-600 dark:text-green-400{% elif perf.earned_points >= 7 %}bg-primary/10 text-primary{% elif perf.earned_points >= 4 %}bg-yellow-500/10 text-yellow-600 dark:text-yellow-400{% else %}bg-orange-500/10 text-orange-600 dark:text-orange-400{% endif %} font-black text-lg">
                                 {{ perf.earned_points|floatformat:0 }}
                             </span>
                         </td>
@@ -252,9 +262,16 @@
                     ticks: { color: tickColor, font: { size: 11, weight: '600' } }
                 },
                 y: {
-                    beginAtZero: true,
+                    beginAtZero: false,
+                    suggestedMin: 0,
+                    suggestedMax: 12,
                     grid: { color: gridColor, borderDash: [5, 5] },
-                    ticks: { color: tickColor, font: { size: 11 } }
+                    ticks: {
+                        color: tickColor,
+                        font: { size: 11 },
+                        stepSize: 1,
+                        callback: function(val) { return Number.isInteger(val) ? val : ''; }
+                    }
                 }
             }
         }

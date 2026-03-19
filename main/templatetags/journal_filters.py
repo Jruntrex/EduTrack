@@ -1,5 +1,6 @@
 # main/templatetags/journal_filters.py
 import json
+from datetime import date as dt_date, timedelta
 from django import template
 
 register = template.Library()
@@ -14,12 +15,13 @@ def get_item(dictionary, key):
 def get_lesson_at(lessons, date_obj, lesson_num):
     """Шукає урок для конкретної дати та номеру пари."""
     times = {
-        1: "08:30",
-        2: "10:15",
-        3: "12:15",
-        4: "14:15",
-        5: "16:00",
-        6: "17:45"
+        1: "08:00",
+        2: "09:00",
+        3: "10:00",
+        4: "12:00",
+        5: "13:00",
+        6: "14:00",
+        7: "15:00",
     }
     target_time = times.get(int(lesson_num))
     if not target_time or not lessons: return None
@@ -50,12 +52,13 @@ def get_schedule_template_at(templates, day_of_week, lesson_num):
 def lesson_hours(num):
     """Повертає часовий інтервал для номеру пари."""
     times = {
-        1: "08:30 - 09:50",
-        2: "10:15 - 11:35",
-        3: "12:15 - 13:35",
-        4: "14:15 - 15:35",
-        5: "16:00 - 17:20",
-        6: "17:45 - 19:05"
+        1: "08:00 - 08:50",
+        2: "09:00 - 09:50",
+        3: "10:00 - 10:50",
+        4: "12:00 - 12:50",
+        5: "13:00 - 13:50",
+        6: "14:00 - 14:50",
+        7: "15:00 - 15:50",
     }
     return times.get(int(num), "")
 
@@ -90,6 +93,29 @@ def modulo(value, arg):
         return int(value) % int(arg)
     except:
         return 0
+
+@register.filter
+def date_bucket(value):
+    """Returns 'today', 'tomorrow', or '' for a date object."""
+    try:
+        today = dt_date.today()
+        if value == today:
+            return 'today'
+        if value == today + timedelta(days=1):
+            return 'tomorrow'
+        return ''
+    except Exception:
+        return ''
+
+
+@register.filter
+def get_hw_weight(lesson, hw_weights):
+    """Повертає відсоток ДЗ для уроку з dict {subj_id_grp_id: weight}."""
+    if not hw_weights:
+        return None
+    key = f"{lesson.subject_id}_{lesson.group_id}"
+    return hw_weights.get(key)
+
 
 # Dummy filters for compatibility with old templates if any
 @register.filter

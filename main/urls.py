@@ -11,8 +11,6 @@ urlpatterns = [
     path('', views.login_view, name='login'),
     path('login/', views.login_process, name='login_process'),
     path('logout/', views.logout_view, name='logout'),
-    # Debugging routes (remove in production)
-    path('debug-csrf/', views.csrf_debug_view, name='debug_csrf'),
     # =========================
     # 2. АДМІНІСТРУВАННЯ ТА ДАШБОРДИ
     # =========================
@@ -99,4 +97,22 @@ urlpatterns = [
     path('api/notifications/', views.api_notifications_list, name='api_notifications_list'),
     path('api/notifications/mark-read/<int:pk>/', views.api_notifications_mark_read, name='api_notifications_mark_read'),
     path('api/notifications/mark-all-read/', views.api_notifications_mark_all_read, name='api_notifications_mark_all_read'),
+    # =========================
+    # 8. ДЕТАЛІ УРОКУ ТА ДЗ
+    # =========================
+    path('lessons/', views.lessons_list_view, name='lessons_list'),
+    path('lesson/<int:lesson_id>/', views.lesson_detail_view, name='lesson_detail'),
+    path('api/lesson/<int:lesson_id>/content/', views.api_lesson_save_content, name='api_lesson_save_content'),
+    path('api/lesson/<int:lesson_id>/upload-attachment/', views.api_lesson_upload_attachment, name='api_lesson_upload_attachment'),
+    path('api/lesson/<int:lesson_id>/delete-attachment/<int:attachment_id>/', views.api_lesson_delete_attachment, name='api_lesson_delete_attachment'),
+    path('api/lesson/<int:lesson_id>/submit-homework/', views.api_lesson_submit_homework, name='api_lesson_submit_homework'),
+    path('api/lesson/<int:lesson_id>/cancel-homework/', views.api_lesson_cancel_homework, name='api_lesson_cancel_homework'),
+    # Google Classroom-style APIs
+    path('api/lesson/<int:lesson_id>/submission/attach/', views.api_submission_upload_file, name='api_submission_upload_file'),
+    path('api/lesson/<int:lesson_id>/submission/delete-file/<int:attachment_id>/', views.api_submission_delete_file, name='api_submission_delete_file'),
+    path('api/lesson/<int:lesson_id>/turn-in/', views.api_lesson_turn_in, name='api_lesson_turn_in'),
+    path('api/lesson/<int:lesson_id>/save-settings/', views.api_lesson_save_settings, name='api_lesson_save_settings'),
+    path('api/lesson/<int:lesson_id>/student/<int:student_id>/submission/', views.api_get_student_submission, name='api_get_student_submission'),
+    path('api/submission/<int:submission_id>/grade/', views.api_grade_submission, name='api_grade_submission'),
+    path('api/submission/<int:submission_id>/comment/', views.api_add_private_comment, name='api_add_private_comment'),
 ]

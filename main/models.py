@@ -262,8 +262,13 @@ class EvaluationType(models.Model):
     )
     description = models.TextField(blank=True, verbose_name="Опис")
     order = models.PositiveSmallIntegerField(default=0, verbose_name="Порядок відображення")
-    
+
     # Технічні поля
+    is_homework_type = models.BooleanField(
+        default=False,
+        verbose_name="Тип ДЗ",
+        help_text="Якщо True — оцінки для цього типу беруться з HomeworkSubmission, а не журналу"
+    )
     is_active = models.BooleanField(default=True, verbose_name="Активний")
     created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата створення")
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Дата оновлення")
@@ -346,7 +351,7 @@ class ScheduleTemplate(models.Model):
     )
     lesson_number = models.PositiveSmallIntegerField(default=1, verbose_name="Номер пари")
     start_time = models.TimeField(verbose_name="Час початку")
-    duration_minutes = models.IntegerField(default=80, verbose_name="Тривалість (хв)")
+    duration_minutes = models.IntegerField(default=50, verbose_name="Тривалість (хв)")
     classroom = models.ForeignKey(Classroom, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Аудиторія")
     
     valid_from = models.DateField(auto_now_add=True, verbose_name="Діє з")
@@ -407,7 +412,7 @@ class Lesson(models.Model):
     
     topic = models.CharField(max_length=255, blank=True, verbose_name="Тема заняття")
     classroom = models.ForeignKey(Classroom, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Аудиторія")
-    max_points = models.PositiveIntegerField(default=5, verbose_name="Макс. балів")
+    max_points = models.PositiveIntegerField(default=12, verbose_name="Макс. балів")
     evaluation_type = models.ForeignKey(EvaluationType, on_delete=models.PROTECT, null=True, blank=True, verbose_name="Тип заняття")
     
     template_source = models.ForeignKey(
@@ -422,6 +427,7 @@ class Lesson(models.Model):
     homework = models.TextField(blank=True, verbose_name="Домашнє завдання")
     materials = models.TextField(blank=True, verbose_name="Матеріали (посилання)")
     notes = models.TextField(blank=True, verbose_name="Примітки викладача")
+    deadline = models.DateTimeField(null=True, blank=True, verbose_name="Термін здачі")
     
     # Статус
     is_cancelled = models.BooleanField(default=False, verbose_name="Скасований")
@@ -605,6 +611,103 @@ class Notification(models.Model):
         return f"[{self.notif_type}] {self.recipient.full_name}: {self.title}"
 
 
+# ==========================================
+# 6. УРОКИ: МАТЕРІАЛИ ТА ДОМАШНІ ЗАВДАННЯ
+# ==========================================
+
+class LessonAttachment(models.Model):
+    """Прикріплений файл/посилання до уроку (додається викладачем)."""
+    FILE_TYPE_CHOICES = [
+        ('document', 'Документ'),
+        ('video', 'Відео'),
+        ('link', 'Посилання'),
+    ]
+
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='attachments', verbose_name="Урок")
+    file = models.FileField(upload_to='lesson_attachments/', blank=True, verbose_name="Файл")
+    link = models.URLField(blank=True, verbose_name="Посилання")
+    file_name = models.CharField(max_length=255, verbose_name="Назва файлу")
+    file_type = models.CharField(max_length=20, choices=FILE_TYPE_CHOICES, default='document', verbose_name="Тип")
+    uploaded_at = models.DateTimeField(auto_now_add=True, verbose_name="Завантажено")
+
+    class Meta:
+        db_table = 'lesson_attachments'
+        ordering = ['-uploaded_at']
+        verbose_name = "Матеріал уроку"
+        verbose_name_plural = "Матеріали уроку"
+
+    def __str__(self) -> str:
+        return f"{self.file_name} ({self.lesson})"
+
+
+class HomeworkSubmission(models.Model):
+    """Здача домашнього завдання студентом."""
+    STATUS_CHOICES = [
+        ('assigned', 'Призначено'),
+        ('turned_in', 'Здано'),
+        ('graded', 'Оцінено'),
+        ('missing', 'Пропущено'),
+    ]
+
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, related_name='submissions', verbose_name="Урок")
+    student = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        limit_choices_to={'role': 'student'},
+        related_name='homework_submissions',
+        verbose_name="Студент",
+    )
+    text_answer = models.TextField(blank=True, verbose_name="Текстова відповідь")
+    attached_file = models.FileField(upload_to='homework_submissions/', blank=True, verbose_name="Прикріплений файл (застарілий)")
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='assigned', verbose_name="Статус")
+    grade = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name="Оцінка")
+    submitted_at = models.DateTimeField(auto_now_add=True, verbose_name="Здано")
+
+    class Meta:
+        db_table = 'homework_submissions'
+        unique_together = ('lesson', 'student')
+        ordering = ['-submitted_at']
+        verbose_name = "Здача ДЗ"
+        verbose_name_plural = "Здачі ДЗ"
+
+    def __str__(self) -> str:
+        return f"{self.student.full_name} — {self.lesson.subject.name} ({self.lesson.date})"
+
+
+class SubmissionAttachment(models.Model):
+    """Файл, прикріплений студентом до здачі ДЗ."""
+    submission = models.ForeignKey(HomeworkSubmission, on_delete=models.CASCADE, related_name='files', verbose_name="Здача")
+    file = models.FileField(upload_to='submission_attachments/', verbose_name="Файл")
+    file_name = models.CharField(max_length=255, verbose_name="Назва файлу")
+    uploaded_at = models.DateTimeField(auto_now_add=True, verbose_name="Завантажено")
+
+    class Meta:
+        db_table = 'submission_attachments'
+        ordering = ['uploaded_at']
+        verbose_name = "Файл здачі"
+        verbose_name_plural = "Файли здачі"
+
+    def __str__(self) -> str:
+        return f"{self.file_name} ({self.submission})"
+
+
+class PrivateComment(models.Model):
+    """Приватний коментар між студентом і викладачем у контексті здачі ДЗ."""
+    submission = models.ForeignKey(HomeworkSubmission, on_delete=models.CASCADE, related_name='private_comments', verbose_name="Здача")
+    author = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Автор")
+    text = models.TextField(verbose_name="Текст")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Час")
+
+    class Meta:
+        db_table = 'private_comments'
+        ordering = ['created_at']
+        verbose_name = "Приватний коментар"
+        verbose_name_plural = "Приватні коментарі"
+
+    def __str__(self) -> str:
+        return f"{self.author.full_name}: {self.text[:50]}"
+
+
 class BuildingAccessLog(models.Model):
     """
     Лог доступу до будівлі (Турнікет).
@@ -633,3 +736,26 @@ class BuildingAccessLog(models.Model):
 
     def __str__(self) -> str:
         return f"{self.student.full_name} - {self.get_action_display()} at {self.timestamp}"
+
+
+# =============================================
+# SIGNALS
+# =============================================
+
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+
+@receiver(post_save, sender=TeachingAssignment)
+def create_default_homework_eval_type(sender, instance, created, **kwargs):
+    """Автоматично створює обов'язковий тип 'Домашнє Завдання' для нового навантаження."""
+    if created:
+        EvaluationType.objects.get_or_create(
+            assignment=instance,
+            is_homework_type=True,
+            defaults={
+                'name': 'Домашнє Завдання',
+                'weight_percent': 30,
+                'description': 'Домашнє завдання',
+                'order': 0,
+            }
+        )

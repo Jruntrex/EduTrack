@@ -168,19 +168,24 @@ class JournalEntryForm(forms.Form):
         val = self.cleaned_data.get('value')
         if val in [None, '', '—']:
             return None
+        # Перевірка числових оцінок
+        if val is not None and str(val).lstrip('-').isdigit():
+            num = int(val)
+            if not (1 <= num <= 12):
+                raise forms.ValidationError("Оцінка має бути від 1 до 12")
         return val
 
 
 class ScheduleSlotForm(forms.Form):
     """Валідація слоту розкладу (API)."""
     group_id = forms.IntegerField()
-    day = forms.IntegerField(min_value=1, max_value=7)
-    lesson_number = forms.IntegerField(min_value=1, max_value=8)
+    day = forms.IntegerField(min_value=1, max_value=5)
+    lesson_number = forms.IntegerField(min_value=1, max_value=7)
     subject_id = forms.IntegerField(required=False)  # Може бути None для видалення
     teacher_id = forms.IntegerField(required=False)
     classroom_id = forms.IntegerField(required=False)
     start_time = forms.TimeField(input_formats=['%H:%M'])
-    duration = forms.IntegerField(min_value=1, initial=80)
+    duration = forms.IntegerField(min_value=1, initial=50)
 class ProfileForm(forms.ModelForm):
     """Форма для самостійного редагування профілю користувачем."""
     class Meta:

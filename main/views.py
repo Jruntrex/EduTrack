@@ -23,6 +23,10 @@ from .models import (
     AbsenceReason,
     EvaluationType,
     Lesson,
+    LessonAttachment,
+    HomeworkSubmission,
+    SubmissionAttachment,
+    PrivateComment,
     StudentPerformance,
     StudyGroup,
     Subject,
@@ -109,7 +113,11 @@ def login_view(request: HttpRequest) -> HttpResponse:
         if role == 'student':
             return redirect('student_dashboard')
 
-    return render(request, 'index.html')
+    response = render(request, 'index.html')
+    response['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
+    return response
 
 
 @require_POST
@@ -141,7 +149,11 @@ def login_process(request):
 def logout_view(request: HttpRequest) -> HttpResponse:
     """Вихід із системи."""
     logout(request)
-    return redirect('login')
+    response = redirect('login')
+    response['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response['Pragma'] = 'no-cache'
+    response['Expires'] = '0'
+    return response
 
 
 def csrf_debug_view(request: HttpRequest) -> JsonResponse:
@@ -839,14 +851,13 @@ def set_weekly_schedule_view(request):
             })
 
     lesson_times = {
-        1: ("08:30", "10:05"),
-        2: ("10:15", "11:50"),
-        3: ("12:15", "13:50"),
-        4: ("14:15", "15:50"),
-        5: ("16:00", "17:35"),
-        6: ("17:45", "19:20"),
-        7: ("19:30", "21:05"),
-        8: ("21:15", "22:50"),
+        1: ("08:00", "08:50"),
+        2: ("09:00", "09:50"),
+        3: ("10:00", "10:50"),
+        4: ("12:00", "12:50"),
+        5: ("13:00", "13:50"),
+        6: ("14:00", "14:50"),
+        7: ("15:00", "15:50"),
     }
 
     context = {
@@ -854,8 +865,8 @@ def set_weekly_schedule_view(request):
         'schedule_map': schedule_map,
         'subject_data': subject_data,
         'subject_teachers_map': subject_teachers_map,
-        'days': [(1, 'Понеділок'), (2, 'Вівторок'), (3, 'Середа'), (4, 'Четвер'), (5, 'П’ятниця'), (6, 'Субота')],
-        'lesson_numbers': range(1, 9),
+        'days': [(1, 'Понеділок'), (2, 'Вівторок'), (3, 'Середа'), (4, 'Четвер'), (5, "П'ятниця")],
+        'lesson_numbers': range(1, 8),
         'lesson_times': lesson_times,
         'active_page': 'schedule_builder',
     }
@@ -1029,7 +1040,7 @@ def schedule_editor_view(request: HttpRequest) -> HttpResponse:
         (2, 'ВІВТОРОК'),
         (3, 'СЕРЕДА'),
         (4, 'ЧЕТВЕР'),
-        (5, 'П’ЯТНИЦЯ'),
+        (5, "П'ЯТНИЦЯ"),
     ]
     
     schedule_data = [] # Список об'єктів для кожного дня
@@ -1042,7 +1053,7 @@ def schedule_editor_view(request: HttpRequest) -> HttpResponse:
             
         for day_num, day_name in days_info:
             slots = []
-            for i in range(1, 9): # 8 слотів
+            for i in range(1, 8): # 7 слотів
                 template = template_dict[day_num].get(i)
                 slots.append({
                     'number': i,
@@ -2096,7 +2107,6 @@ def get_evaluation_types_api(request):
 # --- STUDENTS MANAGEMENT (EXTRA) ---
 
 @login_required
-@login_required
 def timeline_schedule_view(request):
     user = request.user
     
@@ -2194,6 +2204,8 @@ def api_update_lesson(request: HttpRequest) -> JsonResponse:
         is_cancelled = data.get('is_cancelled')
         cancellation_reason = data.get('cancellation_reason')
 
+        eval_weight = data.get('eval_weight')
+
         lesson = get_object_or_404(Lesson, id=lesson_id, teacher=request.user)
 
         if topic is not None:
@@ -2202,6 +2214,14 @@ def api_update_lesson(request: HttpRequest) -> JsonResponse:
         if type_id:
             etype = get_object_or_404(EvaluationType, id=type_id, assignment__teacher=request.user)
             lesson.evaluation_type = etype
+            if eval_weight is not None:
+                try:
+                    weight = float(eval_weight)
+                    if 0 <= weight <= 100:
+                        etype.weight_percent = weight
+                        etype.save(update_fields=['weight_percent', 'updated_at'])
+                except (ValueError, TypeError):
+                    pass
 
         if homework is not None:
             lesson.homework = homework
@@ -2220,11 +2240,13 @@ def api_update_lesson(request: HttpRequest) -> JsonResponse:
 
         logger.info(f"Викладач {request.user} оновив урок #{lesson_id}")
 
+        etype = lesson.evaluation_type
         return JsonResponse({
             'status': 'success',
             'topic': lesson.topic,
-            'type_name': lesson.evaluation_type.name if lesson.evaluation_type else '—',
-            'max_points': float(lesson.evaluation_type.weight_percent) if lesson.evaluation_type else 12,
+            'type_name': etype.name if etype else '—',
+            'max_points': float(etype.weight_percent) if etype else 12,
+            'eval_weight': float(etype.weight_percent) if etype else None,
             'homework': lesson.homework or '',
             'materials': lesson.materials or '',
             'is_cancelled': lesson.is_cancelled,
@@ -2589,3 +2611,464 @@ def api_notifications_mark_all_read(request: HttpRequest) -> JsonResponse:
     """Позначає всі сповіщення поточного користувача як прочитані."""
     Notification.objects.filter(recipient=request.user, is_read=False).update(is_read=True)
     return JsonResponse({'ok': True})
+
+
+# =========================
+# 8. ДЕТАЛІ УРОКУ ТА ДЗ
+# =========================
+
+@login_required
+def lessons_list_view(request: HttpRequest) -> HttpResponse:
+    """Список всіх уроків для вчителя або студента."""
+    user = request.user
+    subject_filter = request.GET.get('subject', '')
+
+    if user.role == 'teacher':
+        lessons_qs = Lesson.objects.filter(teacher=user).select_related('subject', 'group', 'classroom', 'evaluation_type').order_by('-date', 'start_time')
+        if subject_filter:
+            lessons_qs = lessons_qs.filter(subject__id=subject_filter)
+        subjects = Subject.objects.filter(lesson__teacher=user).distinct().order_by('name')
+        from datetime import date as _date, timedelta as _td
+        _today = _date.today()
+        _week_start = _today - _td(days=_today.weekday())
+        _week_end = _week_start + _td(days=6)
+        this_week_count = lessons_qs.filter(date__range=[_week_start, _week_end]).count()
+        groups_count = lessons_qs.values('group').distinct().count()
+        lessons_by_subject_group = lessons_qs.order_by('subject__name', 'group__name', '-date', 'start_time')
+        # ДЗ weights: {subject_id_group_id: weight_percent}
+        hw_weights = {}
+        for assignment in TeachingAssignment.objects.filter(teacher=user).prefetch_related('evaluation_types'):
+            hw_type = assignment.evaluation_types.filter(is_homework_type=True).first()
+            if hw_type:
+                hw_weights[f"{assignment.subject_id}_{assignment.group_id}"] = float(hw_type.weight_percent)
+        context = {
+            'lessons': lessons_qs,
+            'lessons_by_subject_group': lessons_by_subject_group,
+            'subjects': subjects,
+            'subject_filter': subject_filter,
+            'this_week_count': this_week_count,
+            'groups_count': groups_count,
+            'hw_weights': hw_weights,
+            'active_page': 'lessons',
+        }
+    elif user.role == 'student':
+        if not user.group:
+            context = {'lessons': [], 'subjects': [], 'subject_filter': '', 'active_page': 'lessons'}
+            return render(request, 'lessons_list.html', context)
+        lessons_qs = Lesson.objects.filter(group=user.group).select_related('subject', 'teacher', 'classroom', 'evaluation_type').order_by('-date', 'start_time')
+        if subject_filter:
+            lessons_qs = lessons_qs.filter(subject__id=subject_filter)
+        subjects = Subject.objects.filter(lesson__group=user.group).distinct().order_by('name')
+        # Додаємо інфо про ДЗ для кожного уроку
+        submission_lesson_ids = set(
+            HomeworkSubmission.objects.filter(student=user).values_list('lesson_id', flat=True)
+        )
+        pending_hw_count = lessons_qs.filter(homework__gt='').exclude(id__in=submission_lesson_ids).count()
+        # ДЗ weights: {subject_id_group_id: weight_percent}
+        hw_weights = {}
+        for assignment in TeachingAssignment.objects.filter(group=user.group).prefetch_related('evaluation_types'):
+            hw_type = assignment.evaluation_types.filter(is_homework_type=True).first()
+            if hw_type:
+                hw_weights[f"{assignment.subject_id}_{assignment.group_id}"] = float(hw_type.weight_percent)
+        context = {
+            'lessons': lessons_qs,
+            'subjects': subjects,
+            'subject_filter': subject_filter,
+            'submission_lesson_ids': submission_lesson_ids,
+            'pending_hw_count': pending_hw_count,
+            'hw_weights': hw_weights,
+            'active_page': 'lessons',
+        }
+    else:
+        messages.error(request, "У вас немає доступу до цієї сторінки.")
+        return redirect('login')
+
+    return render(request, 'lessons_list.html', context)
+
+
+@login_required
+def lesson_detail_view(request: HttpRequest, lesson_id: int) -> HttpResponse:
+    """Перенаправляє на відповідний шаблон залежно від ролі."""
+    user = request.user
+    lesson = get_object_or_404(Lesson, id=lesson_id)
+
+    # Перевірка доступу
+    if user.role == 'teacher':
+        if lesson.teacher != user:
+            messages.error(request, "У вас немає доступу до цього уроку.")
+            return redirect('teacher_journal')
+        tab = request.GET.get('tab', 'instructions')
+        attachments = lesson.attachments.all()
+        students = User.objects.filter(role='student', group=lesson.group).order_by('full_name')
+        submissions = HomeworkSubmission.objects.filter(lesson=lesson).select_related('student').prefetch_related('files')
+        submission_map = {s.student_id: s for s in submissions}
+        turned_in_count = submissions.filter(status='turned_in').count()
+        graded_count = submissions.filter(status='graded').count()
+        assigned_count = students.count() - submissions.exclude(status='missing').count()
+        context = {
+            'lesson': lesson,
+            'attachments': attachments,
+            'students': students,
+            'submissions': submissions,
+            'submission_map': submission_map,
+            'submitted_count': submissions.filter(status__in=['turned_in', 'graded']).count(),
+            'turned_in_count': turned_in_count,
+            'graded_count': graded_count,
+            'assigned_count': assigned_count,
+            'total_students': students.count(),
+            'tab': tab,
+            'active_page': 'lessons',
+        }
+        return render(request, 'lesson_edit_teacher.html', context)
+
+    elif user.role == 'student':
+        if user.group != lesson.group:
+            messages.error(request, "У вас немає доступу до цього уроку.")
+            return redirect('student_dashboard')
+        attachments = lesson.attachments.all()
+        submission = HomeworkSubmission.objects.filter(lesson=lesson, student=user).prefetch_related('files', 'private_comments__author').first()
+        context = {
+            'lesson': lesson,
+            'attachments': attachments,
+            'submission': submission,
+            'active_page': 'lessons',
+        }
+        return render(request, 'lesson_view_student.html', context)
+
+    messages.error(request, "У вас немає доступу до цієї сторінки.")
+    return redirect('login')
+
+
+@login_required
+@require_POST
+@role_required('teacher')
+def api_lesson_save_content(request: HttpRequest, lesson_id: int) -> JsonResponse:
+    """Зберігає Rich Text контент уроку (теорія та завдання)."""
+    try:
+        lesson = get_object_or_404(Lesson, id=lesson_id, teacher=request.user)
+        data = json.loads(request.body)
+        if 'materials' in data:
+            lesson.materials = data['materials']
+        if 'homework' in data:
+            lesson.homework = data['homework']
+        if 'topic' in data:
+            lesson.topic = data['topic']
+        lesson.save(update_fields=[f for f in ('materials', 'homework', 'topic') if f in data])
+        return JsonResponse({'status': 'success'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@login_required
+@require_POST
+@role_required('teacher')
+def api_lesson_upload_attachment(request: HttpRequest, lesson_id: int) -> JsonResponse:
+    """Завантажує файл-вкладення до уроку."""
+    try:
+        lesson = get_object_or_404(Lesson, id=lesson_id, teacher=request.user)
+        uploaded_file = request.FILES.get('file')
+        file_type = request.POST.get('file_type', 'document')
+
+        if not uploaded_file:
+            return JsonResponse({'status': 'error', 'message': 'Файл не знайдено'}, status=400)
+
+        attachment = LessonAttachment.objects.create(
+            lesson=lesson,
+            file=uploaded_file,
+            file_name=uploaded_file.name,
+            file_type=file_type,
+        )
+        return JsonResponse({
+            'status': 'success',
+            'attachment': {
+                'id': attachment.id,
+                'file_name': attachment.file_name,
+                'file_type': attachment.file_type,
+                'file_url': attachment.file.url if attachment.file else '',
+                'uploaded_at': attachment.uploaded_at.strftime('%d.%m.%Y %H:%M'),
+            }
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@login_required
+@require_POST
+@role_required('teacher')
+def api_lesson_delete_attachment(request: HttpRequest, lesson_id: int, attachment_id: int) -> JsonResponse:
+    """Видаляє вкладення уроку."""
+    try:
+        lesson = get_object_or_404(Lesson, id=lesson_id, teacher=request.user)
+        attachment = get_object_or_404(LessonAttachment, id=attachment_id, lesson=lesson)
+        if attachment.file:
+            try:
+                attachment.file.delete(save=False)
+            except Exception:
+                pass  # файл вже відсутній на диску — не блокуємо видалення запису
+        attachment.delete()
+        return JsonResponse({'status': 'success'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@login_required
+@require_POST
+@role_required('student')
+def api_lesson_submit_homework(request: HttpRequest, lesson_id: int) -> JsonResponse:
+    """Студент відправляє виконане домашнє завдання."""
+    try:
+        user = request.user
+        lesson = get_object_or_404(Lesson, id=lesson_id, group=user.group)
+
+        if HomeworkSubmission.objects.filter(lesson=lesson, student=user).exists():
+            return JsonResponse({'status': 'error', 'message': 'Ви вже відправили ДЗ для цього уроку.'}, status=400)
+
+        text_answer = request.POST.get('text_answer', '').strip()
+        attached_file = request.FILES.get('file')
+
+        if not text_answer and not attached_file:
+            return JsonResponse({'status': 'error', 'message': 'Додайте текст або файл.'}, status=400)
+
+        submission = HomeworkSubmission.objects.create(
+            lesson=lesson,
+            student=user,
+            text_answer=text_answer,
+            attached_file=attached_file or '',
+            status='submitted',
+        )
+        return JsonResponse({
+            'status': 'success',
+            'submission': {
+                'id': submission.id,
+                'status': submission.get_status_display(),
+                'submitted_at': submission.submitted_at.strftime('%d.%m.%Y %H:%M'),
+                'file_url': submission.attached_file.url if submission.attached_file else '',
+                'text_answer': submission.text_answer,
+            }
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@login_required
+@require_POST
+@role_required('student')
+def api_lesson_cancel_homework(request: HttpRequest, lesson_id: int) -> JsonResponse:
+    """Студент скасовує здачу (переводить статус назад в 'assigned')."""
+    try:
+        user = request.user
+        lesson = get_object_or_404(Lesson, id=lesson_id, group=user.group)
+        submission = get_object_or_404(HomeworkSubmission, lesson=lesson, student=user, status='turned_in')
+        submission.status = 'assigned'
+        submission.save(update_fields=['status'])
+        return JsonResponse({'status': 'success'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+# ============================================================
+# NEW: Google Classroom-style APIs
+# ============================================================
+
+@login_required
+@require_POST
+@role_required('student')
+def api_submission_upload_file(request: HttpRequest, lesson_id: int) -> JsonResponse:
+    """Студент завантажує файл до своєї здачі (створює HomeworkSubmission якщо немає)."""
+    try:
+        user = request.user
+        lesson = get_object_or_404(Lesson, id=lesson_id, group=user.group)
+        uploaded_file = request.FILES.get('file')
+        if not uploaded_file:
+            return JsonResponse({'status': 'error', 'message': 'Файл не знайдено'}, status=400)
+
+        submission, _ = HomeworkSubmission.objects.get_or_create(
+            lesson=lesson,
+            student=user,
+            defaults={'status': 'assigned'},
+        )
+        if submission.status == 'turned_in':
+            return JsonResponse({'status': 'error', 'message': 'Не можна редагувати після здачі'}, status=400)
+
+        att = SubmissionAttachment.objects.create(
+            submission=submission,
+            file=uploaded_file,
+            file_name=uploaded_file.name,
+        )
+        return JsonResponse({
+            'status': 'success',
+            'file': {
+                'id': att.id,
+                'file_name': att.file_name,
+                'file_url': att.file.url,
+            },
+            'submission_id': submission.id,
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@login_required
+@require_POST
+@role_required('student')
+def api_submission_delete_file(request: HttpRequest, lesson_id: int, attachment_id: int) -> JsonResponse:
+    """Студент видаляє файл зі своєї здачі."""
+    try:
+        user = request.user
+        lesson = get_object_or_404(Lesson, id=lesson_id, group=user.group)
+        submission = get_object_or_404(HomeworkSubmission, lesson=lesson, student=user)
+        if submission.status == 'turned_in':
+            return JsonResponse({'status': 'error', 'message': 'Не можна редагувати після здачі'}, status=400)
+        att = get_object_or_404(SubmissionAttachment, id=attachment_id, submission=submission)
+        try:
+            att.file.delete(save=False)
+        except Exception:
+            pass
+        att.delete()
+        return JsonResponse({'status': 'success'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@login_required
+@require_POST
+@role_required('student')
+def api_lesson_turn_in(request: HttpRequest, lesson_id: int) -> JsonResponse:
+    """Студент здає роботу (turned_in)."""
+    try:
+        user = request.user
+        lesson = get_object_or_404(Lesson, id=lesson_id, group=user.group)
+        submission, _ = HomeworkSubmission.objects.get_or_create(
+            lesson=lesson,
+            student=user,
+            defaults={'status': 'assigned'},
+        )
+        if submission.status not in ('assigned',):
+            return JsonResponse({'status': 'error', 'message': 'Неможливо здати в поточному статусі'}, status=400)
+        submission.status = 'turned_in'
+        submission.save(update_fields=['status'])
+        return JsonResponse({'status': 'success', 'new_status': 'turned_in'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@login_required
+@require_POST
+def api_add_private_comment(request: HttpRequest, submission_id: int) -> JsonResponse:
+    """Додає приватний коментар (студент або викладач)."""
+    try:
+        user = request.user
+        submission = get_object_or_404(HomeworkSubmission, id=submission_id)
+        # Access check: student who owns it, or teacher of the lesson
+        if user.role == 'student' and submission.student != user:
+            return JsonResponse({'status': 'error', 'message': 'Доступ заборонено'}, status=403)
+        if user.role == 'teacher' and submission.lesson.teacher != user:
+            return JsonResponse({'status': 'error', 'message': 'Доступ заборонено'}, status=403)
+
+        data = json.loads(request.body)
+        text = data.get('text', '').strip()
+        if not text:
+            return JsonResponse({'status': 'error', 'message': 'Текст порожній'}, status=400)
+
+        comment = PrivateComment.objects.create(submission=submission, author=user, text=text)
+        return JsonResponse({
+            'status': 'success',
+            'comment': {
+                'id': comment.id,
+                'author': user.full_name,
+                'text': comment.text,
+                'created_at': comment.created_at.strftime('%d.%m.%Y %H:%M'),
+                'is_me': True,
+            }
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@login_required
+@require_POST
+@role_required('teacher')
+def api_grade_submission(request: HttpRequest, submission_id: int) -> JsonResponse:
+    """Викладач виставляє оцінку та повертає роботу."""
+    try:
+        submission = get_object_or_404(HomeworkSubmission, id=submission_id, lesson__teacher=request.user)
+        data = json.loads(request.body)
+        grade = data.get('grade')
+        if grade is not None:
+            try:
+                grade_val = int(grade)
+            except (ValueError, TypeError):
+                return JsonResponse({'status': 'error', 'message': 'Оцінка має бути числом від 1 до 12'}, status=400)
+            if not (1 <= grade_val <= 12):
+                return JsonResponse({'status': 'error', 'message': 'Оцінка має бути від 1 до 12'}, status=400)
+            submission.grade = grade_val
+        submission.status = 'graded'
+        submission.save(update_fields=['grade', 'status'])
+        return JsonResponse({'status': 'success'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@login_required
+@require_POST
+@role_required('teacher')
+def api_lesson_save_settings(request: HttpRequest, lesson_id: int) -> JsonResponse:
+    """Зберігає налаштування уроку: тема, max_points, deadline."""
+    try:
+        lesson = get_object_or_404(Lesson, id=lesson_id, teacher=request.user)
+        data = json.loads(request.body)
+        fields = []
+        if 'topic' in data:
+            lesson.topic = data['topic']
+            fields.append('topic')
+        if 'max_points' in data:
+            lesson.max_points = int(data['max_points'])
+            fields.append('max_points')
+        if 'deadline' in data:
+            from django.utils.dateparse import parse_datetime
+            lesson.deadline = parse_datetime(data['deadline']) if data['deadline'] else None
+            fields.append('deadline')
+        if fields:
+            lesson.save(update_fields=fields)
+        return JsonResponse({'status': 'success'})
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+
+@login_required
+@role_required('teacher')
+def api_get_student_submission(request: HttpRequest, lesson_id: int, student_id: int) -> JsonResponse:
+    """AJAX: повертає дані здачі конкретного студента для відображення у правій панелі."""
+    try:
+        lesson = get_object_or_404(Lesson, id=lesson_id, teacher=request.user)
+        student = get_object_or_404(User, id=student_id, role='student', group=lesson.group)
+        submission = HomeworkSubmission.objects.filter(lesson=lesson, student=student).prefetch_related('files', 'private_comments__author').first()
+        if not submission:
+            return JsonResponse({
+                'status': 'success',
+                'submission': None,
+                'student': {'id': student.id, 'name': student.full_name},
+            })
+        files = [{'id': f.id, 'file_name': f.file_name, 'file_url': f.file.url} for f in submission.files.all()]
+        comments = [{
+            'id': c.id,
+            'author': c.author.full_name,
+            'text': c.text,
+            'created_at': c.created_at.strftime('%d.%m.%Y %H:%M'),
+            'is_teacher': c.author.role == 'teacher',
+        } for c in submission.private_comments.all()]
+        return JsonResponse({
+            'status': 'success',
+            'student': {'id': student.id, 'name': student.full_name},
+            'submission': {
+                'id': submission.id,
+                'status': submission.status,
+                'status_display': submission.get_status_display(),
+                'grade': str(submission.grade) if submission.grade is not None else '',
+                'submitted_at': submission.submitted_at.strftime('%d.%m.%Y %H:%M'),
+                'files': files,
+                'comments': comments,
+            },
+        })
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)

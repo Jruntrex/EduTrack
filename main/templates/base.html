@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}EduTrack{% endblock %}</title>
+    <title>{% block title %}MyBosco{% endblock %}</title>
     <link rel="icon" type="image/svg+xml" href="{% static 'images/favicon.svg' %}">
     <link rel="stylesheet" href="{% static 'css/output.css' %}">
     <link rel="stylesheet" href="{% static 'css/styles.css' %}">
@@ -31,7 +31,7 @@
                                 d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.908V14z" />
                         </svg>
                     </div>
-                    <h2 class="text-xl font-black text-mainText tracking-tighter uppercase mb-0">EduTrack</h2>
+                    <h2 class="text-xl font-black text-mainText tracking-tighter uppercase mb-0">MyBosco</h2>
                 </div>
             </div>
 
@@ -153,6 +153,17 @@
                     <span>Розклад</span>
                 </a>
 
+                <a href="{% url 'lessons_list' %}"
+                    class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 {% if active_page == 'lessons' %}bg-primary/10 text-primary font-bold{% else %}text-mutedText hover:bg-surface hover:text-mainText{% endif %}"
+                    tabindex="0">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                    <span>Мої Уроки</span>
+                </a>
+
                 <a href="{% url 'news_feed' %}"
                     class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 {% if active_page == 'news' %}bg-primary/10 text-primary font-bold{% else %}text-mutedText hover:bg-surface hover:text-mainText{% endif %}"
                     tabindex="0">
@@ -197,6 +208,17 @@
                             d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <span>Відвідування</span>
+                </a>
+
+                <a href="{% url 'lessons_list' %}"
+                    class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 {% if active_page == 'lessons' %}bg-primary/10 text-primary font-bold{% else %}text-mutedText hover:bg-surface hover:text-mainText{% endif %}"
+                    tabindex="0">
+                    <svg class="w-6 h-6 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                        aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                    <span>Мої Уроки</span>
                 </a>
 
                 <a href="{% url 'news_feed' %}"

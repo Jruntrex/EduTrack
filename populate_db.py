@@ -10,7 +10,7 @@ from zoneinfo import ZoneInfo
 KYIV_TZ = ZoneInfo("Europe/Kyiv")
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'edutrack_project.settings')
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'mybosco_project.settings')
 django.setup()
 
 from main.models import (  # type: ignore[import]
@@ -316,7 +316,7 @@ def create_initial_data() -> None:
     ]
     teachers = [
         User.objects.create_user(
-            email=f"t_{login}@edutrack.ua",
+            email=f"t_{login}@mybosco.ua",
             password=f"t_{login}",
             full_name=full_name,
             role="teacher",
@@ -574,8 +574,8 @@ def create_initial_data() -> None:
     print(f"           без оцінки: {no_grade_count}")
     print(f"{'='*55}")
     print("\nПРИКЛАДИ ВХОДУ:")
-    print(f"  Викладач : t_melnyk@edutrack.ua      / t_melnyk")
-    print(f"  Викладач : t_shevchenko@edutrack.ua  / t_shevchenko")
+    print(f"  Викладач : t_melnyk@mybosco.ua      / t_melnyk")
+    print(f"  Викладач : t_shevchenko@mybosco.ua  / t_shevchenko")
     print(f"  Студент  : s00_ivanen@student.ua     / s00_ivanen")
     print(f"  Студент  : s01_petren@student.ua     / s01_petren")
 

@@ -4,35 +4,78 @@
 {% block title %}Стрічка новин{% endblock %}
 {% block header_title %}Стрічка новин{% endblock %}
 
+{% block extra_head %}
+<style>
+    /* Post card fade-in animation */
+    .post-card { animation: postSlideIn .3s ease both; }
+    @keyframes postSlideIn {
+        from { opacity:0; transform:translateY(12px); }
+        to   { opacity:1; transform:translateY(0); }
+    }
+    /* Comment bubble */
+    .comment-bubble { position:relative; }
+    /* New posts banner pulse */
+    @keyframes bannerPulse { 0%,100%{opacity:1} 50%{opacity:.75} }
+    #new-posts-banner button { animation: bannerPulse 2s ease-in-out infinite; }
+    /* Textarea auto resize */
+    #post-content { resize:none; min-height:72px; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="pb-16">
 
-    <!-- Filter Tabs -->
-    <div class="flex flex-wrap gap-2 mb-8">
+    <!-- Hero banner -->
+    <div class="relative overflow-hidden rounded-2xl mb-6 shadow-lg">
+        <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 via-blue-500 to-violet-500"></div>
+        <div class="absolute -top-6 -right-6 w-36 h-36 rounded-full bg-white/5"></div>
+        <div class="absolute -bottom-8 left-8 w-48 h-48 rounded-full bg-white/5"></div>
+        <div class="relative px-6 py-5 flex items-center justify-between">
+            <div>
+                <div class="flex items-center gap-2 mb-1">
+                    <svg class="w-4 h-4 text-white/70" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z"/></svg>
+                    <span class="text-white/60 text-xs font-semibold uppercase tracking-wider">MyBosco</span>
+                </div>
+                <h1 class="text-2xl font-black text-white leading-tight">Стрічка новин</h1>
+                <p class="text-white/65 text-sm mt-0.5">Оголошення, події та новини</p>
+            </div>
+            <div class="flex-shrink-0 w-16 h-16 rounded-2xl bg-white/15 backdrop-blur-sm border border-white/20 flex flex-col items-center justify-center">
+                <span class="text-xl font-black text-white">{{ posts|length }}</span>
+                <span class="text-[10px] text-white/65 font-semibold">дописів</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter tabs -->
+    <div class="flex flex-wrap items-center bg-surface rounded-2xl border border-border px-2 py-1.5 mb-6 gap-1 shadow-sm overflow-x-auto">
         <a href="?tab=all"
-            class="px-5 py-2 rounded-full text-sm font-bold transition-all
-            {% if active_tab == 'all' %}bg-primary text-white shadow-md{% else %}bg-surface text-mutedText hover:bg-background border border-border{% endif %}">
+            class="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 text-sm font-bold rounded-xl transition-all
+            {% if active_tab == 'all' %}bg-primary/10 text-primary{% else %}text-mutedText hover:bg-background hover:text-mainText{% endif %}">
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
             Всі
         </a>
         <a href="?tab=general"
-            class="px-5 py-2 rounded-full text-sm font-bold transition-all
-            {% if active_tab == 'general' %}bg-indigo-500 text-white shadow-md{% else %}bg-surface text-mutedText hover:bg-background border border-border{% endif %}">
-            Загальні новини
+            class="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 text-sm font-bold rounded-xl transition-all
+            {% if active_tab == 'general' %}bg-indigo-500/10 text-indigo-600{% else %}text-mutedText hover:bg-background hover:text-mainText{% endif %}">
+            <span class="w-2 h-2 rounded-full bg-indigo-500 flex-shrink-0"></span>
+            Загальні
         </a>
 
         {% if user.role == 'student' and student_group %}
         <a href="?tab=group"
-            class="px-5 py-2 rounded-full text-sm font-bold transition-all
-            {% if active_tab == 'group' %}bg-green-600 text-white shadow-md{% else %}bg-surface text-mutedText hover:bg-background border border-border{% endif %}">
-            Новини групи {{ student_group.name }}
+            class="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 text-sm font-bold rounded-xl transition-all
+            {% if active_tab == 'group' %}bg-green-600/10 text-green-600{% else %}text-mutedText hover:bg-background hover:text-mainText{% endif %}">
+            <span class="w-2 h-2 rounded-full bg-green-500 flex-shrink-0"></span>
+            {{ student_group.name }}
         </a>
         {% endif %}
 
         {% if teacher_groups %}
         {% for g in teacher_groups %}
         <a href="?tab=group_{{ g.id }}"
-            class="px-5 py-2 rounded-full text-sm font-bold transition-all
-            {% if active_tab == 'group_'|add:g.id|stringformat:'s' %}bg-green-600 text-white shadow-md{% else %}bg-surface text-mutedText hover:bg-background border border-border{% endif %}">
+            class="flex-shrink-0 flex items-center gap-1.5 px-4 py-2 text-sm font-bold rounded-xl transition-all
+            {% if active_tab == 'group_'|add:g.id|stringformat:'s' %}bg-green-600/10 text-green-600{% else %}text-mutedText hover:bg-background hover:text-mainText{% endif %}">
+            <span class="w-2 h-2 rounded-full bg-green-500 flex-shrink-0"></span>
             {{ g.name }}
         </a>
         {% endfor %}
@@ -41,29 +84,42 @@
 
     <!-- Create Post (teacher/admin only) -->
     {% if user.role == 'teacher' or user.role == 'admin' %}
-    <div class="bg-surface rounded-3xl shadow-sm border border-border p-6 mb-6" id="create-post-card">
-        <h3 class="text-xs font-black uppercase tracking-widest text-mutedText mb-4">Новий допис</h3>
-        <form id="create-post-form">
+    <div class="bg-surface rounded-2xl border border-border shadow-sm mb-6 overflow-hidden" id="create-post-card">
+        <!-- Card header -->
+        <div class="flex items-center gap-3 px-5 py-4 border-b border-border bg-primary/5">
+            <div class="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-base flex-shrink-0 shadow-sm">
+                {{ user.full_name|slice:":1" }}
+            </div>
+            <div>
+                <p class="text-sm font-bold text-mainText">{{ user.full_name }}</p>
+                <p class="text-[11px] text-mutedText">Новий допис</p>
+            </div>
+        </div>
+
+        <form id="create-post-form" class="p-5 space-y-3">
             {% csrf_token %}
+
             <!-- Post type toggle -->
-            <div class="flex gap-2 mb-4">
+            <div class="flex gap-2">
                 <button type="button" onclick="setPostType('general')"
                     id="btn-type-general"
-                    class="px-4 py-2 rounded-xl text-sm font-bold border transition-all bg-indigo-500 text-white border-indigo-500">
+                    class="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold border transition-all bg-indigo-500 text-white border-indigo-500 shadow-sm">
+                    <span class="w-2 h-2 rounded-full bg-white/70"></span>
                     Загальне
                 </button>
                 <button type="button" onclick="setPostType('group')"
                     id="btn-type-group"
-                    class="px-4 py-2 rounded-xl text-sm font-bold border transition-all bg-surface text-mutedText border-border hover:border-green-400 hover:text-green-600">
+                    class="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold border transition-all bg-surface text-mutedText border-border hover:border-green-400 hover:text-green-600">
+                    <span class="w-2 h-2 rounded-full bg-green-400"></span>
                     Для групи
                 </button>
             </div>
             <input type="hidden" name="post_type" id="post-type-input" value="general">
 
-            <!-- Group selector (hidden by default) -->
-            <div id="group-select-wrapper" class="hidden mb-4">
+            <!-- Group selector -->
+            <div id="group-select-wrapper" class="hidden">
                 <select name="group_id" id="group-select"
-                    class="w-full px-4 py-3 rounded-xl border border-border bg-surface text-mainText text-sm font-medium focus:outline-none focus:border-primary">
+                    class="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-mainText text-sm font-medium focus:outline-none focus:border-primary transition-colors">
                     <option value="">— Оберіть групу —</option>
                     {% for g in teacher_groups %}
                     <option value="{{ g.id }}">{{ g.name }}</option>
@@ -72,14 +128,15 @@
             </div>
 
             <input type="text" name="title" placeholder="Заголовок (необов'язково)"
-                class="w-full px-4 py-3 rounded-xl border border-border bg-surface text-mainText text-sm mb-3 focus:outline-none focus:border-primary">
+                class="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-mainText text-sm focus:outline-none focus:border-primary transition-colors placeholder:text-mutedText/50">
 
             <textarea name="content" id="post-content" rows="3" placeholder="Що нового?"
-                class="w-full px-4 py-3 rounded-xl border border-border bg-surface text-mainText text-sm resize-none focus:outline-none focus:border-primary"></textarea>
+                class="w-full px-4 py-2.5 rounded-xl border border-border bg-background text-mainText text-sm focus:outline-none focus:border-primary transition-colors placeholder:text-mutedText/50"></textarea>
 
-            <div class="flex justify-end mt-3">
+            <div class="flex justify-end pt-1">
                 <button type="submit"
-                    class="px-6 py-2.5 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors">
+                    class="flex items-center gap-2 px-5 py-2.5 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary/90 hover:shadow-button transition-all shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
                     Опублікувати
                 </button>
             </div>
@@ -87,48 +144,60 @@
     </div>
     {% endif %}
 
-    <!-- New posts banner (hidden by default, shown via JS) -->
+    <!-- New posts banner -->
     <div id="new-posts-banner" class="hidden mb-4">
         <button onclick="loadNewPosts()"
-            class="w-full py-2.5 bg-primary/10 hover:bg-primary/15 text-primary rounded-2xl text-sm font-bold border border-primary/20 transition-colors">
-            ↑ Нові дописи — натисніть, щоб оновити
+            class="w-full py-3 bg-primary/10 hover:bg-primary/15 text-primary rounded-2xl text-sm font-bold border border-primary/20 transition-colors flex items-center justify-center gap-2">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/></svg>
+            Нові дописи — натисніть, щоб оновити
         </button>
     </div>
 
     <!-- Posts Feed -->
-    <div id="posts-container">
+    <div id="posts-container" class="space-y-4">
         {% for post in posts %}
-        <div class="post-card bg-surface rounded-3xl shadow-sm border border-border mb-5 overflow-hidden"
+        <div class="post-card bg-surface rounded-2xl border border-border shadow-sm overflow-hidden
+            {% if post.post_type == 'general' %}border-l-4 border-l-indigo-400{% else %}border-l-4 border-l-green-500{% endif %}"
             data-post-id="{{ post.id }}">
 
             <!-- Post Header -->
-            <div class="p-6 pb-4">
-                <div class="flex items-start justify-between">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr
-                            {% if post.author.role == 'admin' %}from-purple-500 to-purple-700
-                            {% else %}from-blue-500 to-indigo-600{% endif %}
-                            flex items-center justify-center text-white font-bold text-lg shadow-sm flex-shrink-0">
+            <div class="p-5 pb-3">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <!-- Avatar -->
+                        <div class="w-10 h-10 rounded-full flex-shrink-0
+                            {% if post.author.role == 'admin' %}bg-gradient-to-tr from-purple-500 to-purple-700
+                            {% else %}bg-gradient-to-tr from-blue-500 to-indigo-600{% endif %}
+                            flex items-center justify-center text-white font-black text-base shadow-sm">
                             {{ post.author.full_name|slice:":1" }}
                         </div>
-                        <div>
-                            <div class="font-bold text-mainText text-sm">{{ post.author.full_name }}</div>
-                            <div class="text-xs text-mutedText">{{ post.created_at|date:"d.m.Y H:i" }}</div>
+                        <div class="min-w-0">
+                            <div class="font-bold text-mainText text-sm truncate">{{ post.author.full_name }}</div>
+                            <div class="flex items-center gap-1.5 text-xs text-mutedText">
+                                <svg class="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                {{ post.created_at|date:"d.m.Y H:i" }}
+                            </div>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2 flex-shrink-0">
-                        <!-- Badge -->
+                    <div class="flex items-center gap-1.5 flex-shrink-0">
+                        <!-- Type badge -->
                         {% if post.post_type == 'general' %}
-                        <span class="px-3 py-1 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-full text-xs font-bold">Загальне</span>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-500/10 text-indigo-600 rounded-full text-xs font-bold">
+                            <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                            Загальне
+                        </span>
                         {% else %}
-                        <span class="px-3 py-1 bg-green-500/10 text-green-600 dark:text-green-400 rounded-full text-xs font-bold">{{ post.group.name }}</span>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-green-500/10 text-green-600 rounded-full text-xs font-bold">
+                            <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                            {{ post.group.name }}
+                        </span>
                         {% endif %}
-                        <!-- Delete button (author or admin) -->
+                        <!-- Delete -->
                         {% if user == post.author or user.role == 'admin' %}
                         <button onclick="deletePost({{ post.id }}, this)"
-                            class="p-1.5 rounded-lg text-mutedText/50 hover:text-red-500 hover:bg-red-500/10 transition-colors"
+                            class="p-1.5 rounded-lg text-mutedText/40 hover:text-red-500 hover:bg-red-500/10 transition-colors"
                             title="Видалити допис">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                             </svg>
@@ -137,81 +206,93 @@
                     </div>
                 </div>
 
+                <!-- Content -->
                 {% if post.title %}
-                <h3 class="mt-4 text-base font-black text-mainText">{{ post.title }}</h3>
+                <h3 class="mt-3 text-base font-black text-mainText leading-snug">{{ post.title }}</h3>
                 {% endif %}
-                <p class="mt-2 text-mainText text-sm leading-relaxed whitespace-pre-wrap">{{ post.content }}</p>
+                <p class="mt-2 text-mainText/90 text-sm leading-relaxed whitespace-pre-wrap">{{ post.content }}</p>
             </div>
 
-            <!-- Comments -->
-            <div class="border-t border-border bg-background/50 px-6 pt-4 pb-2">
-                <!-- Toggle comments link -->
+            <!-- Comments section -->
+            <div class="border-t border-border/60 bg-background/40 px-5 pt-3 pb-4">
+                <!-- Toggle comments -->
                 {% with comment_count=post.comments.count %}
-                {% if comment_count > 0 %}
-                <button onclick="toggleComments({{ post.id }}, this)"
-                    class="text-xs text-mutedText hover:text-primary font-semibold mb-3 transition-colors">
-                    💬 {{ comment_count }} {% if comment_count == 1 %}коментар{% elif comment_count < 5 %}коментарі{% else %}коментарів{% endif %}
-                </button>
-                {% else %}
-                <p class="text-xs text-mutedText/50 mb-3">Коментарів ще немає</p>
-                {% endif %}
+                <div class="mb-3">
+                    {% if comment_count > 0 %}
+                    <button onclick="toggleComments({{ post.id }}, this)"
+                        class="inline-flex items-center gap-1.5 text-xs text-mutedText hover:text-primary font-semibold transition-colors py-1">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                        {{ comment_count }} {% if comment_count == 1 %}коментар{% elif comment_count < 5 %}коментарі{% else %}коментарів{% endif %}
+                    </button>
+                    {% else %}
+                    <span class="text-xs text-mutedText/40 flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                        Коментарів ще немає
+                    </span>
+                    {% endif %}
+                </div>
                 {% endwith %}
 
-                <div class="comments-list space-y-3 mb-4" id="comments-{{ post.id }}"
+                <!-- Comments list -->
+                <div class="comments-list space-y-2.5 mb-3" id="comments-{{ post.id }}"
                     {% if post.comments.count > 0 %}style="display:none"{% endif %}>
                     {% for comment in post.comments.all %}
-                    <div class="comment flex gap-3 items-start" data-comment-id="{{ comment.id }}">
-                        <div class="w-7 h-7 rounded-lg bg-gradient-to-tr
-                            {% if comment.author.role == 'teacher' %}from-blue-400 to-blue-600
-                            {% elif comment.author.role == 'admin' %}from-purple-400 to-purple-600
-                            {% else %}from-slate-400 to-slate-500{% endif %}
-                            flex items-center justify-center text-white font-bold text-xs flex-shrink-0 mt-0.5">
+                    <div class="comment flex gap-2.5 items-start" data-comment-id="{{ comment.id }}">
+                        <div class="w-7 h-7 rounded-full flex-shrink-0 mt-0.5
+                            {% if comment.author.role == 'teacher' %}bg-gradient-to-tr from-blue-400 to-blue-600
+                            {% elif comment.author.role == 'admin' %}bg-gradient-to-tr from-purple-400 to-purple-600
+                            {% else %}bg-gradient-to-tr from-slate-400 to-slate-500{% endif %}
+                            flex items-center justify-center text-white font-bold text-[11px]">
                             {{ comment.author.full_name|slice:":1" }}
                         </div>
-                        <div class="flex-1 bg-surface border border-border rounded-2xl px-4 py-2.5 shadow-sm">
-                            <div class="flex items-center justify-between gap-2">
+                        <div class="flex-1 bg-surface border border-border rounded-xl px-3.5 py-2.5 shadow-sm comment-bubble">
+                            <div class="flex items-center justify-between gap-2 mb-1">
                                 <span class="text-xs font-bold text-mainText">{{ comment.author.full_name }}</span>
                                 <div class="flex items-center gap-1">
-                                    <span class="text-xs text-mutedText">{{ comment.created_at|date:"d.m H:i" }}</span>
+                                    <span class="text-[10px] text-mutedText">{{ comment.created_at|date:"d.m H:i" }}</span>
                                     {% if user == comment.author or user.role == 'admin' %}
                                     <button onclick="deleteComment({{ comment.id }}, this)"
-                                        class="ml-1 p-0.5 rounded text-mutedText/50 hover:text-red-400 transition-colors"
+                                        class="ml-0.5 p-0.5 rounded text-mutedText/30 hover:text-red-400 transition-colors"
                                         title="Видалити">
-                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M6 18L18 6M6 6l12 12" />
+                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                                         </svg>
                                     </button>
                                     {% endif %}
                                 </div>
                             </div>
-                            <p class="text-sm text-mutedText mt-0.5">{{ comment.content }}</p>
+                            <p class="text-sm text-mainText/80 leading-snug">{{ comment.content }}</p>
                         </div>
                     </div>
                     {% endfor %}
                 </div>
 
                 <!-- Reply form -->
-                <form class="comment-form flex gap-2 pb-4" data-post-id="{{ post.id }}">
+                <form class="comment-form flex gap-2 items-center" data-post-id="{{ post.id }}">
                     {% csrf_token %}
+                    <div class="w-7 h-7 rounded-full flex-shrink-0 bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-[11px]">
+                        {{ user.full_name|slice:":1" }}
+                    </div>
                     <input type="text" placeholder="Написати коментар..."
-                        class="flex-1 px-4 py-2 rounded-xl border border-border bg-surface text-mainText text-sm focus:outline-none focus:border-primary"
+                        class="flex-1 px-4 py-2 rounded-full border border-border bg-surface text-mainText text-sm focus:outline-none focus:border-primary transition-colors placeholder:text-mutedText/50"
                         name="content">
                     <button type="submit"
-                        class="px-4 py-2 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors flex-shrink-0">
-                        →
+                        class="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center hover:bg-primary/90 transition-colors flex-shrink-0 shadow-sm">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
                     </button>
                 </form>
             </div>
         </div>
         {% empty %}
         <div class="text-center py-20 text-mutedText" id="empty-feed-msg">
-            <svg class="w-16 h-16 mx-auto mb-4 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                    d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
-            </svg>
-            <p class="font-medium text-lg">Дописів ще немає</p>
-            <p class="text-sm mt-1">Будьте першим, хто опублікує новину!</p>
+            <div class="w-20 h-20 rounded-2xl bg-surface border border-border flex items-center justify-center mx-auto mb-4 shadow-sm">
+                <svg class="w-10 h-10 opacity-25" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                        d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                </svg>
+            </div>
+            <p class="font-bold text-base text-mainText">Дописів ще немає</p>
+            <p class="text-sm mt-1 text-mutedText">Будьте першим, хто опублікує новину!</p>
         </div>
         {% endfor %}
     </div>
@@ -223,29 +304,29 @@
 {{ block.super }}
 <script>
     const CSRF_TOKEN = '{{ csrf_token }}';
+    const USER_INITIAL = '{{ user.full_name|slice:":1" }}';
 
-    // ── Toggle comments collapse ──────────────────────────────────────────────
+    // ── Toggle comments ───────────────────────────────────────────────────────
     function toggleComments(postId, btn) {
         const list = document.getElementById(`comments-${postId}`);
         if (!list) return;
-        const hidden = list.style.display === 'none';
-        list.style.display = hidden ? '' : 'none';
+        list.style.display = list.style.display === 'none' ? '' : 'none';
     }
 
     // ── Post type toggle ──────────────────────────────────────────────────────
     function setPostType(type) {
         document.getElementById('post-type-input').value = type;
-        const btnGeneral = document.getElementById('btn-type-general');
-        const btnGroup   = document.getElementById('btn-type-group');
+        const btnGeneral   = document.getElementById('btn-type-general');
+        const btnGroup     = document.getElementById('btn-type-group');
         const groupWrapper = document.getElementById('group-select-wrapper');
 
         if (type === 'general') {
-            btnGeneral.className = 'px-4 py-2 rounded-xl text-sm font-bold border transition-all bg-indigo-500 text-white border-indigo-500';
-            btnGroup.className   = 'px-4 py-2 rounded-xl text-sm font-bold border transition-all bg-surface text-mutedText border-border hover:border-green-400 hover:text-green-600';
+            btnGeneral.className = 'flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold border transition-all bg-indigo-500 text-white border-indigo-500 shadow-sm';
+            btnGroup.className   = 'flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold border transition-all bg-surface text-mutedText border-border hover:border-green-400 hover:text-green-600';
             groupWrapper.classList.add('hidden');
         } else {
-            btnGroup.className   = 'px-4 py-2 rounded-xl text-sm font-bold border transition-all bg-green-600 text-white border-green-600';
-            btnGeneral.className = 'px-4 py-2 rounded-xl text-sm font-bold border transition-all bg-surface text-mutedText border-border hover:border-indigo-400 hover:text-indigo-600';
+            btnGroup.className   = 'flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold border transition-all bg-green-600 text-white border-green-600 shadow-sm';
+            btnGeneral.className = 'flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold border transition-all bg-surface text-mutedText border-border hover:border-indigo-400 hover:text-indigo-600';
             groupWrapper.classList.remove('hidden');
         }
     }
@@ -256,11 +337,14 @@
         createForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const data = new FormData(createForm);
+            const btn = createForm.querySelector('button[type="submit"]');
+            btn.disabled = true;
             const resp = await fetch('{% url "api_news_create_post" %}', {
                 method: 'POST',
                 headers: { 'X-CSRFToken': CSRF_TOKEN },
                 body: data,
             });
+            btn.disabled = false;
             const json = await resp.json();
             if (!resp.ok) { alert(json.error || 'Помилка'); return; }
 
@@ -276,48 +360,56 @@
     }
 
     function buildPostHTML(p) {
-        const badge = p.post_type === 'general'
-            ? '<span class="px-3 py-1 bg-indigo-500/10 text-indigo-500 rounded-full text-xs font-bold">Загальне</span>'
-            : `<span class="px-3 py-1 bg-green-500/10 text-green-600 rounded-full text-xs font-bold">${escHtml(p.group_name)}</span>`;
+        const isGeneral = p.post_type === 'general';
+        const borderColor = isGeneral ? 'border-l-indigo-400' : 'border-l-green-500';
+        const badge = isGeneral
+            ? `<span class="inline-flex items-center gap-1 px-2.5 py-1 bg-indigo-500/10 text-indigo-600 rounded-full text-xs font-bold"><span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>Загальне</span>`
+            : `<span class="inline-flex items-center gap-1 px-2.5 py-1 bg-green-500/10 text-green-600 rounded-full text-xs font-bold"><span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>${escHtml(p.group_name)}</span>`;
 
         const deleteBtn = `
-            <button onclick="deletePost(${p.id}, this)" class="p-1.5 rounded-lg text-mutedText/50 hover:text-red-500 hover:bg-red-500/10 transition-colors" title="Видалити допис">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
+            <button onclick="deletePost(${p.id}, this)" class="p-1.5 rounded-lg text-mutedText/40 hover:text-red-500 hover:bg-red-500/10 transition-colors" title="Видалити">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
             </button>`;
 
         const titleHTML = p.title
-            ? `<h3 class="mt-4 text-base font-black text-mainText">${escHtml(p.title)}</h3>`
+            ? `<h3 class="mt-3 text-base font-black text-mainText leading-snug">${escHtml(p.title)}</h3>`
             : '';
 
         return `
-        <div class="post-card bg-surface rounded-3xl shadow-sm border border-border mb-5 overflow-hidden" data-post-id="${p.id}">
-            <div class="p-6 pb-4">
-                <div class="flex items-start justify-between">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-lg shadow-sm flex-shrink-0">
+        <div class="post-card bg-surface rounded-2xl border border-border border-l-4 ${borderColor} shadow-sm overflow-hidden" data-post-id="${p.id}">
+            <div class="p-5 pb-3">
+                <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-10 h-10 rounded-full flex-shrink-0 bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-base shadow-sm">
                             ${escHtml(p.author.slice(0,1))}
                         </div>
-                        <div>
-                            <div class="font-bold text-mainText text-sm">${escHtml(p.author)}</div>
-                            <div class="text-xs text-mutedText">${escHtml(p.created_at)}</div>
+                        <div class="min-w-0">
+                            <div class="font-bold text-mainText text-sm truncate">${escHtml(p.author)}</div>
+                            <div class="flex items-center gap-1.5 text-xs text-mutedText">
+                                <svg class="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                ${escHtml(p.created_at)}
+                            </div>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2 flex-shrink-0">
-                        ${badge}
-                        ${deleteBtn}
-                    </div>
+                    <div class="flex items-center gap-1.5 flex-shrink-0">${badge}${deleteBtn}</div>
                 </div>
                 ${titleHTML}
-                <p class="mt-2 text-mainText text-sm leading-relaxed whitespace-pre-wrap">${escHtml(p.content)}</p>
+                <p class="mt-2 text-mainText/90 text-sm leading-relaxed whitespace-pre-wrap">${escHtml(p.content)}</p>
             </div>
-            <div class="border-t border-border bg-background/50 px-6 pt-4 pb-2">
-                <p class="text-xs text-mutedText/50 mb-3">Коментарів ще немає</p>
-                <div class="comments-list space-y-3 mb-4" id="comments-${p.id}"></div>
-                <form class="comment-form flex gap-2 pb-4" data-post-id="${p.id}">
-                    <input type="text" placeholder="Написати коментар..." class="flex-1 px-4 py-2 rounded-xl border border-border bg-surface text-mainText text-sm focus:outline-none focus:border-primary" name="content">
-                    <button type="submit" class="px-4 py-2 bg-primary text-white rounded-xl text-sm font-bold hover:bg-primary/90 transition-colors flex-shrink-0">→</button>
+            <div class="border-t border-border/60 bg-background/40 px-5 pt-3 pb-4">
+                <div class="mb-3">
+                    <span class="text-xs text-mutedText/40 flex items-center gap-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                        Коментарів ще немає
+                    </span>
+                </div>
+                <div class="comments-list space-y-2.5 mb-3" id="comments-${p.id}"></div>
+                <form class="comment-form flex gap-2 items-center" data-post-id="${p.id}">
+                    <div class="w-7 h-7 rounded-full flex-shrink-0 bg-gradient-to-tr from-blue-500 to-indigo-600 flex items-center justify-center text-white font-black text-[11px]">${escHtml(USER_INITIAL)}</div>
+                    <input type="text" placeholder="Написати коментар..." class="flex-1 px-4 py-2 rounded-full border border-border bg-surface text-mainText text-sm focus:outline-none focus:border-primary transition-colors placeholder:text-mutedText/50" name="content">
+                    <button type="submit" class="w-8 h-8 bg-primary text-white rounded-full flex items-center justify-center hover:bg-primary/90 transition-colors flex-shrink-0 shadow-sm">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                    </button>
                 </form>
             </div>
         </div>`;
@@ -327,9 +419,9 @@
     document.addEventListener('submit', async (e) => {
         if (!e.target.classList.contains('comment-form')) return;
         e.preventDefault();
-        const form   = e.target;
-        const postId = form.dataset.postId;
-        const input  = form.querySelector('input[name="content"]');
+        const form    = e.target;
+        const postId  = form.dataset.postId;
+        const input   = form.querySelector('input[name="content"]');
         const content = input.value.trim();
         if (!content) return;
 
@@ -349,18 +441,18 @@
         if (commentsList.style.display === 'none') commentsList.style.display = '';
 
         const card = commentsList.closest('.post-card');
+        const noCommentMsg = card.querySelector('.text-mutedText\\/40');
+        if (noCommentMsg && noCommentMsg.tagName === 'SPAN') noCommentMsg.closest('div').innerHTML =
+            `<button onclick="toggleComments(${postId}, this)" class="inline-flex items-center gap-1.5 text-xs text-mutedText hover:text-primary font-semibold transition-colors py-1">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+                1 коментар
+            </button>`;
+
         const toggleBtn = card.querySelector('button[onclick^="toggleComments"]');
-        const noCommentMsg = card.querySelector('.text-mutedText\\/50');
-        if (noCommentMsg && noCommentMsg.tagName === 'P') noCommentMsg.remove();
         if (toggleBtn) {
             const newCount = commentsList.querySelectorAll('.comment').length + 1;
             const label = newCount === 1 ? 'коментар' : newCount < 5 ? 'коментарі' : 'коментарів';
-            toggleBtn.textContent = `💬 ${newCount} ${label}`;
-        } else {
-            const parentDiv = commentsList.parentElement;
-            parentDiv.insertAdjacentHTML('afterbegin',
-                `<button onclick="toggleComments(${postId}, this)" class="text-xs text-mutedText hover:text-primary font-semibold mb-3 transition-colors">💬 1 коментар</button>`
-            );
+            toggleBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>${newCount} ${label}`;
         }
 
         commentsList.insertAdjacentHTML('beforeend', buildCommentHTML(json));
@@ -375,23 +467,21 @@
                 : 'from-slate-400 to-slate-500';
 
         return `
-        <div class="comment flex gap-3 items-start" data-comment-id="${c.id}">
-            <div class="w-7 h-7 rounded-lg bg-gradient-to-tr ${colorClass} flex items-center justify-center text-white font-bold text-xs flex-shrink-0 mt-0.5">
+        <div class="comment flex gap-2.5 items-start" data-comment-id="${c.id}">
+            <div class="w-7 h-7 rounded-full bg-gradient-to-tr ${colorClass} flex items-center justify-center text-white font-bold text-[11px] flex-shrink-0 mt-0.5">
                 ${escHtml(c.author.slice(0,1))}
             </div>
-            <div class="flex-1 bg-surface border border-border rounded-2xl px-4 py-2.5 shadow-sm">
-                <div class="flex items-center justify-between gap-2">
+            <div class="flex-1 bg-surface border border-border rounded-xl px-3.5 py-2.5 shadow-sm">
+                <div class="flex items-center justify-between gap-2 mb-1">
                     <span class="text-xs font-bold text-mainText">${escHtml(c.author)}</span>
                     <div class="flex items-center gap-1">
-                        <span class="text-xs text-mutedText">${escHtml(c.created_at)}</span>
-                        <button onclick="deleteComment(${c.id}, this)" class="ml-1 p-0.5 rounded text-mutedText/50 hover:text-red-400 transition-colors" title="Видалити">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
+                        <span class="text-[10px] text-mutedText">${escHtml(c.created_at)}</span>
+                        <button onclick="deleteComment(${c.id}, this)" class="ml-0.5 p-0.5 rounded text-mutedText/30 hover:text-red-400 transition-colors" title="Видалити">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                         </button>
                     </div>
                 </div>
-                <p class="text-sm text-mutedText mt-0.5">${escHtml(c.content)}</p>
+                <p class="text-sm text-mainText/80 leading-snug">${escHtml(c.content)}</p>
             </div>
         </div>`;
     }
@@ -405,8 +495,9 @@
         });
         if (resp.ok) {
             const card = btn.closest('.post-card');
+            card.style.transition = 'opacity .3s, transform .3s';
             card.style.opacity    = '0';
-            card.style.transition = 'opacity 0.3s';
+            card.style.transform  = 'scale(0.97)';
             setTimeout(() => card.remove(), 300);
         }
     }
@@ -419,9 +510,9 @@
         });
         if (resp.ok) {
             const el = btn.closest('.comment');
+            el.style.transition = 'opacity .2s';
             el.style.opacity    = '0';
-            el.style.transition = 'opacity 0.3s';
-            setTimeout(() => el.remove(), 300);
+            setTimeout(() => el.remove(), 200);
         }
     }
 

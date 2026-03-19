@@ -1,5 +1,5 @@
 """
-Service Layer для EduTrack
+Service Layer для MyBosco
 
 Цей модуль містить бізнес-логіку додатку, відокремлену від views.
 """

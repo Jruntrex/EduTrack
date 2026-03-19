@@ -236,8 +236,13 @@
                             </div>
                             <!-- Tooltip -->
                             <div
-                                class="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-2 py-1 bg-gray-800 text-white text-xs rounded shadow-lg whitespace-nowrap z-50">
-                                {% if lesson.is_cancelled %}Скасовано{% else %}{{ lesson.topic|default:"Без теми" }}{% endif %}
+                                class="hidden group-hover:flex flex-col gap-1 absolute bottom-full left-1/2 -translate-x-1/2 mb-2 bg-gray-800 text-white text-xs rounded-xl shadow-lg z-50 overflow-hidden min-w-[120px]">
+                                <span class="px-3 pt-2 pb-1 whitespace-nowrap">{% if lesson.is_cancelled %}Скасовано{% else %}{{ lesson.topic|default:"Без теми" }}{% endif %}</span>
+                                <a href="/lesson/{{ lesson.id }}/" onclick="event.stopPropagation()"
+                                    class="px-3 pb-2 pt-1 text-blue-300 hover:text-blue-200 font-bold border-t border-white/10 whitespace-nowrap flex items-center gap-1">
+                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
+                                    Деталі уроку
+                                </a>
                             </div>
                         </th>
                         {% endfor %}
@@ -353,33 +358,63 @@
             <!-- Тип оцінювання -->
             <div class="flex flex-col gap-1.5">
                 <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Тип оцінювання</label>
-                <select id="modalLessonType"
+                <select id="modalLessonType" onchange="onEvalTypeChange()"
                     class="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-gray-700 font-medium h-[52px]">
                     <option value="">Без специфічного типу</option>
                     {% for etype in evaluation_types %}
-                    <option value="{{ etype.id }}">{{ etype.name }} ({{ etype.weight_percent|floatformat:0 }}%)</option>
+                    {% if not etype.is_homework_type %}
+                    <option value="{{ etype.id }}" data-weight="{{ etype.weight_percent|floatformat:0 }}">{{ etype.name }} ({{ etype.weight_percent|floatformat:0 }}%)</option>
+                    {% endif %}
                     {% endfor %}
                 </select>
-                <p class="text-[10px] text-gray-400 px-1 mt-1">Ви можете створити нові типи в <a
-                        href="{% url 'teacher_settings' %}"
-                        class="text-primary hover:underline font-bold">налаштуваннях</a></p>
             </div>
 
-            <!-- Домашнє завдання -->
-            <div class="flex flex-col gap-1.5">
-                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Домашнє завдання</label>
-                <textarea id="modalLessonHomework" rows="3"
-                    class="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-gray-700 font-medium resize-none"
-                    placeholder="Опишіть домашнє завдання..."></textarea>
+            <!-- Вплив ДЗ на оцінку -->
+            <div id="hwWeightSection" class="hidden flex-col gap-1.5">
+                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Вплив ДЗ на підсумкову оцінку</label>
+                <div class="flex items-center gap-2">
+                    <div class="flex-1 relative">
+                        <input type="number" id="modalHwWeight" min="0" max="100" step="1"
+                            class="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-gray-700 font-medium pr-10"
+                            placeholder="0">
+                        <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold text-sm">%</span>
+                    </div>
+                    <a href="{% url 'teacher_settings' %}"
+                        class="p-3 bg-blue-50 border border-blue-100 rounded-2xl text-primary hover:bg-blue-100 transition-colors flex-shrink-0"
+                        title="Керувати типами оцінювання в налаштуваннях">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </a>
+                </div>
+                <p class="text-[10px] text-gray-400 px-1">Вага оцінки цього типу у загальному балі. <a href="{% url 'teacher_settings' %}" class="text-primary hover:underline font-bold">Детальне налаштування →</a></p>
             </div>
 
-            <!-- Матеріали -->
-            <div class="flex flex-col gap-1.5">
-                <label class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Матеріали / Посилання</label>
-                <input type="text" id="modalLessonMaterials"
-                    class="w-full px-5 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-4 focus:ring-primary/10 focus:border-primary outline-none transition-all text-gray-700 font-medium"
-                    placeholder="https://... або посилання на файл">
+            <!-- ДЗ — завжди присутній тип, показується окремо -->
+            {% for etype in evaluation_types %}
+            {% if etype.is_homework_type %}
+            <div class="flex items-center justify-between gap-3 px-4 py-3 bg-indigo-50 border border-indigo-100 rounded-2xl">
+                <div class="flex items-center gap-2">
+                    <svg class="w-4 h-4 text-indigo-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"/></svg>
+                    <div>
+                        <p class="text-xs font-black text-indigo-700">Домашнє Завдання · {{ etype.weight_percent|floatformat:0 }}% від оцінки</p>
+                        <p class="text-[10px] text-indigo-400">Обов'язковий тип — оцінки з Мої Уроки</p>
+                    </div>
+                </div>
+                <a href="{% url 'teacher_settings' %}" class="text-[10px] font-bold text-indigo-500 hover:text-indigo-700 hover:underline whitespace-nowrap">Змінити %</a>
             </div>
+            {% endif %}
+            {% endfor %}
+
+            <!-- Посилання на деталі уроку (Мої Уроки) -->
+            <a id="modalLessonDetailLink" href="#"
+                class="flex items-center gap-2 px-4 py-3 bg-blue-50 border border-blue-100 rounded-2xl text-sm font-bold text-primary hover:bg-blue-100 transition-colors group">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                <span>Детальне редагування Домашнього Завдання та лекції — Мої Уроки</span>
+            </a>
 
             <!-- Скасування заняття -->
             <div class="flex flex-col gap-2 p-4 bg-red-50 border border-red-100 rounded-2xl">
@@ -645,13 +680,32 @@
         }
     }
 
+    function onEvalTypeChange() {
+        const select = document.getElementById('modalLessonType');
+        const section = document.getElementById('hwWeightSection');
+        const weightInput = document.getElementById('modalHwWeight');
+        const selectedOption = select.options[select.selectedIndex];
+
+        if (select.value) {
+            const weight = selectedOption.getAttribute('data-weight') || '0';
+            weightInput.value = weight;
+            section.classList.remove('hidden');
+            section.classList.add('flex');
+        } else {
+            section.classList.add('hidden');
+            section.classList.remove('flex');
+            weightInput.value = '';
+        }
+    }
+
     function openLessonModal(id, topic, typeId, homework, materials, isCancelled, cancellationReason) {
         document.getElementById('modalLessonId').value = id;
         document.getElementById('modalLessonTopic').value = topic;
         document.getElementById('modalLessonType').value = typeId || "";
-        document.getElementById('modalLessonHomework').value = homework || "";
-        document.getElementById('modalLessonMaterials').value = materials || "";
         document.getElementById('modalCancellationReason').value = cancellationReason || "";
+        // Trigger weight section update
+        onEvalTypeChange();
+        document.getElementById('modalLessonDetailLink').href = '/lesson/' + id + '/';
 
         // Reset toggle first, then apply state
         const track = document.getElementById('cancelledToggleTrack');
@@ -689,9 +743,9 @@
         const id = document.getElementById('modalLessonId').value;
         const topic = document.getElementById('modalLessonTopic').value;
         const typeId = document.getElementById('modalLessonType').value;
-        const homework = document.getElementById('modalLessonHomework').value;
-        const materials = document.getElementById('modalLessonMaterials').value;
         const cancellationReason = document.getElementById('modalCancellationReason').value;
+        const hwWeightInput = document.getElementById('modalHwWeight');
+        const evalWeight = hwWeightInput && typeId ? hwWeightInput.value : null;
 
         showStatus('saving');
 
@@ -708,7 +762,8 @@
                 homework: homework,
                 materials: materials,
                 is_cancelled: isCancelledState,
-                cancellation_reason: cancellationReason
+                cancellation_reason: cancellationReason,
+                eval_weight: evalWeight
             })
         })
             .then(res => res.json())
@@ -737,6 +792,16 @@
         // Update topic text
         const topicEl = th.querySelector('.lesson-topic-text');
         if (topicEl) topicEl.textContent = (data.topic || '—') + ' / ' + Math.round(data.max_points);
+
+        // Sync eval type option data-weight so modal re-opens with correct %
+        if (data.eval_weight !== null && data.eval_weight !== undefined) {
+            const typeSelect = document.getElementById('modalLessonType');
+            const selectedOpt = typeSelect.options[typeSelect.selectedIndex];
+            if (selectedOpt && selectedOpt.value) {
+                selectedOpt.setAttribute('data-weight', Math.round(data.eval_weight));
+                selectedOpt.text = selectedOpt.text.replace(/\(\d+%\)/, `(${Math.round(data.eval_weight)}%)`);
+            }
+        }
 
         // Homework icon
         let hwIcon = th.querySelector('.hw-icon');

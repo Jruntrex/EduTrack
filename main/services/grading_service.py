@@ -15,7 +15,7 @@ from typing import Optional
 from django.db.models import Avg, Count, Sum, Q, QuerySet
 from main.models import (
     User, Subject, StudentPerformance, GradingScale, GradeRule,
-    Lesson, EvaluationType, AbsenceReason, TeachingAssignment,
+    Lesson, EvaluationType, AbsenceReason, TeachingAssignment, HomeworkSubmission,
 )
 
 logger = logging.getLogger(__name__)
@@ -78,7 +78,7 @@ def calculate_student_grade(
 
 def get_bayesian_average(
     grades: list[float],
-    prior_mean: float = 3.0,
+    prior_mean: float = 6.5,
     prior_weight: int = 5
 ) -> float:
     """
@@ -90,17 +90,17 @@ def get_bayesian_average(
     
     Args:
         grades: Список оцінок
-        prior_mean: Апріорне середнє (за замовчуванням 3.0)
+        prior_mean: Апріорне середнє (за замовчуванням 6.0 — середина 12-бальної шкали)
         prior_weight: Вага апріорного середнього
-    
+
     Returns:
         Згладжений середній бал
-    
+
     Example:
-        >>> get_bayesian_average([5.0], prior_mean=3.0, prior_weight=5)
-        3.33  # Замість 5.0
-        >>> get_bayesian_average([5.0, 5.0, 5.0, 5.0, 5.0], prior_mean=3.0)
-        4.5   # Більше ваги реальним оцінкам
+        >>> get_bayesian_average([12.0], prior_mean=6.0, prior_weight=5)
+        7.0   # Замість 12.0
+        >>> get_bayesian_average([12.0, 12.0, 12.0, 12.0, 12.0], prior_mean=6.0)
+        9.0   # Більше ваги реальним оцінкам
     """
     if not grades:
         return prior_mean
@@ -257,8 +257,7 @@ def get_teacher_journal_context(group_id: int, subject_id: int, week_offset: int
         # Determine lesson number
         lesson_num = lesson.lesson_number
         
-        max_points = getattr(lesson.evaluation_type, 'weight_percent', 10) if lesson.evaluation_type else 12
-        print(f"[DEBUG] Header info: date={lesson.date}, day={day_name}, lesson={lesson_num}, max={max_points}")
+        max_points = getattr(lesson.evaluation_type, 'weight_percent', 12) if lesson.evaluation_type else 12
 
         headers_map[lesson.date]['lessons'].append({
             'lesson_num': lesson_num,
@@ -319,6 +318,73 @@ def get_teacher_journal_context(group_id: int, subject_id: int, week_offset: int
         'week_end': target_sunday,
         'week_offset': week_offset,
         'evaluation_types': EvaluationType.objects.filter(assignment__group_id=group_id, assignment__subject_id=subject_id)
+    }
+
+
+def calculate_weighted_final_grade(
+    student: User,
+    assignment: TeachingAssignment,
+) -> dict:
+    """
+    Розраховує підсумкову зважену оцінку студента для навчального навантаження.
+
+    Формула (12-бальна шкала):
+        - Для ДЗ-типу (is_homework_type=True):
+            avg(HomeworkSubmission.grade) × weight% / 100
+        - Для інших типів:
+            avg(StudentPerformance.earned_points де lesson.evaluation_type=type) × weight% / 100
+        - final_grade = Σ всіх внесків
+
+    Returns:
+        dict:
+            final_grade     — підсумкова оцінка (0–12)
+            total_weight    — сума відсотків всіх типів (0–100)
+            contributions   — список по кожному типу:
+                              {type, avg_grade, weight, contribution, grades_count}
+    """
+    eval_types = assignment.evaluation_types.filter(is_active=True)
+    contributions = []
+    total_weight = 0.0
+
+    for etype in eval_types:
+        weight_pct = float(etype.weight_percent)
+        total_weight += weight_pct
+
+        if etype.is_homework_type:
+            grades_qs = HomeworkSubmission.objects.filter(
+                lesson__subject=assignment.subject,
+                lesson__group=assignment.group,
+                student=student,
+                grade__isnull=False,
+                status='graded',
+            ).values_list('grade', flat=True)
+        else:
+            grades_qs = StudentPerformance.objects.filter(
+                student=student,
+                lesson__subject=assignment.subject,
+                lesson__group=assignment.group,
+                lesson__evaluation_type=etype,
+                earned_points__isnull=False,
+            ).values_list('earned_points', flat=True)
+
+        grades_list = [float(g) for g in grades_qs]
+        avg = sum(grades_list) / len(grades_list) if grades_list else 0.0
+        contribution = avg * weight_pct / 100.0
+
+        contributions.append({
+            'type': etype,
+            'avg_grade': round(avg, 2),
+            'weight': weight_pct,
+            'contribution': round(contribution, 2),
+            'grades_count': len(grades_list),
+        })
+
+    final_grade = round(sum(c['contribution'] for c in contributions), 2)
+
+    return {
+        'final_grade': final_grade,
+        'total_weight': total_weight,
+        'contributions': contributions,
     }
 
 
@@ -449,6 +515,8 @@ def save_grade(
         absence_obj = AbsenceReason.objects.filter(id=absence_id).first()
     elif raw_str.isdigit() or (raw_str.startswith('-') and raw_str[1:].isdigit()):
         grade_value = int(raw_str)
+        if not (1 <= grade_value <= 12):
+            return {'status': 'error', 'message': 'Оцінка має бути від 1 до 12'}
 
     logger.debug(
         "Saving Grade: Student=%s, Lesson=%s, Value=%s",
@@ -474,11 +542,13 @@ def save_grade(
     )
     logger.debug("Performance saved: id=%s, created=%s", perf.id, created)
 
-    # --- Сповіщення студента ---
+    # --- Сповіщення студента (in-app + SMS) ---
     try:
         from main.models import Notification
+        from main.services.sms_service import notify_grade, notify_absence
         subject_name = current_lesson.subject.name if current_lesson.subject_id else "Предмет"
         lesson_date  = current_lesson.date.strftime('%d.%m.%Y') if current_lesson.date else ''
+        student = User.objects.only('id', 'phone').get(pk=student_id)
         if grade_value is not None:
             Notification.objects.create(
                 recipient_id=student_id,
@@ -486,6 +556,7 @@ def save_grade(
                 title=f"Нова оцінка з {subject_name}",
                 message=f"{lesson_date}: {grade_value} балів",
             )
+            notify_grade(student, subject_name, lesson_date, grade_value)
         elif absence_obj is not None:
             Notification.objects.create(
                 recipient_id=student_id,
@@ -493,6 +564,7 @@ def save_grade(
                 title=f"Відмічено пропуск з {subject_name}",
                 message=f"{lesson_date}: {absence_obj.name} ({absence_obj.code})",
             )
+            notify_absence(student, subject_name, lesson_date, absence_obj.name, absence_obj.code)
     except Exception:
         logger.exception("save_grade: не вдалося створити сповіщення")
 

@@ -74,13 +74,13 @@
     @apply text-6xl md:text-7xl font-black tracking-tighter text-mainText;
   }
 
-  /* Таблиця в стилі EduTrack */
+  /* Таблиця в стилі MyBosco */
   .table-clean {
     @apply w-full text-left border-collapse;
   }
 
   .table-clean th {
-    @apply pb-4 pr-4 text-xs font-bold text-mutedText border-b border-border italic uppercase;
+    @apply pb-4 pr-4 text-xs font-bold text-white border-b border-border italic uppercase;
   }
 
   .table-clean td {
