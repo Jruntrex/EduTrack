@@ -80,3 +80,18 @@ static_root/
 
 # Media files (if you don't want to track uploaded files)
 media/
+
+# Diagrams and design docs
+docs/
+*.puml
+*.uxf
+ux_pilot_page_structure.md
+
+# Pyright config
+pyrightconfig.json
+
+# Logs directory
+logs/
+
+# DB population scripts
+populate_db.py
